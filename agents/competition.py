@@ -1,18 +1,21 @@
-"""🥊 경쟁사 비교 에이전트.
+"""🥊 경쟁사 비교 에이전트 (Scorecard '경쟁 우위 10%', 문항 C1~C4).
 
-기술·팀 분석 결과(제품·핵심 기술·차별점 주장)를 받아, 국내·해외 경쟁사와 실제로 비교해 차별성과 진입장벽을 검증한다.
+기술 요약 결과(제품·핵심 기술·회사 측 차별점 주장 claims)를 받아, 국내·해외 경쟁사와 실제로 비교해 차별성과 진입장벽을 검증한다.
 - 경쟁사는 분야 이름("애그테크")이 아니라 대상의 **제품 유형**(예: 온실 과채류 수확 로봇)으로 찾는다.
   LLM 이 제품 설명에서 제품 유형과 검색 질의를 정하고(검색 계획), 에이전트가 그 질의로 검색한다.
 - 대상 회사 기사 본문에 경쟁사로 직접 언급된 회사(예: "영국 더그투스 등 … 외국 경쟁사")는 코드로 뽑아 반드시 검토한다.
 - 경쟁사 행마다 근거 id 를 달고, 이름이 근거에 없는 경쟁사는 버린다. 대상의 우위는 단정하지 않고 "회사 측 주장"으로 쓴다.
+- 기술 요약의 차별점 주장(claims)마다 '제3자 확인'·'회사 주장'·'반대 근거'를 붙인다(verified_claims).
+  근거 id 가 없거나 회사 자체 사이트 근거뿐인 '제3자 확인', 근거 id 가 없는 '반대 근거'는 코드가 '회사 주장'으로 낮춘다.
 """
 from __future__ import annotations
 
 import re
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from agents.tech import evidence_blocks
+from agents.tech import candidate_line, evidence_blocks, judge_own
 from core.config import get_segment
 from core.llm import structured
 from core.prompts import render
@@ -96,11 +99,20 @@ class Competitor(BaseModel):
     evidence_ids: list[str] = Field(description="이 경쟁사 이름이 실제로 나오는 근거 id (1개 이상)")
 
 
+class VerifiedClaim(BaseModel):
+    claim: str = Field(description="기술 요약이 정리한 차별점 주장 (문구 그대로, 근거 id 표기는 빼도 됨)")
+    status: Literal["제3자 확인", "회사 주장", "반대 근거"] = Field(
+        description="제3자 확인: 회사가 아닌 출처(기관·언론 취재·실증 결과·경쟁사 비교)가 확인 / "
+                    "회사 주장: 회사 발표·대표 발언뿐 / 반대 근거: 경쟁사가 같은 기능을 이미 제공하는 등 주장과 어긋나는 근거가 있음")
+    evidence_ids: list[str] = Field(description="판단에 쓴 근거 id (제3자 확인·반대 근거는 필수)")
+
+
 class CompetitionAnalysis(BaseModel):
     competitors: list[Competitor] = Field(description="3~5곳")
     differentiation: str = Field(description="대상의 차별성 판단: 제3자 근거로 확인된 것과 회사 측 주장을 구분 (근거 id)")
     entry_barriers: str = Field(description="특허·데이터·네트워크 효과·인증 등 진입장벽 (근거 id), 약하면 약하다고 쓴다")
     threats: list[str] = Field(description="경쟁 위협 (근거 id)")
+    verified_claims: list[VerifiedClaim] = Field(description="기술 요약의 차별점 주장마다 1개 (주장이 없으면 빈 목록)")
     evidence_ids: list[str]
 
 
@@ -125,14 +137,51 @@ def _ground(res: CompetitionAnalysis, ids: list[str], reg: SourceRegistry, named
     return rows
 
 
+def _own_site(s: dict | None, keys: list[str]) -> bool:
+    """회사 자체 사이트 근거인지 (호스트에 회사 영문명·이름이 들어감)."""
+    url = (s or {}).get("url") or ""
+    host = norm(url.split("/")[2]) if url.count("/") >= 2 else ""
+    return bool(host) and any(k in host for k in keys)
+
+
+def verify_claims(items: list[VerifiedClaim], valid: set[str], reg: SourceRegistry, company: list[str]) -> list[dict]:
+    """주장 검증 결과를 코드로 점검한다. 근거 id 는 저장소에 있는 것만 남기고,
+    - '제3자 확인'인데 근거 id 가 없거나 회사 자체 사이트 근거뿐이면 → '회사 주장'
+    - '반대 근거'인데 근거 id 가 없으면 → '회사 주장'
+    낮춘 항목은 downgraded=True 로 표시한다."""
+    keys = [norm(k) for k in company if k and len(norm(k)) >= 3]
+    out = []
+    for v in items:
+        ev = [i for i in dict.fromkeys(v.evidence_ids) if i in valid]
+        third = [i for i in ev if not _own_site(reg.get(i), keys)]
+        low = (v.status == "제3자 확인" and not third) or (v.status == "반대 근거" and not ev)
+        out.append({"claim": v.claim, "status": "회사 주장" if low else v.status, "evidence_ids": ev, "downgraded": low})
+    return out
+
+
+def _analysis_text(c: dict, tech: dict, k: dict) -> str:
+    """경쟁 우위 판정에 넘기는 요약문."""
+    rows = "; ".join(f"{r['name']}({r['country']}): {r['offering']}" for r in k["competitors"])
+    claims = "; ".join(f"{v['claim']} → {v['status']}" for v in k["verified_claims"])
+    return "\n".join([
+        candidate_line(c),
+        f"[기술 요약] 제품: {tech.get('product') or '확인 불가'} / 핵심 기술: {tech.get('core_technology') or '확인 불가'} "
+        f"/ 특허·인증: {tech.get('ip_evidence') or '확인 불가'}",
+        f"[경쟁] 제품 유형: {k['search_plan']['product_type_ko']} / 경쟁사: {rows or '없음'}",
+        f"[차별성] {k['differentiation']} / 진입장벽: {k['entry_barriers']}",
+        f"[차별점 주장 검증] {claims or '검증할 주장 없음'}",
+    ])
+
+
 def competition_node(state: dict) -> dict:
     c, tech = state["current"], state.get("tech", {})
     reg = SourceRegistry(state.get("registry"))
     seg = get_segment(c["segment_id"])
     name = c["official_name"]
     names = [name, c.get("name_en") or ""]
-    # 1) 대상 회사 근거 본문에 경쟁사로 직접 언급된 회사 (기술·팀 근거 전체 + 적격성 근거)
-    own = list(dict.fromkeys(c.get("evidence_ids", []) + tech.get("pool_ids", [])))
+    # 1) 대상 회사 근거 본문에 경쟁사로 직접 언급된 회사 (적격성 근거 + 창업자·기술 요약 근거 전체, v1 기술·팀 근거와 같은 범위)
+    own = list(dict.fromkeys(c.get("evidence_ids", []) + state.get("founder", {}).get("pool_ids", [])
+                             + tech.get("pool_ids", [])))
     named = mentioned_competitors(reg, own, names)
     # 2) 검색 계획: 제품 유형을 정하고 그 유형의 경쟁사를 찾는 질의를 LLM 이 만든다
     plan: SearchPlan = structured(SearchPlan).invoke(render(
@@ -149,7 +198,7 @@ def competition_node(state: dict) -> dict:
     keys = names + [m["name"] for m in named]
     evidence = "\n\n".join(evidence_blocks(reg, ids, keys, terms=RIVAL_TERMS, max_chars=600, boost=None).values())
     ctx = dict(name=name, segment=seg["name"], product=tech.get("product", ""), product_type=plan.product_type_ko,
-               differentiators="\n".join(tech.get("differentiators", [])),
+               claims="\n".join(f"- {x}" for x in tech.get("claims", [])) or "(없음)",
                named="\n".join(f"- {m['name']} [{', '.join(m['evidence_ids'])}]: \"{m['quote']}\"" for m in named)
                or "(없음)", evidence=evidence)
     llm = structured(CompetitionAnalysis)
@@ -170,8 +219,15 @@ def competition_node(state: dict) -> dict:
     out["search_plan"] = {"product_type_ko": plan.product_type_ko, "product_type_en": plan.product_type_en,
                           "queries": queries}
     out["mentioned_competitors"] = named
+    out["verified_claims"] = verify_claims(res.verified_claims, set(ids), reg, names)
+    out["evidence_ids"] = [i for i in dict.fromkeys(out["evidence_ids"] + [i for v in out["verified_claims"]
+                                                                          for i in v["evidence_ids"]])]
+    out["criterion"] = judge_own("competition", state, reg, ids, _analysis_text(c, tech, out))
+    crit = out["criterion"]
+    status = [v["status"] for v in out["verified_claims"]]
     msg = (f"[경쟁사] {name}: 제품 유형 '{plan.product_type_ko}', 검색 {len(queries) + 1}건, "
            f"근거 속 경쟁사 {', '.join(m['name'] for m in named) or '없음'} → 경쟁사 {len(out['competitors'])}곳 비교"
-           f"{' (우열 단정 고쳐 씀)' if bad else ''}")
+           f"{' (우열 단정 고쳐 씀)' if bad else ''}, 주장 {len(status)}건(제3자 확인 {status.count('제3자 확인')}·"
+           f"반대 근거 {status.count('반대 근거')}) → 경쟁 우위 YES {crit['yes']}/{crit['n']}")
     print(msg)
     return {"registry": reg.data, "competition": out, "log": [msg]}
