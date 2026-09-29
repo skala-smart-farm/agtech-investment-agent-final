@@ -49,7 +49,13 @@ B_DETAIL = ("3.1 사업 아이디어(핵심 컨셉)와 기술", "3.2 시장 규�
             "3.4 경쟁 구도와 차별성", "3.5 사업 리스크(시장·기술·규제·경쟁)")
 C_CHAPTERS = ("SUMMARY", "1. 탐색 경과와 탈락 사유", "2. 한계점", "REFERENCE")
 REQUIRED_ITEMS = ("사업 아이디어", "사업 리스크", "시장 규모", "팀의 구성", "한계점")
-DESIGN_THRESHOLD = 1.10  # 설계서 C.4 에 고정한 투자 기준 배수 (시나리오 실행 --threshold 와 구분해 문구를 고른다)
+
+
+def _design_threshold() -> float:
+    """설계서 C.4 에 고정한 투자 기준 배수 = config.yaml 파일의 값. 시나리오 실행(--threshold)은 메모리의 설정만 바꾸므로
+    파일을 다시 읽어 '설계 기준'과 '이번 실행 기준'을 구분한다."""
+    with open(ROOT / "config.yaml", encoding="utf-8") as f:
+        return float(yaml.safe_load(f)["decision"]["threshold"])
 # 이 말이 있는 줄(ROI 수치)에는 '가정' 표기가 있어야 한다 ('유료 전환율'의 '환율'은 제외)
 ASSUMPTION_TERMS = re.compile(r"(?<!전)환율|지분율|post-money|필요 Exit|회수 배수")
 STAGE_ORDER = ("Seed", "Pre-A", "Series A", "Pre-B", "Series B", "Pre-C", "Series C")
@@ -157,6 +163,11 @@ def _names(e: dict) -> list[str]:
 def _s100(m: float | None) -> str:
     """배수 → 보고서 표기 (동종 평균 = 100)."""
     return "-" if m is None else f"{m * 100:.0f}"
+
+
+def _p100(pct: float | None) -> str:
+    """기준별 점수(투자 판단 에이전트가 c_d × 100 으로 준 값) → 보고서 표기. _s100 과 달리 다시 곱하지 않는다."""
+    return "-" if pct is None else f"{pct:.0f}"
 
 
 def _num(x) -> str:
@@ -503,17 +514,17 @@ def _verdict_facts(rows: list[dict], dim: str) -> str:
 
 def _criteria_rows(sc: dict) -> list[list[str]]:
     rows = sc["rows"]
-    out = [[f"{_dim_short(c['name'])} ({c['weight']}%)", f"{c['yes']} / {c['no']} / {c['unknown']}", _s100(c["pct"]),
+    out = [[f"{_dim_short(c['name'])} ({c['weight']}%)", f"{c['yes']} / {c['no']} / {c['unknown']}", _p100(c["pct"]),
             f"{c['contribution'] * 100:.1f}", _verdict_facts(rows, c["dim"])] for c in sc["criteria"]]
     out.append(["합계 (가중합)", "", "", f"{sc['multiplier'] * 100:.1f}", f"동종 평균 = 100, 기준 {_s100(sc['threshold'])}"])
     return out
 
 
 def _rule_line(sc: dict, cfg) -> str:
-    t = sc["threshold"]
-    why = ("두 참고자료 예시 배수 1.1205(Eqvista)·1.155(ACA 2019)보다 낮은 1.10, 설계 가정"
-           if abs(t - DESIGN_THRESHOLD) < 1e-9 else f"이번 실행에 지정한 기준(설계 기준 {DESIGN_THRESHOLD:.2f}과 다름)")
-    return (f"투자 추천 ⇔ 배수 ≥ {t:.2f} ∧ 창업자 문항 YES ≥ {cfg.decision.min_founder_yes} ∧ Deal-killer 없음. "
+    t, design = sc["threshold"], _design_threshold()
+    why = (f"두 참고자료 예시 배수 1.1205(Eqvista)·1.155(ACA 2019)보다 낮은 {t:.2f}, 설계 가정"
+           if abs(t - design) < 1e-9 else f"이번 실행에 지정한 기준(설계 기준 {design:.2f}과 다름)")
+    return (f"투자 추천 ⇔ 배수 ≥ {t:.2f}(표기 {_s100(t)}) ∧ 창업자 문항 YES ≥ {cfg.decision.min_founder_yes} ∧ Deal-killer 없음. "
             f"기준 {t:.2f}: {why}. 기준별 배수 = 1 + {cfg.decision.step} × 평균(문항 신호 − 동종 평균 신호)"
             f"({cfg.decision.clip[0]}~{cfg.decision.clip[1]}로 자름), 신호 YES +1 · NO −1 · 미확인 0")
 
@@ -605,8 +616,31 @@ def _flip_text(e: dict) -> str:
     if not f:
         ks = sc.get("deal_killers") or []
         return f"Deal-killer {', '.join(ks)} 해소 필요 (배수와 관계없이 보류)" if ks else "-"
-    return f.get("note") or ("·".join(f.get("items") or []) + (f" 확인 시 동종 평균 대비 {_s100(f['new_multiplier'])}"
-                                                            if f.get("new_multiplier") else ""))
+    items = "·".join(f.get("items") or [])
+    if f.get("new_multiplier") is None or not items:   # Deal-killer 해소가 먼저이거나, 뒤집을 미확인 문항이 없음
+        return f.get("note") or "-"
+    after = f"동종 평균 대비 {_s100(f['new_multiplier'])}(기준 {_s100(sc.get('threshold'))})"
+    return (f"{items} 이(가) YES 로 확인되면 {after} → 투자 조건 충족" if f.get("reached")
+            else f"{items} 이(가) 모두 YES 로 확인돼도 {after} — 기준 미달")
+
+
+def _reference_mix() -> str:
+    """기준 집단의 단계·지역 구성 (Payne 의 '같은 지역·같은 단계 투자 기업' 기준 집단을 근사한 정도를 한계점에 밝힌다)."""
+    from agents.decision import _read_json, _ref_path
+
+    data = _read_json(_ref_path()) or {}
+    ms = data.get("members") or []
+    if not ms:
+        return " (기준 집단 파일이 없어 동종 평균 신호를 0 으로 두었다, 설계 가정)"
+
+    def mix(key: str) -> str:
+        cnt: dict[str, int] = {}
+        for m in ms:
+            cnt[m.get(key) or "미상"] = cnt.get(m.get(key) or "미상", 0) + 1
+        return "·".join(f"{k} {v}" for k, v in sorted(cnt.items(), key=lambda kv: -kv[1]))
+
+    return (f". 또 기준 집단 {len(ms)}곳은 단계({mix('stage')})와 지역({mix('region')})이 섞여 있어, "
+            "같은 지역·같은 단계 투자 기업과 비교하라는 Scorecard 원칙을 근사한 것이다")
 
 
 def _limitations(cfg, pool: dict, failed_by: dict[str, int], data_limits: list[str], mode: str,
@@ -623,8 +657,8 @@ def _limitations(cfg, pool: dict, failed_by: dict[str, int], data_limits: list[s
         out.append(f"적격 후보 {pool['eligible']}곳 중 {len(pool['unevaluated'])}곳은 평가하지 않았다({pool['why']})"
                    + (f" — '투자 추천 없음'은 평가한 {pool['evaluated']}곳에 대한 결론이다" if mode == "hold" else ""))
     if mode != "none":
-        out.append("동종 기준 집단 평균 대비 상대 평가라 기준 집단 전체의 질이 낮으면 상대적으로 나은 기업이 추천될 수 있다. "
-                   "관문(실제 투자 유치 확인)·창업자 근거 요건·Deal-killer·실사 조건으로 보완한다")
+        out.append("동종 기준 집단 평균 대비 상대 평가라 기준 집단 전체의 질이 낮으면 상대적으로 나은 기업이 추천될 수 있다"
+                   f"{_reference_mix()}. 관문(실제 투자 유치 확인)·창업자 근거 요건·Deal-killer·실사 조건으로 보완한다")
         out.append("ROI 는 환율·지분율·회수 배수 가정에 따른 참고치이며 점수와 결정에 넣지 않았다")
     out += data_limits[:1]
     out.append(f"문항 판정은 {cfg.models.judge} 가 하고, 코드는 인용이 원문에 있는지·제3자·최근 24개월·상용 운영 요건만 검사한다"
@@ -872,7 +906,7 @@ def _chapters_hold(evals: list[dict], target: dict, d: dict, t: dict, reg: Sourc
     detail += [{"t": "h3", "text": B_DETAIL[3]}] + _competition_blocks(target, d, reg, c2_yes, t["notes"])
     detail += [{"t": "h3", "text": B_DETAIL[4]}, _table(["유형", "내용", "실사 질문"], t["risks"], ["8%", "57%", "35%"], small=True)]
     dims = [_dim_short(c["name"]) for c in sc["criteria"]]
-    score_rows = [[e["name"]] + [_s100(c["pct"]) for c in e["scorecard"]["criteria"]]
+    score_rows = [[e["name"]] + [_p100(c["pct"]) for c in e["scorecard"]["criteria"]]
                   + [_s100(e["scorecard"]["multiplier"]), e.get("hold_type") or e["scorecard"].get("hold_type") or "-"]
                   for e in evals]
     sens_keys = list((sc.get("sensitivity") or {}).keys())
@@ -936,6 +970,21 @@ def _to_markdown(v: dict) -> str:
 
 # ── 형식 검사 (렌더링한 md·REFERENCE·평가 결과로)
 
+def _assumption_scope(md: str) -> list[str]:
+    """'가정' 표기를 검사할 줄: 코드가 만든 ROI 참고치 상자와 한계점 장 (다른 곳의 '환율' 언급은 시장 자료 인용일 수 있다)."""
+    out, in_roi, in_lim = [], False, False
+    for ln in md.splitlines():
+        if ln.startswith("## "):
+            in_lim, in_roi = "한계점" in ln, False
+        elif ln.startswith("**ROI 참고치"):
+            in_roi = True
+        elif in_roi and ln.strip() and not ln.startswith("- "):
+            in_roi = False
+        if in_roi or in_lim:
+            out.append(ln)
+    return out
+
+
 def _checks(md: str, view: dict, refs: list[dict], mode: str, expect: dict, draft_probs: list[str], limit: int) -> dict:
     heads = re.findall(r"^## (.+)$", md, re.M)
     subs = re.findall(r"^### (.+)$", md.split("\n## REFERENCE")[0], re.M)
@@ -949,7 +998,7 @@ def _checks(md: str, view: dict, refs: list[dict], mode: str, expect: dict, draf
     items_in = heads + (subs if mode == "hold" else [])
     fmt_bad = [r["text"] for r in refs
                if not REFERENCE_FORMATS[r["group"]].match(r["text"]) or re.search(r"\s\([^()]*\)$", r["text"])]
-    assumption_bad = [ln for ln in md.splitlines() if ASSUMPTION_TERMS.search(ln) and "가정" not in ln]
+    assumption_bad = [ln for ln in _assumption_scope(md) if ASSUMPTION_TERMS.search(ln) and "가정" not in ln]
     return {
         "first_section": heads[0] if heads else None, "last_section": heads[-1] if heads else None,
         "banned_hits": [b for b in BANNED if b in summary_text],
@@ -1023,7 +1072,7 @@ def _context(mode: str, target: dict, evals: list[dict], reg: SourceRegistry, po
         "competitor_names": comp_names,
         "scorecard": json.dumps({"동종 평균 대비": _s100(sc["multiplier"]), "기준": _s100(sc["threshold"]),
                                  "결정": sc["decision"], "보류 유형": sc.get("hold_type"), "사유": sc.get("reasons"),
-                                 "기준별": {_dim_short(c["name"]): _s100(c["pct"]) for c in sc["criteria"]},
+                                 "기준별": {_dim_short(c["name"]): _p100(c["pct"]) for c in sc["criteria"]},
                                  "실사 항목": [x["item"] for x in sc.get("dd_items") or []]}, ensure_ascii=False),
         "verified": "\n".join(f"- {r['qid']} {_short(r)}: \"{r['quote']}\"{_cite(reg, r.get('evidence_ids'))}"
                               for r in rows if r["answer"] == "YES" and r.get("quote")) or "(없음)",

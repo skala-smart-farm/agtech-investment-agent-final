@@ -71,7 +71,7 @@ def test_peer_inferior_label_on_real_data(set_cfg):
     set_cfg("decision.threshold", 1.30)
     rows = ROWS["메타파머스"]["rows"]
     d, h, reasons = _decide(rows, _score(rows, "메타파머스")[0])
-    assert (d, h) == ("보류", "동종 대비 열위") and "기준 130점 미달" in reasons[0]
+    assert (d, h) == ("보류", "동종 대비 열위") and "기준 130) — 기준 미달" in reasons[0]
 
 
 def test_all_unknown_and_all_yes():
@@ -303,3 +303,14 @@ def test_node_fallback_without_reference(judged, set_cfg, tmp_path):
     sc = dec.decision_node(_state("메타파머스"))["scorecard"]
     assert sc["reference"]["source"] == "fallback" and sc["reference"]["note"]
     assert (sc["ranking"], sc["target_rank"], sc["peer_n"]) == ([], None, 0)
+
+
+def test_rubric_decision_rule_matches_config():
+    """rubric.yaml 의 decision_rule 설명이 config.yaml decision 수치와 같다 (설명과 코드가 따로 놀지 않게)."""
+    from core.config import get_config
+
+    d, rule = get_config().decision, load_rubric()["decision_rule"]
+    for s in (f"M ≥ {d.threshold:.2f}", f"1 + {d.step} ×", f"{d.clip[0]}, {d.clip[1]})", f"YES ≥ {d.min_founder_yes}",
+              f"미확인 ≥ {d.info_gap_ratio:.0%}", f"{d.reference_min_n}곳 미만", f"{min(d.sensitivity):.2f}~{max(d.sensitivity):.2f}"):
+        assert s in rule, s
+    assert "70" not in rule  # v1 의 100점 만점 규칙이 남아 있지 않다

@@ -28,11 +28,15 @@ def route_after_discover(state: dict) -> Literal["founder", "report"]:
     return "founder" if state.get("current") else "report"
 
 
+def stops_on_invest(wf) -> bool:
+    """투자 추천이 나오면 평가를 멈추는지. 보정 실행은 멈추지 않는다
+    (app.py --calibrate 가 stop_on_invest 도 끄지만, calibrate 만 켜도 같게 동작)."""
+    return wf.get("stop_on_invest", True) and not wf.get("calibrate", False)
+
+
 def route_after_decide(state: dict) -> Literal["report", "discover"]:
     wf = get_config().workflow
-    # 보정 실행은 투자여도 멈추지 않는다 (app.py --calibrate 가 stop_on_invest 도 끄지만, calibrate 만 켜도 같게 동작)
-    stop_on_invest = wf.get("stop_on_invest", True) and not wf.get("calibrate", False)
-    if state.get("decision") == "투자" and stop_on_invest:
+    if state.get("decision") == "투자" and stops_on_invest(wf):
         return "report"
     if state.get("iterations", 0) >= wf.max_evaluations:  # 반복 상한 (무한 루프 방지)
         return "report"

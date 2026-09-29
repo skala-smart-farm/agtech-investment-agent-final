@@ -200,6 +200,7 @@ class AnswerState(TypedDict):
     cited_ids: list[str]
     check: str             # '' | grounded | not_grounded | not_useful
     feedback: str          # not_grounded 일 때 재생성에 넘기는 점검 결과
+    best: dict             # 지금까지 점검한 답 중 가장 나은 것 (grounded > not_useful > not_grounded, 같으면 나중 것)
     rewrites: int
     regenerations: int
     evidence_ids: list[str]
@@ -220,6 +221,7 @@ class Check(BaseModel):
 
 CITE = re.compile(r"\[([DW][0-9a-f]{5})\]")
 NOT_FOUND = "확인되지 않음"
+CHECK_RANK = {"grounded": 2, "not_useful": 1, "not_grounded": 0}  # not_useful 은 근거는 맞고 질문에 덜 맞는 답
 
 
 def _agent_decide(question: str, purpose: str, run_date: str, allow_web: bool, allow_direct: bool) -> dict:
@@ -307,9 +309,11 @@ def _searched(state: AnswerState) -> bool:
 
 
 def _context(reg: SourceRegistry, ids: list[str]) -> str:
-    """generate·check 에 넘기는 근거 목록 (reg.brief): 문서 조각은 1200자까지(조각이 800자라 사실상 전부), 웹 근거는 스니펫 800자까지."""
-    docs = reg.brief([i for i in ids if i.startswith("D")], 1200)
-    webs = reg.brief([i for i in ids if i.startswith("W")], 800)
+    """generate·check 에 넘기는 근거 목록 (reg.brief): 문서 조각은 rag.context_doc_chars(조각이 800자라 사실상 전부),
+    웹 근거는 스니펫 rag.context_web_chars 까지."""
+    r = get_config().rag
+    docs = reg.brief([i for i in ids if i.startswith("D")], r.context_doc_chars)
+    webs = reg.brief([i for i in ids if i.startswith("W")], r.context_web_chars)
     return "\n\n".join(x for x in (docs, webs) if x)
 
 
@@ -394,18 +398,25 @@ def build_rag_graph(reg: SourceRegistry | None = None):
             feedback = reason if verdict == "not_grounded" else ""
             entry["reason"] = reason
         entry["check"] = verdict
-        return {"check": verdict, "feedback": feedback, "trace": state["trace"] + [entry]}
+        out = {"check": verdict, "feedback": feedback, "trace": state["trace"] + [entry]}
+        best = state.get("best") or {}
+        if not best or CHECK_RANK[verdict] >= CHECK_RANK[best["check"]]:  # 재작성·재생성한 답이 더 나빠지면 앞의 답을 남긴다
+            out["best"] = {"check": verdict, "answer": state["answer"], "cited_ids": state["cited_ids"],
+                           "context_ids": state["context_ids"]}
+        return out
 
     def finish(state: AnswerState) -> dict:
-        cited = [i for i in state["cited_ids"] if i in reg.data]
-        evidence = cited or [i for i in state["context_ids"] if i in reg.data]
-        if NOT_FOUND in state["answer"] and not cited:
+        b = state.get("best") or {k: state[k] for k in ("check", "answer", "cited_ids", "context_ids")}
+        cited = [i for i in b["cited_ids"] if i in reg.data]
+        evidence = cited or [i for i in b["context_ids"] if i in reg.data]
+        if NOT_FOUND in b["answer"] and not cited:
             status = "not_found"
-        elif state["check"] == "grounded" and evidence and NOT_FOUND not in state["answer"]:
+        elif b["check"] == "grounded" and evidence and NOT_FOUND not in b["answer"]:
             status = "grounded"
         else:
             status = "partial"
-        return {"evidence_ids": evidence, "cited_ids": cited, "status": status}
+        return {"answer": b["answer"], "check": b["check"], "evidence_ids": evidence, "cited_ids": cited,
+                "status": status}
 
     g = StateGraph(AnswerState)
     for name, fn in (("agent", agent), ("retrieve", retrieve), ("grade", grade), ("rewrite", rewrite), ("web", web),
@@ -468,15 +479,17 @@ def route_after_check(state: AnswerState) -> Literal["finish", "generate", "rewr
     return "finish"
 
 
-RESULT_KEYS = ("answer", "evidence_ids", "cited_ids", "status", "route", "rewrites", "regenerations", "trace")
+RESULT_KEYS = ("answer", "evidence_ids", "cited_ids", "status", "check", "route", "rewrites", "regenerations", "trace")
 
 
 def answer_question(question: str, purpose: str, registry: SourceRegistry, agent: str, *,
                     allow_web: bool = True, allow_direct: bool = False) -> dict:
     """질문 하나에 근거를 달아 답한다 (계약 C4, v2 서브그래프).
     반환: {'answer': str, 'evidence_ids': [str], 'cited_ids': [str], 'status': 'grounded'|'partial'|'not_found',
+           'check': 마지막으로 고른 답의 점검 결과 grounded|not_useful|not_grounded,
            'route': 'docs'|'web'|'both'|'direct', 'rewrites': int, 'regenerations': int, 'trace': [dict]}
     - evidence_ids: 답변이 인용한 근거 id (인용이 없으면 generate 가 본 근거 전부)
+    - answer: 점검한 답 중 가장 나은 것(grounded > not_useful > not_grounded, 같으면 나중 것)
     - status: 인용 없이 '확인되지 않음'이면 not_found, 점검을 통과하고 빠진 부분이 없으면 grounded, 그 밖은 partial
     - route: agent 가 고른 경로. both 는 두 도구를 함께 부른 경우(문서 기준 수치 + 최신 뉴스)
     registry 는 제자리에서 갱신된다(노드가 같은 객체에 근거를 등록). allow_direct(검색 없이 답하기)의 기본값은
@@ -493,7 +506,7 @@ def initial_state(question: str, purpose: str, agent: str, date: str, *, allow_w
     return {"question": question, "purpose": purpose, "agent": agent, "run_date": date, "allow_web": allow_web,
             "allow_direct": allow_direct, "route": "", "query": question, "web_query": question, "recent": True,
             "retrieved": [], "relevant": [], "web_ids": [], "web_done": False, "context_ids": [], "answer": "",
-            "cited_ids": [], "check": "", "feedback": "", "rewrites": 0, "regenerations": 0, "evidence_ids": [],
+            "cited_ids": [], "check": "", "feedback": "", "best": {}, "rewrites": 0, "regenerations": 0, "evidence_ids": [],
             "status": "", "trace": []}
 
 

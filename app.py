@@ -164,10 +164,14 @@ def finish_calibration(state: dict, cfg, run_date: str) -> dict:
     ref_file = cfg.decision.reference_file
     ref = write_reference_class(evaluations, str(path(ref_file)), run_date)
     sens = write_threshold_sensitivity(str(path(ref_file)), str(path(SENSITIVITY_FILE)))
-    print(f"기준 집단: {ref.get('n')}곳 → {ref_file}")
+    n, need = ref.get("n") or 0, cfg.decision.reference_min_n
+    enough = n >= need
+    print(f"기준 집단: {n}곳 → {ref_file}")
+    if not enough:  # 본 실행은 이 파일 대신 동종 평균 신호 0(fallback)으로 계산하게 된다
+        print(f"[경고] 기준 집단 {n}곳 < 최소 {need}곳(decision.reference_min_n). 본 실행은 fallback(동종 평균 신호 0)으로 계산됩니다.")
     print(f"기준 배수별 투자 추천 수: {json.dumps(sens.get('invest_count_at', {}), ensure_ascii=False)} → {SENSITIVITY_FILE}")
-    same = check_v1_members([e.get("name") for e in evaluations])
-    return {"reference_file": ref_file, "reference_n": ref.get("n"), "sensitivity_file": SENSITIVITY_FILE,
+    same = check_v1_members([m["name"] for m in ref.get("members") or []])  # 실제로 파일에 쓴 구성원을 v1 과 비교
+    return {"reference_file": ref_file, "reference_n": n, "reference_enough": enough, "sensitivity_file": SENSITIVITY_FILE,
             "invest_count_at": sens.get("invest_count_at"), "same_as_v1_evaluated": same}
 
 

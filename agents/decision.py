@@ -228,9 +228,9 @@ def decide_rule(M: float, founder_yes: int, killers: list[str], unknown_ratio: f
     반환: (결정 '투자'|'보류', 보류 유형 또는 None, 사람이 읽는 사유 문장 목록 — 보류면 보류 유형의 사유가 맨 앞)"""
     d = cfg.decision
     t, need, gap = d.threshold, d.min_founder_yes, d.info_gap_ratio
-    score = f"Scorecard {M * 100:.1f}점(동종 평균 100)"
+    score = f"동종 평균 대비 {M * 100:.0f}(평균 100, 기준 {t * 100:.0f})"   # 보고서 표기와 같은 형식
     if _decide(M, founder_yes, killers, t, need) == "투자":
-        return "투자", None, [f"{score} ≥ 기준 {t * 100:.0f}점", f"창업자 문항(F1~F4) YES {founder_yes}개 (최소 {need}개)",
+        return "투자", None, [f"{score} — 기준 충족", f"창업자 문항(F1~F4) YES {founder_yes}개 (최소 {need}개)",
                             "Deal-killer 없음"]
     text = {k["id"]: k["text"] for k in load_rubric()["deal_killers"]}
     reasons = [f"Deal-killer {k}: {text.get(k, '')}" for k in killers]
@@ -239,7 +239,7 @@ def decide_rule(M: float, founder_yes: int, killers: list[str], unknown_ratio: f
     if M < t and unknown_ratio >= gap:
         reasons.append(f"미확인 문항 {unknown_ratio:.0%} (≥ {gap:.0%}) — 공개 정보로는 판단하기 어려움")
     if M < t:
-        reasons.append(f"{score} — 기준 {t * 100:.0f}점 미달")
+        reasons.append(f"{score} — 기준 미달")
     hold = ("Deal-killer" if killers else "창업자 근거 없음" if founder_yes < need
             else "정보 부족" if unknown_ratio >= gap else "동종 대비 열위")
     return "보류", hold, reasons
@@ -282,9 +282,9 @@ def flip_conditions(rows: list[dict], mean: dict, rubric: dict, cfg, founder_ok:
         note = ("창업자 문항에 미확인이 없어(모두 NO) 미확인 문항 확인만으로는 뒤집을 수 없음" if fy < d.min_founder_yes
                 else "미확인 문항이 없어 뒤집힘 조건 없음")
     elif done():
-        note = f"{'·'.join(picked)} 이(가) YES 로 확인되면 Scorecard {M * 100:.1f}점 ≥ 기준 {t}점 → 투자"
+        note = f"{'·'.join(picked)} 이(가) YES 로 확인되면 동종 평균 대비 {M * 100:.0f}(기준 {t}) → 투자"
     else:
-        note = (f"미확인 {len(picked)}문항({'·'.join(picked)})이 YES 로 확인돼도 Scorecard {M * 100:.1f}점"
+        note = (f"미확인 {len(picked)}문항({'·'.join(picked)})이 YES 로 확인돼도 동종 평균 대비 {M * 100:.0f}"
                 f"{f', 창업자 YES {fy}개' if fy < d.min_founder_yes else ''} — 기준 미달(최대 {d.flip_max_items}문항)")
     return {"qids": picked, "items": [f"{q} {info[q]['short']}" for q in picked], "new_multiplier": round(M, 4),
             "reached": done(), "note": note}
@@ -527,7 +527,9 @@ def decision_node(state: dict) -> dict:
                   "criteria": criteria, "scorecard": scorecard, "founder": state.get("founder"), "tech": state.get("tech"),
                   "market": state.get("market"), "competition": state.get("competition"), "profile": c}
     out = {"scorecard": scorecard, "decision": decision, "evaluations": [evaluation], "log": [msg]}
-    if decision == "투자" and cfg.workflow.get("stop_on_invest", True):
+    from graph.routes import stops_on_invest  # 라우터와 같은 규칙으로 종료 사유를 적는다
+
+    if decision == "투자" and stops_on_invest(cfg.workflow):
         out["end_reason"] = "invest_found"
     elif state.get("iterations", 0) >= cfg.workflow.max_evaluations:
         out["end_reason"] = "max_evaluations"

@@ -290,7 +290,7 @@ def test_app_calibrate_writes_reference_class(fake_app, monkeypatch):
 
     def write_reference_class(evaluations, path, run_date):
         got["ref"] = ([e["name"] for e in evaluations], path, run_date)
-        return {"n": len(evaluations)}
+        return {"n": len(evaluations), "members": [{"name": e["name"]} for e in evaluations]}
 
     def write_threshold_sensitivity(ref_path, out_path):
         got["sens"] = (ref_path, out_path)
@@ -307,6 +307,7 @@ def test_app_calibrate_writes_reference_class(fake_app, monkeypatch):
     log = json.loads((tmp / "outputs/calibration/run_log.json").read_text(encoding="utf-8"))
     assert log["mode"] == "calibrate" and log["end_reason"] == "exhausted" and log["report"] == {"mode": "calibrate"}
     assert log["calibration"]["reference_n"] == 3 and log["calibration"]["same_as_v1_evaluated"] is True
+    assert log["calibration"]["reference_enough"] is False  # 3곳 < reference_min_n 5 → 경고, 본 실행은 fallback
 
 
 def test_v1_members_gate(monkeypatch):

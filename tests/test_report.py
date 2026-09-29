@@ -341,6 +341,22 @@ def test_format_reference_access_date_without_note():
 
 
 def test_flip_text_deal_killer_and_note():
-    assert R._flip_text({"flip": {"note": "특허 확인 시 동종 평균 대비 112", "qids": ["C1"]}}) == "특허 확인 시 동종 평균 대비 112"
+    # 문항이 없거나 Deal-killer 면 투자 판단 에이전트의 note 를 그대로, 문항이 있으면 구조화 필드로 문장을 만든다
+    assert R._flip_text({"flip": {"note": "미확인 문항이 없어 뒤집힘 조건 없음", "items": [], "new_multiplier": 1.0}}) \
+        == "미확인 문항이 없어 뒤집힘 조건 없음"
+    assert R._flip_text({"flip": {"note": "K1 해소 필요(x)", "items": ["P4 x"], "new_multiplier": None}}) == "K1 해소 필요(x)"
     assert R._flip_text({"flip": None, "scorecard": {"deal_killers": ["K1"]}}).startswith("Deal-killer K1 해소 필요")
-    assert R._flip_text({"flip": {"items": ["C1 특허"], "new_multiplier": 1.123}}) == "C1 특허 확인 시 동종 평균 대비 112"
+    sc = {"threshold": 1.1}
+    assert R._flip_text({"flip": {"items": ["C1 특허"], "new_multiplier": 1.123, "reached": True}, "scorecard": sc}) \
+        == "C1 특허 이(가) YES 로 확인되면 동종 평균 대비 112(기준 110) → 투자 조건 충족"
+    assert R._flip_text({"flip": {"items": ["C1 특허"], "new_multiplier": 1.05, "reached": False}, "scorecard": sc}) \
+        == "C1 특허 이(가) 모두 YES 로 확인돼도 동종 평균 대비 105(기준 110) — 기준 미달"
+
+
+def test_pct_not_double_scaled_and_assumption_scope():
+    sc = {"rows": [], "multiplier": 1.13, "threshold": 1.1,
+          "criteria": [{"name": "창업자·경영진", "dim": "founder", "weight": 30, "yes": 3, "no": 0, "unknown": 1,
+                        "pct": 129.2, "contribution": 0.3876}]}
+    assert R._criteria_rows(sc)[0][2] == "129"
+    md = "## 2. 시장\n원화 환율 상승이 수입 자재 가격을 올렸다\n**ROI 참고치 (점수·결정에 넣지 않음)**\n\n- 환율: 1,400원\n\n## 5. 한계점\n- 지분율 20%\n"
+    assert R._assumption_scope(md) == ["**ROI 참고치 (점수·결정에 넣지 않음)**", "", "- 환율: 1,400원", "", "## 5. 한계점", "- 지분율 20%"]

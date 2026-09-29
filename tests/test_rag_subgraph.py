@@ -143,6 +143,20 @@ def test_not_grounded_regenerates_once_then_partial(monkeypatch):
     assert out["status"] == "partial" and out["rewrites"] == 0
 
 
+def test_keeps_best_answer_when_later_answers_get_worse(monkeypatch):
+    """1차 답은 근거는 맞지만 질문에 덜 맞음(not_useful) → 재작성 후 새 답은 근거 밖(not_grounded) 두 번 → 1차 답을 낸다."""
+    def generate(ctx, fb, n):
+        ans, ids = Env.cite_all(ctx)
+        return f"답{n} " + ans, ids
+
+    checks = {1: (True, False, "질문과 다름"), 2: (False, True, "근거 밖"), 3: (False, True, "근거 밖")}
+    env = Env(monkeypatch, generate=generate, check=lambda n: checks[n])
+    out = ar.answer_question(QUESTION, PURPOSE, SourceRegistry(), "market")
+    assert len(env.calls["check"]) == 3 and out["rewrites"] == 1 and out["regenerations"] == 1
+    assert out["answer"].startswith("답1 ") and (out["check"], out["status"]) == ("not_useful", "partial")
+    assert out["evidence_ids"]
+
+
 def test_numeric_check_skips_llm_and_feeds_back(monkeypatch):
     def generate(ctx, fb, n):
         ans, ids = Env.cite_all(ctx)

@@ -41,6 +41,8 @@ rag:
   web_fallback: true                   # 재작성 후에도 부족하면 웹 검색으로 보완
   max_regenerations: 1                 # 답변 점검 결과 근거에 없는 내용이 있으면(not_grounded) 검색은 두고 답변만 다시 쓰는 횟수 상한
   rag_recursion_limit: 25              # RAG 서브그래프 recursion_limit (무한 루프 방지)
+  context_doc_chars: 1200              # 답변 생성·점검에 넘기는 문서 조각 최대 글자 수 (조각이 800자라 사실상 전부)
+  context_web_chars: 800               # 답변 생성·점검에 넘기는 웹 근거 스니펫 최대 글자 수
   allow_direct_answer: false           # 검색 없이 바로 답하는 경로. 분석 에이전트 호출에서는 끈다(수치 환각 방지). 라우팅 시연(eval_judge)만 켜서 부른다
 
 tools:
@@ -75,12 +77,7 @@ workflow:
   recursion_limit: 100                 # 메인 그래프 recursion_limit (무한 루프 방지)
 
 decision:
-  invest_threshold: 70                 # 100점 만점, 이상이면 "투자"
-  min_dimension_ratio:                 # 핵심 항목 최소 통과율 (미달 시 총점과 무관하게 "보류")
-    founder: 0.5
-    market: 0.5
-  max_unknown_ratio: 0.4               # 근거를 못 찾은(UNKNOWN) 문항이 40% 를 넘으면 "정보 부족 보류"
-  # ── 위 3키는 v1 규칙(100점 만점). 아래는 v2 규칙: Payne Scorecard 의 비교 원리(동종 투자 유치 기업 평균 = 1.00)
+  # Payne Scorecard 의 비교 원리(동종 투자 유치 기업 평균 = 1.00). v1 의 100점 만점 규칙(70점)은 쓰지 않는다
   method: payne_relative               # 6개 기준마다 동종 기준 집단 평균 대비 배수를 구해 가중합(M)
   threshold: 1.10                      # 투자 기준 배수. 두 참고자료 예시 배수 1.1205(Eqvista)·1.155(ACA 2019)보다 낮은 1.10 (원전에 go/no-go 기준 없음 → 설계 가정)
   step: 0.5                            # 기준별 배수 c = clip(1 + step × 평균(문항 신호 − 동종 평균 신호))

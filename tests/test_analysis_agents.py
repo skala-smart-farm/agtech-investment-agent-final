@@ -245,7 +245,11 @@ def test_t0_priority():
     assert (t["t0"], t["t0_source"]) == ("2020-04-17", "TIPS 공개 목록 설립일(estDt)")
     t = fd.pick_t0(kr_company(nps=nps), reg, ids, names, RUN_DATE)
     assert t["t0"] == "2020-06-01" and t["t0_evidence_ids"] == ["Wnps01"] and "Wnps01" in t["t0_source"]
+    t = fd.pick_t0(kr_company(nps={"status": "not_found"}, founded_year=2021), reg, ids, names, RUN_DATE)
+    assert t["t0"] == "2021" and t["t0_evidence_ids"] == [b]  # 적격성 설립연도 + 같은 연도의 원문 설립 표현
     t = fd.pick_t0(kr_company(nps={"status": "not_found"}), reg, ids, names, RUN_DATE)
+    assert t["t0"] == "2020" and t["t0_evidence_ids"] == [] and "원문 인용 확인 안 됨" in t["t0_source"]
+    t = fd.pick_t0(kr_company(nps={"status": "not_found"}, founded_year=None), reg, ids, names, RUN_DATE)
     assert t["t0"] == "2019" and t["t0_evidence_ids"] == [a]  # 가장 이른 설립 표현, '창업도약패키지'는 설립이 아님
     t = fd.pick_t0(kr_company(nps={}, founded_year=2018), SourceRegistry(), [], names, RUN_DATE)
     assert t["t0"] == "2018" and "원문 인용 확인 안 됨" in t["t0_source"]

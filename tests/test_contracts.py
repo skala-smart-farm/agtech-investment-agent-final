@@ -150,13 +150,16 @@ def test_company_keys_and_evidence_pool():
     assert evidence_pool(state, extra=["D2", "D9"]) == ["W1", "W2", "W3", "D1", "D2"]
 
 
-def test_judge_dimension_signature_stub():
+def test_judge_dimension_signature():
     from core.judge import judge_dimension
+    from tools.sources import SourceRegistry
 
     assert list(inspect.signature(judge_dimension).parameters) == ["dim_id", "company", "pool_ids", "reg", "analysis",
                                                                    "run_date"]
-    with pytest.raises(NotImplementedError):
-        judge_dimension("founder", {}, [], None, "", "2026-09-30")
+    # 근거가 없으면 LLM 을 부르지 않고 네 문항 모두 미확인 (C3 모양)
+    r = judge_dimension("founder", {"official_name": "x"}, [], SourceRegistry(), "", "2026-09-30")
+    assert [row["answer"] for row in r["rows"]] == ["UNKNOWN"] * 4
+    assert {"dim", "name", "weight", "owner", "rows", "yes", "no", "unknown", "n"} <= set(r)
 
 
 # ── C10 투자 판단 공개 함수 (P3 가 구현)
@@ -178,15 +181,14 @@ def test_decision_public_signatures(name, params):
 
 
 # ── C4 RAG·도구, 👤 창업자
-def test_make_tools_and_founder_stubs():
+def test_make_tools_and_founder_contract():
     from agents.founder import founder_node
     from tools.agent_tools import TOOL_NAMES, make_tools
+    from tools.sources import SourceRegistry
 
     assert TOOL_NAMES == ("search_documents", "web_search", "summarize_document")  # fetch_page 없음
-    with pytest.raises(NotImplementedError):
-        make_tools(None, "tech")
-    with pytest.raises(NotImplementedError):
-        founder_node({})
+    assert tuple(make_tools(SourceRegistry(), "tech")) == TOOL_NAMES
+    assert list(inspect.signature(founder_node).parameters) == ["state"]
 
 
 def test_answer_question_v1_compat(monkeypatch):
@@ -204,11 +206,11 @@ def test_answer_question_v1_compat(monkeypatch):
 
     monkeypatch.setattr(ar, "agentic_rag", fake)
     reg = SourceRegistry()
-    out = ar.answer_question("질문", "목적", reg, "market")
+    out = ar.answer_question_v1("질문", "목적", reg, "market")  # v1 교정형 경로(생성 없음)는 폴백으로 남아 있다
     assert out == {"answer": "", "evidence_ids": ["D1", "W1"], "cited_ids": [], "status": "grounded", "route": "docs",
                    "rewrites": 1, "regenerations": 0, "trace": trace}
     assert "W1" in reg.data  # registry 는 제자리에서 갱신
 
     monkeypatch.setattr(ar, "agentic_rag", lambda *a: ([], [{"query": "q", "retrieved": 0, "relevant": 0}]))
-    out = ar.answer_question("질문", "목적", SourceRegistry(), "tech")
+    out = ar.answer_question_v1("질문", "목적", SourceRegistry(), "tech")
     assert (out["status"], out["rewrites"], out["evidence_ids"]) == ("not_found", 0, [])

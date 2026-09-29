@@ -2,8 +2,9 @@
 
 Scorecard 에서 비중이 가장 큰 '창업자 (Owner) 30%' 를 혼자 맡는다 (1 에이전트 = 1 기준, 문항 F1~F4).
 창업 시점(t0)을 먼저 코드로 고정하고, 창업 **전** 전문성(F1·F2)과 창업 **후** 실행력(F3)을 나눠 본다.
-- t0 우선순위: TIPS 공개 목록 설립일(estDt) → 국민연금 사업장 최초 가입일(첫 고용) → 근거 속 가장 이른 설립 표현(근거 id)
-  → 적격성 검증 단계의 설립연도(원문 확인 없음) → 확인 불가. 어느 값을 썼는지 t0_source 에 남긴다.
+- t0 우선순위: TIPS 공개 목록 설립일(estDt) → 국민연금 사업장 최초 가입일(첫 고용) → 적격성 검증 단계의 설립연도
+  (같은 연도의 설립 표현이 근거에 있으면 그 근거 id 를 붙인다. 보고서 안에서 설립연도가 둘로 갈리지 않게 한다)
+  → 근거 속 가장 이른 설립 표현(근거 id) → 확인 불가. 어느 값을 썼는지 t0_source 에 남긴다.
 - 창업자는 인물 검색이 아니라 "회사가 알려진 기사·인터뷰 속 창업자 이력"으로 확인한다. 검색 쿼리 문자열은 v1 그대로다.
 - 검색 스니펫에는 창업자 이름·이력이 잘 안 나온다(예: CTO 이름이 기사 본문 1,300자 뒤에만 있음).
   그래서 기사 본문에서 회사명·창업자 표현(대표, CTO, 창업 …) 주변 문단을 골라 스니펫과 함께 LLM 에 넘긴다.
@@ -166,13 +167,19 @@ def pick_t0(c: dict, reg: SourceRegistry, ids: list[str], keys: list[str], until
         return {"t0": nps["first_date"], "t0_basis": "국민연금 최초 가입일", "t0_evidence_ids": ev,
                 "t0_source": "국민연금 사업장 최초 가입일(첫 고용 시점, 실제 설립일보다 늦을 수 있음)"
                              + (f" [{ev[0]}]" if ev else "")}
-    if found := founding_mentions(reg, ids, keys, until):
+    found = founding_mentions(reg, ids, keys, until)
+    if c.get("founded_year"):
+        y = str(c["founded_year"])
+        same = next((f for f in found if f["date"][:4] == y), None)   # 설립 표현은 근거를 붙이는 데만 쓴다
+        if same:
+            return {"t0": y, "t0_basis": "적격성 검증 설립연도", "t0_evidence_ids": [same["evidence_id"]],
+                    "t0_source": f"적격성 검증 단계의 설립연도, 원문 \"{same['quote'].strip()}\" [{same['evidence_id']}]"}
+        return {"t0": y, "t0_basis": "적격성 검증 설립연도", "t0_evidence_ids": [],
+                "t0_source": "적격성 검증 단계에서 LLM 이 근거에서 읽은 설립연도 (원문 인용 확인 안 됨)"}
+    if found:
         f = found[0]
         return {"t0": f["date"], "t0_basis": "근거 속 설립 표현", "t0_evidence_ids": [f["evidence_id"]],
                 "t0_source": f"근거 속 가장 이른 설립 표현 \"{f['quote'].strip()}\" [{f['evidence_id']}]"}
-    if c.get("founded_year"):
-        return {"t0": str(c["founded_year"]), "t0_basis": "적격성 검증 설립연도", "t0_evidence_ids": [],
-                "t0_source": "적격성 검증 단계에서 LLM 이 근거에서 읽은 설립연도 (원문 인용 확인 안 됨)"}
     return {"t0": None, "t0_basis": "없음", "t0_source": "확인 불가", "t0_evidence_ids": []}
 
 
