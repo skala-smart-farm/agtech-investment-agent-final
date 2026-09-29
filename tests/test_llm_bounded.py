@@ -27,9 +27,10 @@ def test_retry_once_with_hint_then_raise(monkeypatch):
                 raise r
             return r
 
-    monkeypatch.setattr(lb.Bounded, "_llm", lambda self: Fake())
+    penalties = []
+    monkeypatch.setattr(lb.Bounded, "_llm", lambda self, penalty=0.0: penalties.append(penalty) or Fake())
     assert lb.bounded(Out).invoke("질문") == Out(x="ok")
-    assert prompts == ["질문", "질문" + lb.REPEAT_HINT]
+    assert prompts == ["질문", "질문" + lb.REPEAT_HINT] and penalties == [0.0, lb.REPEAT_PENALTY]
 
     replies[:] = [_length_error(), _length_error()]
     with pytest.raises(LengthFinishReasonError):  # 두 번째도 한도면 그대로 실패 (무한 재시도 없음)
