@@ -1,83 +1,71 @@
-"""메인 그래프.
+"""메인 그래프: 노션 Graph(안)을 모양 그대로 따르고 👤 창업자 평가 한 노드만 더했다.
 
-discover → verify ─(대기열 있음)→ select ─┬→ tech ──────┐
-   ↑           ├─(없음·라운드 남음)→ discover  └→ market ─┐ │
-   │           └─(없음·라운드 소진)→ report (적격 후보 없음 보고서)
-   │                                          competition ← (tech·market 모두 끝나면)
-   │                                               ↓
-   │                                            decide ─(투자)→ report → END
-   └──────────(보류 · 대기열 비었고 라운드 남음)────┤
-                           (보류 · 대기열 남음) → select
-                           (보류 · 평가 상한 도달/후보 소진) → report
+    Graph(안)               이 코드의 노드
+    A 스타트업 탐색     →   discover     (🔍 서브그래프 collect → screen → pick / exhausted, graph/discovery_graph.py)
+    (추가) 창업자 평가  →   founder
+    B 기술 요약         →   tech
+    C 시장성 평가       →   market
+    D 경쟁사 비교       →   competition
+    E 투자 판단         →   decide
+    F 보고서 생성       →   report
+
+    START → discover ─(평가 대상 있음)→ founder → tech → market → competition → decide
+               │                                                                 ├─(투자 추천)→ report → END
+               └─(후보 소진)→ report                                              ├─(보류)→ discover
+                                                                                  └─(보류 · 평가 상한 도달)→ report
+
+- 간선 집합은 설계서의 DESIGN_EDGES(계약 C2)와 같다. 병렬 간선은 없다(경쟁사가 tech.claims 를, 투자 판단이 market 을 받아 쓰는 순서 의존).
+- 분기 규칙은 graph/routes.py 의 순수 함수다. 보정 실행도 report 노드에서 끝난다(report 가 보정 모드에서는 렌더링하지 않음).
+- 에이전트 모듈은 함수 안에서 import 한다. 그래서 nodes 로 가짜 노드를 넣은 테스트는 에이전트 모듈(검색·LLM 의존성)을 읽지 않는다.
 """
 from __future__ import annotations
 
+import importlib
+
 from langgraph.graph import END, START, StateGraph
 
-from agents.competition import competition_node
-from agents.decision import decision_node
-from agents.discovery import discovery_node
-from agents.eligibility import eligibility_node
-from agents.market import market_node
-from agents.report import report_node
-from agents.tech import tech_node
-from core.config import get_config
+from graph.routes import route_after_decide, route_after_discover
 from graph.state import InvestmentState
 
+NODE_NAMES = ("discover", "founder", "tech", "market", "competition", "decide", "report")
 
-def select_node(state: dict) -> dict:
-    """대기열 맨 앞 후보를 꺼내 평가 대상으로 정하고, 이전 후보의 분석 결과를 비운다."""
-    queue = list(state.get("queue", []))
-    current = queue.pop(0)
-    n = state.get("iterations", 0) + 1
-    msg = f"[평가 {n}] {current['official_name']} ({current['region']}, {current['stage']}, {current['segment_id']})"
-    print(msg)
-    return {"current": current, "queue": queue, "iterations": n, "tech": {}, "market": {}, "competition": {},
-            "scorecard": {}, "log": [msg]}
-
-
-def route_after_verify(state: dict) -> str:
-    cfg = get_config()
-    if state.get("queue"):
-        return "select"
-    if state.get("discovery_rounds", 0) < cfg.workflow.max_discovery_rounds:
-        return "discover"
-    return "report"  # 후보 소진: 평가 결과가 있으면 보류 보고서, 없으면 "적격 후보 없음" 보고서
+# 노드 이름 → (모듈, 함수). discover 는 서브그래프라 build_discovery_graph() 로 만든다
+_AGENT_NODES = {
+    "founder": ("agents.founder", "founder_node"),              # 👤 창업자 평가 (창업자 30%)
+    "tech": ("agents.tech", "tech_node"),                       # 🗜️ 기술 요약 (제품/기술력 15%)
+    "market": ("agents.market", "market_node"),                 # 📊 시장성 평가 (시장성 25%, Agentic RAG)
+    "competition": ("agents.competition", "competition_node"),  # 🥊 경쟁사 비교 (경쟁 우위 10%)
+    "decide": ("agents.decision", "decision_node"),             # 🧮 투자 판단 (실적·투자조건 20% + 동종 대비 배수)
+    "report": ("agents.report", "report_node"),                 # 📝 보고서 생성
+}
 
 
-def route_after_decide(state: dict) -> str:
-    cfg = get_config()
-    if state.get("decision") == "투자":
-        return "report"
-    if state.get("iterations", 0) >= cfg.workflow.max_evaluations:  # 반복 상한 (무한 루프 방지)
-        return "report"
-    if state.get("queue"):
-        return "select"
-    if state.get("discovery_rounds", 0) < cfg.workflow.max_discovery_rounds:
-        return "discover"  # 가이드: 보류면 다른 스타트업 탐색으로 돌아간다
-    return "report"        # 모두 보류: 루프 종료 후 보고서 생성
+def _default_node(name: str):
+    if name == "discover":  # 🔍 스타트업 탐색 (서브그래프)
+        from graph.discovery_graph import build_discovery_graph
+
+        return build_discovery_graph()
+    module, fn = _AGENT_NODES[name]
+    return getattr(importlib.import_module(module), fn)
 
 
-def build_graph():
+def build_graph(nodes: dict | None = None):
+    """메인 그래프를 컴파일한다. nodes={'decide': 가짜 함수, …} 로 일부 노드를 바꿔 끼울 수 있다(테스트용)."""
+    nodes = dict(nodes or {})
+    unknown = set(nodes) - set(NODE_NAMES)
+    if unknown:
+        raise ValueError(f"알 수 없는 노드 이름: {sorted(unknown)} (가능: {NODE_NAMES})")
+
     g = StateGraph(InvestmentState)
-    g.add_node("discover", discovery_node)      # 🔭 스타트업 발굴 에이전트
-    g.add_node("verify", eligibility_node)      # ✅ 적격성 검증 에이전트
-    g.add_node("select", select_node)           # (제어 노드) 다음 평가 대상 선택
-    g.add_node("tech", tech_node)               # 🔬 기술·팀 분석 에이전트
-    g.add_node("market", market_node)           # 📊 시장성 평가 에이전트
-    g.add_node("competition", competition_node)  # 🥊 경쟁사 비교 에이전트
-    g.add_node("decide", decision_node)         # 🧮 투자 판단 에이전트
-    g.add_node("report", report_node)           # 📝 보고서 생성 에이전트
+    for name in NODE_NAMES:
+        g.add_node(name, nodes[name] if name in nodes else _default_node(name))
 
     g.add_edge(START, "discover")
-    g.add_edge("discover", "verify")
-    g.add_conditional_edges("verify", route_after_verify,
-                            {"select": "select", "discover": "discover", "report": "report"})
-    g.add_edge("select", "tech")                # 기술·팀 분석과 시장성 평가는 서로 독립 → 병렬 실행
-    g.add_edge("select", "market")
-    g.add_edge(["tech", "market"], "competition")  # 둘 다 끝나면 경쟁사 비교 (기술 차별점 검증에 tech 결과 사용)
+    g.add_conditional_edges("discover", route_after_discover, {"founder": "founder", "report": "report"})
+    g.add_edge("founder", "tech")
+    g.add_edge("tech", "market")
+    g.add_edge("market", "competition")
     g.add_edge("competition", "decide")
-    g.add_conditional_edges("decide", route_after_decide,
-                            {"report": "report", "select": "select", "discover": "discover"})
+    g.add_conditional_edges("decide", route_after_decide, {"report": "report", "discover": "discover"})
     g.add_edge("report", END)
     return g.compile()
