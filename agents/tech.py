@@ -1,10 +1,12 @@
-"""🔬 기술·팀 분석 에이전트.
+"""🗜️ 기술 요약 에이전트 (Scorecard '제품/기술력 15%', 문항 P1~P4).
 
-- 회사 고유 정보(제품, 핵심 기술, 특허·논문, 창업자 이력)는 웹 근거로 모은다.
-  창업자는 인물 검색이 아니라 "회사가 알려진 기사·인터뷰 속 창업자 이력"으로 확인한다.
-- 검색 스니펫에는 창업자 이름·이력이 잘 안 나온다(예: CTO 이름이 기사 본문 1,300자 뒤에만 있음).
-  그래서 기사 본문에서 회사명·창업자 표현(대표, CTO, 창업 …) 주변 문단을 골라 스니펫과 함께 LLM 에 넘긴다.
-- 기술 수준 비교의 기준선(해당 분야 기술 동향·상용화 수준)은 문서 코퍼스에서 Agentic RAG 로 가져온다.
+가이드: "홈페이지, 논문 등에서 핵심 기술, 장단점 정보 확인". 창업자·팀은 👤 창업자 평가 에이전트(agents/founder.py)가 맡는다.
+- 회사 고유 정보(제품, 핵심 기술, 특허, 실증, 판매·계약)는 웹 근거로 모은다. 검색 쿼리 문자열은 v1 그대로다(검색 캐시 재사용).
+- 홈페이지 요약: 문서 요약 도구(summarize_document)를 코드가 직접 부른다. 홈페이지를 못 읽으면 이미 모은 회사 기사 본문 1건을 요약한다.
+- 기술 수준 비교의 기준선(해당 분야 기술 동향·상용화 수준)은 문서 코퍼스에서 Agentic RAG(answer_question)로 가져온다.
+- 결과: 장점(pros)·단점(cons)·회사 측 차별점 주장(claims, 경쟁사 비교 에이전트가 검증)과 제품/기술력 기준 판정(criterion).
+
+이 모듈의 evidence_blocks(본문 발췌 body_passages 포함)·CITE_ID·candidate_line·judge_own 은 다른 분석 에이전트도 쓴다.
 """
 from __future__ import annotations
 
@@ -13,34 +15,39 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from core.config import get_segment
+from core import judge
+from core.config import get_segment, run_date
 from core.llm import structured
 from core.prompts import render
-from rag.agentic_rag import agentic_rag
+from rag import agentic_rag as rag  # 함수는 호출 시점에 찾는다(병합 순서와 무관하게 import 되고, 테스트에서 바꿔 끼우기 쉽게)
 from rag.index import get_chunks
+from tools import agent_tools, channels
 from tools.fetch import enrich
 from tools.grounding import norm
+from tools.listing_check import normalize
 from tools.sources import SourceRegistry
 from tools.web_search import web_search
 
 AGENT = "tech"
 
-# 창업자·핵심 인력이 나오는 문단을 찾는 표현 ("대표적"은 제외)
-FOUNDER_TERMS = re.compile(r"대표(?!적)|CEO|CTO|공동\s?창업|창업자|창업|[Cc]o-?[Ff]ounder|[Ff]ounder|기술이사|연구소장")
-_TITLE = r"(?:대표이사|대표(?!적)|CEO|CTO|COO|공동창업자|창업자|기술이사|연구소장)"
-# 사람 이름(한글 3자) + 직함: "이규화 대표", "이규화(28) 메타파머스 대표", "(대표 이규화)", "대표자는 이원준입니다",
-# "윤원재 CTO", "Jane Doe, CEO". 회사명이 사이에 끼는 "이원준 조벡스 대표"는 _mentions 가 회사명으로 따로 찾는다
-PERSON = re.compile(
-    rf"(?<![가-힣])(?P<ko>[가-힣]{{3}})(?:\(\d{{2}}\) (?:[가-힣A-Za-z]{{2,12}} )?| ){_TITLE}"
-    rf"|(?:대표이사|대표|CEO|CTO) (?P<ko2>[가-힣]{{3}})(?=[),])"
-    r"|대표자는 (?P<ko3>[가-힣]{3})(?=입니다|[\s.,)])"
-    r"|(?P<en>[A-Z][a-z]+ [A-Z][a-z]+),? (?:the )?(?:CEO|CTO|[Cc]o-?[Ff]ounder|[Ff]ounder)"
-    r"|(?:CEO|CTO|[Cc]o-?[Ff]ounder|[Ff]ounder)(?: and CEO)?,? (?P<en2>[A-Z][a-z]+ [A-Z][a-z]+)")
-# 직함 앞에 오지만 사람 이름이 아닌 말
-NOT_NAME = {"비롯한", "투자사", "관계자", "운영사", "스타트", "창업주", "공동의", "신임의"}
-# 창업자 이력 문단에 자주 나오는 말 (학력·경력) — 이름만 나열된 문단보다 이력 문단을 먼저 고르게 한다
-BACKGROUND = re.compile(r"대학|학과|학부|박사|석사|전공|출신|경력|경험|근무|졸업|University|PhD|former", re.I)
+# 기사 본문에서 기술·제품·실적 문단을 고르는 표현 (본문 발췌용)
+TECH_TERMS = re.compile(r"기술|특허|제품|개발|실증|상용|출시|설치|도입|농가|매출|고객|계약|협약|공급|수출|정확도|절감|수확량|"
+                        r"AI|인공지능|로봇|센서|patent|product|deploy|customer|revenue|trial|yield", re.I)
 CITE_ID = re.compile(r"\b[WD][0-9a-f]{5}\b")
+BASELINE_Q = "{seg} 분야의 기술 동향, 상용화 수준, 기술적 과제"   # v1 과 같은 질문 (RAG 캐시 키)
+BASELINE_PURPOSE = "스타트업 기술 수준을 비교할 기준선"
+HOMEPAGE_FOCUS = "핵심 기술·제품·장점과 단점"
+
+
+def tech_queries(c: dict) -> list[tuple[str, bool]]:
+    """기술·제품 검색 쿼리 (쿼리, deep). v1 tech_node 쿼리 중 창업자용을 뺀 나머지이며 문자열은 v1 그대로다."""
+    name = c["official_name"]
+    if c["region"] == "KR":
+        return [(f"{name} 특허 등록 기술", False), (f"{name} 실증 농가 효과 수확량 절감", True),
+                (f"{name} 매출 고객 농가 수 설치", True), (f"{name} 협약 계약 공급 농협 지자체 수출", False)]
+    q = c.get("name_en") or name
+    return [(f"{q} patent", False), (f"{q} field trial results yield savings", True),
+            (f"{q} revenue customers farms deployed", True), (f"{q} partnership contract distribution", False)]
 
 
 def _covered(passage: str, skip: str) -> bool:
@@ -50,9 +57,9 @@ def _covered(passage: str, skip: str) -> bool:
 
 
 def body_passages(body: str, keys: list[str], terms: re.Pattern, n: int = 2, window: int = 400,
-                  skip: str = "", boost: re.Pattern | None = BACKGROUND) -> list[str]:
+                  skip: str = "", boost: re.Pattern | None = None, person: re.Pattern | None = None) -> list[str]:
     """본문에서 회사명(keys)·용어(terms) 주변 ±window 자 문단을 최대 n 개 고른다 (서로 겹치지 않게).
-    용어·사람 이름+직함·boost 표현이 많이 모이고 회사명이 함께 있는 문단을 먼저 고르고,
+    용어·boost 표현·사람 이름+직함(person, 창업자 에이전트가 넘김)이 많이 모이고 회사명이 함께 있는 문단을 먼저 고르고,
     스니펫(skip)에 이미 있는 문단은 건너뛴다."""
     low = body.lower()
     hits = {m.start() for m in terms.finditer(body)}
@@ -67,8 +74,8 @@ def body_passages(body: str, keys: list[str], terms: re.Pattern, n: int = 2, win
 
     def score(p: int) -> int:
         w = win(p)
-        return (len(terms.findall(w)) + 2 * len(PERSON.findall(w)) + (len(boost.findall(w)) if boost else 0)
-                + 2 * any(k.lower() in w.lower() for k in keys))
+        return (len(terms.findall(w)) + (2 * len(person.findall(w)) if person else 0)
+                + (len(boost.findall(w)) if boost else 0) + 2 * any(k.lower() in w.lower() for k in keys))
 
     skip = re.sub(r"\s+", " ", skip or "")
     chosen: list[int] = []
@@ -81,10 +88,10 @@ def body_passages(body: str, keys: list[str], terms: re.Pattern, n: int = 2, win
     return [("…" if p > window else "") + win(p) + ("…" if p + window < len(body) else "") for p in sorted(chosen)]
 
 
-def evidence_blocks(reg: SourceRegistry, ids: list[str], keys: list[str], terms: re.Pattern = FOUNDER_TERMS,
-                    max_chars: int = 650, n: int = 2, window: int = 400,
-                    boost: re.Pattern | None = BACKGROUND) -> dict[str, str]:
-    """근거 id → LLM 에 넘길 텍스트 (기술·경쟁·시장 에이전트 공용).
+def evidence_blocks(reg: SourceRegistry, ids: list[str], keys: list[str], terms: re.Pattern = TECH_TERMS,
+                    max_chars: int = 650, n: int = 2, window: int = 400, boost: re.Pattern | None = None,
+                    person: re.Pattern | None = None) -> dict[str, str]:
+    """근거 id → LLM 에 넘길 텍스트 (분석 에이전트 공용).
     - 웹 근거: 스니펫(max_chars) + 회사명(keys)이 나오는 근거는 본문 핵심 문단 최대 n 개(±window 자)
     - 문서 조각: 자르지 않고 그대로 (조각 800자 기준, 끝부분 수치가 잘리지 않게)"""
     keys = [k for k in keys if k and len(norm(k)) >= 2]
@@ -99,87 +106,108 @@ def evidence_blocks(reg: SourceRegistry, ids: list[str], keys: list[str], terms:
         block = reg.brief([sid], max_chars)
         body = s.get("body") or ""
         if body and keys and any(norm(k) in norm(reg.text(sid)) for k in keys):
-            ps = body_passages(body, keys, terms, n, window, skip=s["snippet"][:max_chars], boost=boost)
+            ps = body_passages(body, keys, terms, n, window, skip=s["snippet"][:max_chars], boost=boost, person=person)
             if ps:
                 block += "\n" + "\n".join(f"(본문) {p}" for p in ps)
         out[sid] = block
     return out
 
 
-def _mentions(text: str, companies: list[str] | None = None) -> list[re.Match]:
-    """이름+직함 표현. companies 가 있으면 "이원준 조벡스 대표", "조벡스 대표 이원준" 형태도 찾고, 회사명 자체(3자)는 뺀다."""
-    companies = [c for c in companies or [] if c]
-    pats = [PERSON] + [re.compile(rf"(?<![가-힣])(?P<ko>[가-힣]{{3}}) {re.escape(c)} {_TITLE}"
-                                  rf"|{re.escape(c)} {_TITLE} (?P<ko2>[가-힣]{{3}})(?=(?:는|은|이|가|의)?(?![가-힣]))")
-                       for c in companies]
-    own = {norm(c) for c in companies}
-    out = []
-    for pat in pats:
-        for m in pat.finditer(text or ""):
-            who = next(v for v in m.groupdict().values() if v)
-            if who not in NOT_NAME and norm(who) not in own:
-                out.append(m)
-    return sorted(out, key=lambda m: m.start())
+def cited(items: list[str], valid: set[str]) -> list[str]:
+    """근거 저장소에 있는 근거 id 가 하나 이상 달린 항목만 남긴다."""
+    return [x for x in items if set(CITE_ID.findall(x)) & valid]
 
 
-def person_mentions(text: str, companies: list[str] | None = None) -> list[str]:
-    """사람 이름과 직함이 붙은 표현 (창업자 누락 재시도 판단용)."""
-    return list(dict.fromkeys(m.group(0) for m in _mentions(text, companies)))
+def candidate_line(c: dict) -> str:
+    """판정 LLM 에 넘기는 요약문 첫 줄: 후보 기본 정보 (v1 투자 판단 요약문의 [후보] 줄과 같은 형식)."""
+    return (f"[후보] {c['official_name']} | 단계 {c.get('stage')} ({c.get('round_date') or '시점 미상'}, "
+            f"{c.get('round_amount') or '금액 미상'}) | 설립 {c.get('founded_year') or '확인 불가'} | {c.get('one_line')}")
 
 
-def _leader_hints(blocks: dict[str, str], keys: list[str], ceo: str | None, limit: int = 8) -> list[str]:
-    """회사명이 나오는 근거 안의 '이름 + 직함' 표현. 프로필 대표자 → 회사명 바로 옆(±80자) → 나머지 순으로 고른다
-    (같은 기사에 나온 투자사 대표 같은 다른 회사 사람이 앞에 오지 않게)."""
-    nk = [norm(k) for k in keys if k and len(norm(k)) >= 2]
-    ck = norm(ceo or "")
-    ranked = []
-    for sid, text in blocks.items():
-        if not any(k in norm(text) for k in nk):
-            continue
-        found = _mentions(text, keys)
-        for m in found:
-            near = any(k in norm(text[max(0, m.start() - 80): m.end() + 80]) for k in nk)
-            rank = 0 if len(ck) >= 2 and ck in norm(m.group(0)) else (1 if near else 2)
-            ranked.append((rank, f"'{m.group(0)}' [{sid}]"))
-        if len(ck) >= 2 and ck in norm(text) and not any(ck in norm(m.group(0)) for m in found):
-            ranked.append((0, f"'{ceo}'(프로필 대표자) [{sid}]"))
-    return list(dict.fromkeys(h for _, h in sorted(ranked, key=lambda x: x[0])))[:limit]
+def judge_own(dim: str, state: dict, reg: SourceRegistry, pool_ids: list[str], analysis: str) -> dict:
+    """에이전트가 맡은 Scorecard 기준(dim)을 core.judge 로 판정한다 (계약 C3).
+    근거 풀 = 지금까지 모인 근거(current·앞 에이전트의 pool_ids) + 이 에이전트가 모은 근거.
+    이 노드에서 새로 등록한 근거도 풀에 들어가도록 state 의 registry 대신 지금의 reg 로 거른다."""
+    pool = judge.evidence_pool({**state, "registry": reg.data}, pool_ids)
+    return judge.judge_dimension(dim, state["current"], pool, reg, analysis, state.get("run_date") or run_date())
 
 
-def _ground_founders(founders: list, blocks: dict[str, str]) -> list[dict]:
-    """근거 텍스트에 이름이 실제로 있는 인물만 남기고, evidence_ids 는 그 이름이 나오는 근거로 맞춘다 (지어낸 인물 차단)."""
-    out = []
-    for f in founders:
-        key = norm(re.split(r"[(/]", f.name)[0])
-        found = [sid for sid, t in blocks.items() if len(key) >= 2 and key in norm(t)]
-        if not found:
-            continue
-        ev = [i for i in f.evidence_ids if i in found] or found[:3]
-        out.append({**f.model_dump(), "evidence_ids": ev})
-    return out
+def homepage_url(c: dict, reg: SourceRegistry, ids: list[str]) -> str | None:
+    """회사 홈페이지 주소: TIPS 공개 목록(국내)의 홈페이지 → 호스트에 회사 영문명·이름이 들어간 웹 근거 URL → 없으면 None."""
+    if c.get("region") == "KR":
+        names = {normalize(x) for x in (c.get("name"), c.get("official_name")) if x}
+        for r in channels.tips_agtech(min_year=0):
+            if normalize(r["name"]) in names and r.get("homepage"):
+                url = r["homepage"].strip()
+                return url if url.startswith("http") else "https://" + url
+    keys = [k for k in (norm(c.get("name_en") or ""), norm(c.get("official_name") or "")) if len(k) >= 3]
+    for sid in ids:
+        s = reg.get(sid) or {}
+        host = s.get("url", "").split("/")[2] if s.get("url", "").count("/") >= 2 else ""
+        if s.get("kind") == "web" and any(k in norm(host) for k in keys):
+            return s["url"]
+    return None
 
 
-class Founder(BaseModel):
-    name: str = Field(description="근거에 나온 이름 그대로")
-    role: str = Field(description="대표, 공동창업자, CTO 등")
-    background: str = Field(description="학력·경력·이전 창업 등 (근거 id 포함), 모르면 '확인 불가'")
-    evidence_ids: list[str] = Field(description="이 인물이 나오는 근거 id")
+def _main_article(reg: SourceRegistry, ids: list[str], keys: list[str]) -> str | None:
+    """홈페이지를 못 읽었을 때 대신 요약할 회사 기사: 본문이 있고 회사명이 가장 많이 나오는 웹 근거."""
+    best, top = None, 0
+    for sid in ids:
+        s = reg.get(sid) or {}
+        body = norm(s.get("body") or "")
+        n = sum(body.count(k) for k in keys) if s.get("kind") == "web" and len(body) >= 300 else 0
+        if n > top:
+            best, top = sid, n
+    return best
+
+
+def summarize_company(c: dict, reg: SourceRegistry, ids: list[str], keys: list[str]) -> tuple[str | None, str | None, str]:
+    """홈페이지를 문서 요약 도구로 요약한다. 실패하면 회사 기사 본문 1건을 요약한다.
+    반환 (요약문 또는 None, 요약한 출처(URL 또는 근거 id) 또는 None, 로그용 메모). 실패해도 예외를 던지지 않는다."""
+    try:
+        summarize = agent_tools.make_tools(reg, AGENT)["summarize_document"]
+        url = homepage_url(c, reg, ids)
+        if url and (text := summarize.invoke({"source": url, "focus": HOMEPAGE_FOCUS})):
+            return text, url, "홈페이지 요약"
+        sid = _main_article(reg, ids, keys)
+        if sid and (text := summarize.invoke({"source": sid, "focus": HOMEPAGE_FOCUS})):
+            return text, sid, "홈페이지 " + ("읽기 실패" if url else "주소 없음") + " → 회사 기사 요약"
+        return None, None, "요약 없음"
+    except Exception as e:  # 요약은 선택 단계: 도구 오류로 분석 전체를 멈추지 않는다
+        return None, None, f"요약 실패({type(e).__name__})"
 
 
 class TechAnalysis(BaseModel):
     product: str = Field(description="주요 제품·서비스 (근거 id 인용 [W..])")
-    core_technology: str = Field(description="핵심 기술과 AI 가 하는 일")
+    core_technology: str = Field(description="핵심 기술과 AI 가 하는 일 (근거 id)")
     maturity: Literal["연구", "시제품", "실증", "상용", "확인 불가"]
     maturity_evidence: str = Field(description="성숙도 근거와 그 날짜 (근거 id), 앞으로의 계획은 '예정'으로 구분")
-    differentiators: list[str] = Field(description="기술적 차별점, 각 항목 끝에 근거 id")
-    weaknesses: list[str] = Field(description="기술 한계·위험, 각 항목 끝에 근거 id")
-    ip_evidence: str = Field(description="특허·논문·인증 근거, 없으면 '확인 불가'")
-    founders: list[Founder] = Field(description="근거에 이름이 나온 창업자·대표·기술 책임자")
-    team_assessment: str = Field(description="팀 역량 평가 (근거 id 인용)")
+    pros: list[str] = Field(description="기술·제품의 장점 2~4개, 각 항목 끝에 근거 id. 회사 발표뿐이면 '회사 측 주장:' 으로 시작")
+    cons: list[str] = Field(description="기술·제품의 단점·한계·위험 1~4개, 각 항목 끝에 근거 id")
+    claims: list[str] = Field(
+        description="회사가 내세우는 경쟁 차별점 주장 1~4개 (경쟁사 비교 에이전트가 검증). 형식 '<주장> [근거 id]'")
+    ip_evidence: str = Field(description="특허·논문·인증 근거 (등록·출원 구분, 근거 id), 없으면 '확인 불가'")
+    license_check: str = Field(
+        description="제품 유형상 필요한 인허가·검정(농업기계 검정, 농약·비료·동물용 의약품 등록 등)과 취득·신청 여부 (근거 id). "
+                    "대상이 아니면 '해당 없음: <사유>', 근거가 없으면 '확인 불가'")
     growth_signals: list[str] = Field(
-        description="회사 성장 신호: 수상, 정부·기관 선정, 투자 유치, 상용화 일정, 인력 규모. 각 항목에 날짜와 근거 id")
-    trend_fit: str = Field(description="문서 코퍼스의 기술 동향 대비 위치 (근거 id 인용 [D..])")
+        description="제품·사업 성장 신호 0~5개: 상용 설치·유료 고객·계약·수출·출시. 형식 '<YYYY-MM> <사건> [근거 id]'")
+    trend_fit: str = Field(description="분야 기술 기준선(문서 근거 [D..]) 대비 이 회사 기술의 위치")
     evidence_ids: list[str] = Field(description="실제로 인용한 근거 id 전체")
+
+
+def _analysis_text(c: dict, t: dict) -> str:
+    """제품/기술력 판정에 넘기는 기술 요약문."""
+    return "\n".join([
+        candidate_line(c),
+        f"[기술] 제품: {t['product']} / 핵심 기술: {t['core_technology']} / 성숙도: {t['maturity']} "
+        f"({t['maturity_evidence']}) / 특허·인증: {t['ip_evidence']} / 인허가: {t['license_check']}",
+        f"[장점] {'; '.join(t['pros']) or '확인 불가'}",
+        f"[단점] {'; '.join(t['cons']) or '확인 불가'}",
+        f"[회사 측 차별점 주장] {'; '.join(t['claims']) or '없음'}",
+        f"[성장 신호] {'; '.join(t['growth_signals']) or '없음'}",
+        f"[업계 기준선 대비] {t['trend_fit']}",
+    ])
 
 
 def tech_node(state: dict) -> dict:
@@ -188,68 +216,49 @@ def tech_node(state: dict) -> dict:
     name = c["official_name"]
     seg = get_segment(c["segment_id"])
     ids = list(c.get("evidence_ids", []))
-    # 평가표 문항별로 필요한 근거를 겨냥한 검색 (창업자 이력·기술 책임자·특허·실증·실적·파트너)
-    if c["region"] == "KR":
-        queries = [(f"{name} 대표 창업자 이력 인터뷰", True), (f"{name} CTO 연구소장 기술 개발", False),
-                   (f"{name} 수상 선정 혁신상 우수기업 출시", False),
-                   (f"{name} 특허 등록 기술", False), (f"{name} 실증 농가 효과 수확량 절감", True),
-                   (f"{name} 매출 고객 농가 수 설치", True), (f"{name} 협약 계약 공급 농협 지자체 수출", False)]
-    else:
-        q = c.get("name_en") or name
-        queries = [(f"{q} founder CEO background interview", True), (f"{q} CTO technology team", False),
-                   (f"{q} patent", False), (f"{q} field trial results yield savings", True),
-                   (f"{q} revenue customers farms deployed", True), (f"{q} partnership contract distribution", False)]
-    for query, deep in queries:
+    # 평가표 제품/기술력·경쟁 문항에 필요한 근거를 겨냥한 검색 (특허·실증·판매·파트너)
+    for query, deep in tech_queries(c):
         ids += web_search(query, reg, AGENT, topic="news", recent=False, deep=deep, raw=True)
-    # 회사 기사 원문을 받아 창업자 이력·실적·계약처럼 스니펫에 없는 사실을 보강 (키 불필요)
+    # 회사 기사 원문을 받아 실적·계약처럼 스니펫에 없는 사실을 보강 (키 불필요)
     enrich(reg, ids, [norm(name), norm(c.get("name_en") or "")], limit=12)
     # 코퍼스(공공 문서)에서 회사 이름이 직접 나오는 조각 (예: 정부 우수기업 선정 목록) → 날짜 있는 제3자 근거
     keys = [k for k in (norm(name), norm(c.get("name_en") or "")) if len(k) >= 2]
     for ch in get_chunks():
         if any(k in norm(ch.page_content) for k in keys):
             ids.append(reg.add_doc(ch.metadata, ch.page_content, agent=AGENT, query=f"코퍼스 속 {name}"))
-    rag_ids, trace = agentic_rag(f"{seg['name']} 분야의 기술 동향, 상용화 수준, 기술적 과제",
-                                 "스타트업 기술 수준을 비교할 기준선", reg, AGENT)
-    ids = list(dict.fromkeys(ids + rag_ids))
+    # 분야 기술 기준선: Agentic RAG (검색 없이 바로 답하는 경로는 끈다 — 수치 환각 방지)
+    base = rag.answer_question(BASELINE_Q.format(seg=seg["name"]), BASELINE_PURPOSE, reg, AGENT, allow_direct=False)
+    ids += base["evidence_ids"]
+    # 홈페이지(없거나 못 읽으면 회사 기사) 요약: 끝에 붙은 [근거 id] 를 근거 목록에 더한다
+    summary, summary_src, summary_note = summarize_company(c, reg, ids, keys)
+    if summary:
+        ids += [i for i in CITE_ID.findall(summary) if reg.get(i)]
+    ids = list(dict.fromkeys(ids))
 
-    # 스니펫 + 본문 속 회사명·창업자 문단 (창업자 이름·이력은 대개 본문에만 있다)
-    names = [name, c.get("name_en") or ""]
-    blocks = evidence_blocks(reg, ids, names)
-    # 적격성 검증 프로필의 대표자·설립일 (공공 데이터 기준, 병합 전에도 동작하도록 .get)
-    ceo = c.get("ceo")
-    founded = c.get("founded_date") or (str(c["founded_year"]) if c.get("founded_year") else None)
-    ctx = dict(name=name, one_line=c.get("one_line", ""), segment=seg["name"], ceo=ceo or "미확인",
-               founded=founded or "확인 불가", evidence="\n\n".join(blocks.values()))
-    llm = structured(TechAnalysis)
-    res: TechAnalysis = llm.invoke(render("tech", **ctx, feedback=""))
-    hints = _leader_hints(blocks, names, ceo)
-    retried = False
-    # 근거에 '이름 + 대표' 같은 표현이 있는데 (근거로 확인되는) 창업자가 비었으면 한 번만 다시 묻는다
-    if not _ground_founders(res.founders, blocks) and hints:
-        retried = True
-        feedback = ("직전 답의 founders 가 비어 있다. 근거에 다음 인물 표현이 있다: " + "; ".join(hints)
-                    + "\n근거 본문에서 이 회사의 대표·공동창업자·기술 책임자인지 확인해 founders 를 채워라. "
-                      "사람 이름이 아니거나 다른 회사 사람이면 넣지 마라.")
-        res = llm.invoke(render("tech", **ctx, feedback=feedback))
+    blocks = evidence_blocks(reg, ids, [name, c.get("name_en") or ""])
+    ctx = dict(name=name, one_line=c.get("one_line", ""), segment=seg["name"],
+               baseline=base.get("answer") or "(생성 답변 없음 — 아래 문서 근거 [D...] 를 직접 읽을 것)",
+               homepage=summary or "(요약 없음)", evidence="\n\n".join(blocks.values()))
+    res: TechAnalysis = structured(TechAnalysis).invoke(render("tech", **ctx))
 
     valid = set(ids)
     out = res.model_dump()
-    out["founders"] = _ground_founders(res.founders, blocks)
-    ck = norm(ceo or "")
-    if not out["founders"] and len(ck) >= 2:  # 그래도 비었으면 공공 데이터(TIPS)의 대표자를 근거와 함께 넣는다
-        found = [sid for sid, t in blocks.items() if ck in norm(t)]
-        if found:
-            out["founders"] = [{"name": ceo, "role": "대표", "background": "확인 불가 (TIPS 공개 목록의 대표자)",
-                                "evidence_ids": found[:3]}]
-    # 근거 id 가 달린 성장 신호만 남긴다
-    out["growth_signals"] = [g for g in res.growth_signals if set(CITE_ID.findall(g)) & valid]
-    cited = (list(res.evidence_ids) + [i for f in out["founders"] for i in f["evidence_ids"]]
-             + [i for g in out["growth_signals"] for i in CITE_ID.findall(g)])
-    out["evidence_ids"] = [i for i in dict.fromkeys(cited) if i in valid]
+    # 근거 id 가 달린 성장 신호·차별점 주장만 남긴다 (주장은 경쟁사 비교 에이전트가 검증)
+    out["growth_signals"] = cited(res.growth_signals, valid)
+    out["claims"] = cited(res.claims, valid)
+    refs = (list(res.evidence_ids) + [i for x in out["growth_signals"] + out["claims"] + res.pros + res.cons
+                                      for i in CITE_ID.findall(x)])
+    out["evidence_ids"] = [i for i in dict.fromkeys(refs) if i in valid]
+    out["baseline_answer"] = base.get("answer") or ""
+    out["homepage_summary"] = summary
+    out["homepage_source"] = summary_src
     out["pool_ids"] = ids
-    who = ", ".join(f"{f['name']}({f['role']})" for f in out["founders"]) or "없음"
-    msg = (f"[기술·팀] {name}: 성숙도 {res.maturity}, 창업자 {len(out['founders'])}명({who})"
-           f"{' — 재시도' if retried else ''}, 성장 신호 {len(out['growth_signals'])}건, 근거 {len(out['evidence_ids'])}건")
+    out["criterion"] = judge_own("product", state, reg, ids, _analysis_text(c, out))
+    crit = out["criterion"]
+    msg = (f"[기술 요약] {name}: 성숙도 {res.maturity}, 장점 {len(res.pros)}·단점 {len(res.cons)}·주장 {len(out['claims'])}건, "
+           f"{summary_note}, 기준선 {base.get('status')}, 근거 {len(out['evidence_ids'])}건 → 제품/기술력 "
+           f"YES {crit['yes']}/{crit['n']}")
     print(msg)
     return {"registry": reg.data, "tech": out, "log": [msg],
-            "rag_traces": [{"agent": AGENT, "question": "기술 동향", "trace": trace}]}
+            "rag_traces": [{"agent": AGENT, "question": "기술 동향", "route": base.get("route"),
+                            "status": base.get("status"), "trace": base.get("trace", [])}]}
