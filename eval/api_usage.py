@@ -14,7 +14,7 @@ import sqlite3
 from collections import defaultdict
 
 from core.config import ROOT, path
-from core.cost import DEFAULT_PRICE
+from core.cost import model_price
 
 PURPOSE = {
     "Answers": "투자 판단 평가표 판정", "Eligibility": "적격성 판정", "Draft": "보고서 작성", "TechAnalysis": "기술·팀 분석",
@@ -56,7 +56,7 @@ def main() -> None:
     tot = {"calls": 0, "in": 0, "out": 0, "usd": 0.0}
     for k, r in sorted(rows.items(), key=lambda x: -x[1]["in"]):
         model = sorted(r["models"])[0]
-        price = DEFAULT_PRICE.get(re.sub(r"-\d{4}-\d{2}-\d{2}$", "", model), DEFAULT_PRICE["gpt-4.1-mini"])
+        price = model_price(model)  # 가격표: config.yaml models.price_per_mtok
         usd = ((r["in"] - r["cached_in"]) * price[0] + r["cached_in"] * price[0] / 4 + r["out"] * price[1]) / 1e6
         tot["calls"] += r["calls"]; tot["in"] += r["in"]; tot["out"] += r["out"]; tot["usd"] += usd
         lines.append(f"| {k} | {r['calls']} | {r['in']:,} | {r['out']:,} | {usd:.3f} | {', '.join(sorted(r['models']))} |")

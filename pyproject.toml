@@ -34,3 +34,12 @@ dependencies = [
     "trafilatura>=2.2.0",
     "requests>=2.34.2",
 ]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = ["api: API 키가 필요한 테스트 (기본 실행에서 제외, 필요할 때 -m api 로 실행)"]
+addopts = '-m "not api"'

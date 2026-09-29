@@ -19,10 +19,10 @@ from datetime import date, datetime
 from functools import lru_cache
 from typing import Literal
 
-import yaml
 from pydantic import BaseModel, Field
 
-from core.config import ROOT, get_config
+from core.config import get_config
+from core.judge import load_rubric  # 판정 공용 모듈로 옮김. agents.report 가 이 이름으로 import 하므로 재수출
 from core.llm import structured
 from core.prompts import render
 from rank_bm25 import BM25Okapi
@@ -62,11 +62,6 @@ class Answer(BaseModel):
 
 class Answers(BaseModel):
     answers: list[Answer]
-
-
-def load_rubric() -> dict:
-    with open(ROOT / "rubric.yaml", encoding="utf-8") as f:
-        return yaml.safe_load(f)
 
 
 _norm = norm
@@ -366,3 +361,74 @@ def decision_node(state: dict) -> dict:
     return {"scorecard": scorecard, "decision": decision, "log": [msg],
             "evaluations": [{**summary, "tech": state.get("tech"), "market": state.get("market"),
                              "competition": state.get("competition"), "scorecard": scorecard, "profile": c}]}
+
+
+# ── v2 공개 함수 (계약 C10). P0 계약 커밋에서는 시그니처만 두고, P3 가 구현한 뒤 decision_node 를 v2 규칙으로 바꾼다.
+# 위의 decision_node 는 아직 v1 규칙(100점 만점, invest_threshold 70)으로 동작한다.
+
+def load_reference(exclude: str | None = None) -> dict:
+    """동종 기준 집단(config decision.reference_file)의 문항별 평균 신호.
+    exclude: 평가 대상 이름 — 기준 집단에 있으면 빼고 평균을 낸다(자기 제외, LOO).
+    기준 집단이 decision.reference_min_n 보다 작거나 파일이 없으면 평균 0(source 'fallback').
+    반환: {'mean': {qid: float}, 'n': int, 'loo': bool, 'source': 'calibration'|'fallback', 'members': [이름]}"""
+    raise NotImplementedError("P3")
+
+
+def write_reference_class(evaluations: list[dict], path: str, run_date: str) -> dict:
+    """보정 실행(app.py --calibrate)의 평가 결과로 동종 기준 집단 파일을 쓴다.
+    파일 형식: {'version': 1, 'run_date', 'rubric_qids': [24개], 'created_by': 'app.py --calibrate', 'n',
+               'members': [{'name','region','stage','segment_id','signals': {qid: 1|-1|0|None}}], 'mean': {qid: float}}
+    반환: 쓴 내용(dict)."""
+    raise NotImplementedError("P3")
+
+
+def write_threshold_sensitivity(ref_path: str, out_path: str) -> dict:
+    """기준 집단 구성원마다 자기 제외 배수(multiplier_loo)를 구하고, config decision.sensitivity 의 각 기준 배수에서의 결정을 기록한다.
+    파일 형식: {'thresholds': [...], 'members': [{'name','multiplier_loo','founder_yes','killers','decision_at': {'1.10': '투자'|'보류', …}}],
+               'invest_count_at': {'1.00': int, …}}
+    반환: 쓴 내용(dict)."""
+    raise NotImplementedError("P3")
+
+
+def payne_multiplier(rows: list[dict], mean: dict, rubric: dict, step: float, clip: list) -> tuple[float, list[dict]]:
+    """Payne Scorecard 의 비교 원리(동종 평균 = 1.00)로 배수 M 을 구한다.
+    기준 d 마다 c_d = clip(1 + step × 평균_q(x_q − x̄_q)) (N/A 문항 제외, 문항이 없으면 1.0), M = Σ (weight/100) × c_d.
+    반환: (M, criteria) — criteria 원소 {dim, name, weight, yes, no, unknown, n, pct, peer_mean, contribution}"""
+    raise NotImplementedError("P3")
+
+
+def decide_rule(M: float, founder_yes: int, killers: list[str], unknown_ratio: float, cfg) -> tuple[str, str | None, list[str]]:
+    """투자 ⇔ M ≥ decision.threshold ∧ founder_yes ≥ decision.min_founder_yes ∧ Deal-killer 없음.
+    보류 유형 우선순위: 'Deal-killer' > '창업자 근거 없음' > '정보 부족'(unknown_ratio ≥ info_gap_ratio) > '동종 대비 열위'.
+    반환: (결정 '투자'|'보류', 보류 유형 또는 None, 사람이 읽는 사유 문장 목록)"""
+    raise NotImplementedError("P3")
+
+
+def flip_conditions(rows: list[dict], mean: dict, rubric: dict, cfg, founder_ok: bool, killers: list[str]) -> dict | None:
+    """보류 후보의 뒤집힘 조건: 미확인 문항 중 YES 로 확인되면 M 이 가장 많이 오르는 문항을 decision.flip_max_items 개까지 골라
+    새 배수 M' 을 계산한다. 창업자 요건이 모자라면 창업자 문항을 먼저 넣는다. Deal-killer 가 있으면 None.
+    반환: {'qids': [str], 'items': [str], 'new_multiplier': float, 'note': str} 또는 None"""
+    raise NotImplementedError("P3")
+
+
+def bessemer_panel(rows: list[dict], rubric: dict) -> list[dict]:
+    """rubric.yaml bessemer 10문마다 via 문항의 판정으로 답을 정한다(NO 가 하나라도 있으면 NO, 그다음 YES, 그 밖은 미확인).
+    반환: [{'q': int, 'text': str, 'answer': 'YES'|'NO'|'미확인', 'via': [qid], 'proxy': bool}] (10행)"""
+    raise NotImplementedError("P3")
+
+
+def roi(current: dict, market: dict, cfg) -> dict:
+    """ROI 참고치 (점수에 쓰지 않음). 두 가지만 계산한다.
+    1) 라운드 금액 대 단계별 중앙값: config roi.stage_median_usd_m (AgFunder 2026 p.13)
+    2) VC Method 필요 Exit(가정): post-money = 금액 ÷ 지분율 가정(roi.stake_assumption), 필요 Exit = post-money × roi.target_multiple
+    라운드 금액을 모르면 computable=False. 가정 값은 assumptions 에 문장으로 남긴다.
+    반환: {'computable','round_amount_raw','round_amount_usd_m','stage','stage_median_usd_m','vs_stage_median',
+           'stake_assumption','post_money_usd_m': [lo, hi]|None,'target_multiple','required_exit_usd_m': [lo, hi]|None,
+           'assumptions': [str],'source_ids': [str]}"""
+    raise NotImplementedError("P3")
+
+
+def parse_amount(s: str) -> dict | None:
+    """라운드 금액 문자열 → {'krw': float|None, 'usd_m': float|None}. 예: '30억 원' → krw 3e9, '$12M'·'12 million' → usd_m 12.
+    '비공개'·빈 문자열처럼 금액이 없으면 None."""
+    raise NotImplementedError("P3")

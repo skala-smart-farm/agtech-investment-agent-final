@@ -8,8 +8,18 @@ import threading
 
 from langchain_core.callbacks import BaseCallbackHandler
 
-# USD / 100만 토큰 (OpenAI 공개 가격: 입력, 출력). 프롬프트 캐시로 처리된 입력은 입력 가격의 1/4
-DEFAULT_PRICE = {"gpt-4.1-mini": (0.40, 1.60), "gpt-4.1-nano": (0.10, 0.40)}
+from core.config import get_config
+
+
+def model_price(model: str) -> tuple[float, float]:
+    """모델 이름 → (입력, 출력) USD / 100만 토큰. 가격표는 config.yaml 의 models.price_per_mtok 에만 둔다.
+    응답의 모델명에 날짜가 붙어도(…-2025-04-14) 가장 길게 일치하는 앞부분으로 찾고, 표에 없으면 생성 모델 가격으로 계산한다.
+    프롬프트 캐시로 처리된 입력은 호출하는 쪽에서 입력 가격의 1/4 로 계산한다."""
+    models = get_config().models
+    table = models.get("price_per_mtok") or {}
+    hit = max((k for k in table if model.startswith(k)), key=len, default=None)
+    pi, po = table[hit] if hit else table[models.generator]
+    return float(pi), float(po)
 
 
 class CostTracker(BaseCallbackHandler):
@@ -26,7 +36,7 @@ class CostTracker(BaseCallbackHandler):
                 self.cached += 1
                 return
             model = str(out.get("model_name", ""))
-            pi, po = next((v for k, v in DEFAULT_PRICE.items() if model.startswith(k)), (0.40, 1.60))
+            pi, po = model_price(model)
             i, o = usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)
             ci = (usage.get("prompt_tokens_details") or {}).get("cached_tokens", 0) or 0
             self.calls += 1

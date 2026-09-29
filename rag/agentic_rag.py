@@ -138,3 +138,29 @@ def agentic_rag(question: str, purpose: str, registry: SourceRegistry, agent: st
                        "registry": registry.data, "trace": [], "agent": agent})
     registry.data.update(out["registry"])
     return out["evidence_ids"], out["trace"]
+
+
+def answer_question_v1(question: str, purpose: str, registry: SourceRegistry, agent: str, *,
+                       allow_web: bool = True, allow_direct: bool = False) -> dict:
+    """v1 호환 구현: 위의 교정형 경로(agentic_rag)로 근거 id 만 모은다. 답변 생성·점검은 하지 않는다.
+    - answer 는 빈 문자열, cited_ids 는 빈 목록 (호출한 에이전트가 근거를 직접 읽고 분석한다)
+    - status: 근거 id 가 있으면 'grounded', 없으면 'not_found' / route: 항상 'docs'
+    - rewrites: 질의 재작성 횟수 (trace 의 검색 기록 수 − 1), regenerations: 0
+    - allow_web·allow_direct 는 v2 와 같은 시그니처를 위해 받기만 한다. v1 경로에는 direct 가 없고,
+      웹 보완 여부는 config rag.web_fallback 이 정한다.
+    registry 는 제자리에서 갱신된다."""
+    ids, trace = agentic_rag(question, purpose, registry, agent)
+    rewrites = max(0, sum(1 for t in trace if "retrieved" in t) - 1)
+    return {"answer": "", "evidence_ids": ids, "cited_ids": [], "status": "grounded" if ids else "not_found",
+            "route": "docs", "rewrites": rewrites, "regenerations": 0, "trace": trace}
+
+
+def answer_question(question: str, purpose: str, registry: SourceRegistry, agent: str, *,
+                    allow_web: bool = True, allow_direct: bool = False) -> dict:
+    """질문 하나에 근거를 달아 답한다 (계약 C4).
+    반환: {'answer': str, 'evidence_ids': [str], 'cited_ids': [str], 'status': 'grounded'|'partial'|'not_found',
+           'route': 'docs'|'web'|'direct', 'rewrites': int, 'regenerations': int, 'trace': [dict]}
+    registry.data 는 제자리에서 갱신된다. allow_direct(검색 없이 답하기)의 기본값은 False 다(수치 환각 방지).
+    지금은 v1 호환 구현(answer_question_v1)을 그대로 부른다. v2 서브그래프(도구 선택 → 검색 → 채점 → 재작성/웹 보완 →
+    인용 답변 생성 → 점검)가 들어오면 같은 시그니처로 바꾼다."""
+    return answer_question_v1(question, purpose, registry, agent, allow_web=allow_web, allow_direct=allow_direct)
