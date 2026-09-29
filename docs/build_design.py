@@ -353,16 +353,16 @@ def _blank_before_lists(md: str) -> str:
     return "\n".join(out)
 
 
-def build() -> tuple[str, str]:
+def context() -> dict:
+    """설계서 md(GitHub 용)와 HTML(제출 PDF 용)이 같이 쓰는 값."""
     cfg = get_config()
     team = cfg.submission
     members = sorted(team.members)
-    env = Environment(loader=FileSystemLoader(ROOT / "docs"))
     with open(ROOT / "rubric.yaml", encoding="utf-8") as f:
         rubric = yaml.safe_load(f)
     dec = _merged(cfg.get("decision"), DECISION_DEFAULT)
-    md = env.get_template("design.md.j2").render(
-        team=team, members_line=" · ".join(members), today=datetime.now().strftime("%Y-%m-%d"), cfg=cfg,
+    return dict(
+        team=team, members=members, members_line=" · ".join(members), today=datetime.now().strftime("%Y-%m-%d"), cfg=cfg,
         segments=cfg.domain.segments, corpus=load_manifest(), total_pages=total_pages(), rubric=rubric,
         dims=_rubric_view(rubric), bessemer=BESSEMER, bessemer_note=BESSEMER_NOTE,
         agents=AGENTS, tools=DESIGN_TOOLS, state_rows=_state_rows(), n_state=len(DESIGN_STATE),
@@ -373,16 +373,71 @@ def build() -> tuple[str, str]:
         eligibility_history=_read("outputs/eval/eligibility_eval_history.md"),
         judge_line=_judge_line(), elig_gold=_elig("outputs/eval/eligibility_eval_gold.json"),
         elig_holdout=_elig("outputs/eval/eligibility_eval_holdout.json"),
-        main_mermaid=_main_mermaid(cfg), discovery_mermaid=_discovery_mermaid(cfg), rag_mermaid=_rag_mermaid(cfg))
+        main_mermaid=_main_mermaid(cfg), discovery_mermaid=_discovery_mermaid(cfg), rag_mermaid=_rag_mermaid(cfg),
+        main_edges=MAIN_EDGES, node_labels=NODE_LABELS, rubric_map=RUBRIC_MAP, owner_label=OWNER_LABEL,
+        calib=_calibration(), run=_run_result())
+
+
+def _calibration() -> dict:
+    """v2 보정 실행 결과(data/reference_class.json): 구성원마다 자기 제외 동종 평균으로 다시 계산한 배수·결정.
+    파일이 없으면 빈 값 (설계서는 규칙만 싣는다)."""
+    from agents.decision import _founder_yes, _killers, _reference, _rows_from_signals, decide_rule, payne_multiplier
+    from core.judge import load_rubric
+
+    ref, sens = _json("data/reference_class.json"), _json("outputs/eval/threshold_sensitivity.json")
+    if not ref:
+        return {"rows": [], "sens": {}, "n": 0, "run_date": None}
+    cfg, rubric = get_config(), load_rubric()
+    d = cfg.decision
+    rows = []
+    for m in ref["members"]:
+        r = _rows_from_signals(m["signals"], rubric)
+        mean = _reference(ref, m["name"], rubric, d.reference_min_n)["mean"]
+        M, _ = payne_multiplier(r, mean, rubric, d.step, d.clip)
+        fy, k = _founder_yes(r), _killers(r, rubric)
+        judged = [x for x in r if x["answer"] != "N/A"]
+        unk = sum(x["answer"] == "UNKNOWN" for x in judged) / len(judged)
+        dec, hold, _ = decide_rule(M, fy, k, unk, cfg)
+        rows.append({"name": m["name"], "region": m.get("region"), "stage": m.get("stage"), "M": M, "founder_yes": fy,
+                     "yes": sum(x["answer"] == "YES" for x in r), "no": sum(x["answer"] == "NO" for x in r),
+                     "unknown_ratio": unk, "decision": dec, "hold_type": hold, "killers": k})
+    rows.sort(key=lambda x: -x["M"])
+    return {"rows": rows, "sens": (sens or {}).get("invest_count_at", {}), "n": ref.get("n"), "run_date": ref.get("run_date")}
+
+
+def _run_result() -> dict:
+    """제출 실행(outputs/run_log.json) 요약: 결론·대상·배수·보고서 쪽수 (없으면 빈 값)."""
+    run = _json("outputs/run_log.json") or {}
+    ev = [e for e in run.get("evaluations", []) if e.get("decision") == "투자"]
+    rep = run.get("report") or {}
+    return {"mode": rep.get("mode"), "target": ev[0]["name"] if ev else None,
+            "multiplier": ev[0]["multiplier"] if ev else None, "pages": (rep.get("checks") or {}).get("pages"),
+            "summary_ratio": (rep.get("checks") or {}).get("summary_ratio_of_a4"), "end_reason": run.get("end_reason"),
+            "evaluated": len(run.get("evaluations", [])),
+            "screened": len(run.get("screened", [])), "eligible": sum(1 for x in run.get("screened", []) if x.get("eligible"))}
+
+
+def _html_env() -> Environment:
+    from markupsafe import Markup
+
+    env = Environment(loader=FileSystemLoader(ROOT / "docs"))
+    # 표·목록이 든 markdown 조각(검색기 실측표 등)을 HTML 로
+    env.filters["md"] = lambda s: Markup(markdown.markdown(s or "", extensions=["tables", "sane_lists"])
+                                         .replace("<table>", '<table class="t compact">'))
+    # **굵게**·`코드` 가 든 한 줄 설명(에이전트 역할 등)을 HTML 로
+    env.filters["inline"] = lambda s: Markup(re.sub(r"^<p>|</p>$", "", markdown.markdown(s or "").strip()))
+    return env
+
+
+def build() -> tuple[str, str]:
+    ctx = context()
+    team, members = ctx["team"], ctx["members"]
+    md = Environment(loader=FileSystemLoader(ROOT / "docs")).get_template("design.md.j2").render(**ctx)
     md = _blank_before_lists(md)
     md_path = path("docs/design.md")
     md_path.write_text(md, encoding="utf-8")
 
-    html_body = markdown.markdown(md, extensions=["tables", "fenced_code", "toc", "sane_lists"])
-    n = iter(range(1, 100))
-    html_body = re.sub(r'<pre><code class="language-mermaid">(.*?)</code></pre>',
-                       lambda m: f'<pre class="mermaid m{next(n)}">{m.group(1)}</pre>', html_body, flags=re.S)
-    html = HTML.replace("{{BODY}}", html_body)
+    html = _html_env().get_template("design_html/base.html.j2").render(**ctx)
     pdf = path(f"docs/RAG-Design_{team.campus}-{team['class']}_{'+'.join(members)}.pdf")
     _to_pdf(html, pdf)
     return str(md_path), str(pdf)
@@ -406,11 +461,12 @@ def _to_pdf(html: str, pdf) -> None:
             raise RuntimeError(f"mermaid 그림 {bad}개가 렌더링되지 않았습니다 (문법 오류)")
         pg.pdf(path=str(pdf), format="A4", print_background=True, display_header_footer=True,
                header_template="<span></span>",
-               footer_template='<div style="font-size:8px;width:100%;text-align:center;color:#888">'
-                               '<span class="pageNumber"></span> / <span class="totalPages"></span></div>',
-               margin={"top": "14mm", "bottom": "16mm", "left": "12mm", "right": "12mm"})
+               footer_template='<div style="font-family:Pretendard,sans-serif;font-size:7px;width:100%;padding:0 12mm;'
+                               'display:flex;justify-content:space-between;color:#8a94a6">'
+                               '<span>AgTech AI 스타트업 투자 평가 에이전트 · 설계 산출물 v2 · SKALA 울산 2반 1조</span>'
+                               '<span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
+               margin={"top": "12mm", "bottom": "14mm", "left": "12mm", "right": "12mm"})
         b.close()
-    tmp.unlink(missing_ok=True)
 
 
 HTML = """<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
