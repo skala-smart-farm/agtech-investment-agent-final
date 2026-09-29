@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <title>{{ title }}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css">
-{% set fs = [10.2, 9.7, 9.2, 8.8][density] %}
-{% set lh = [1.55, 1.5, 1.45, 1.4][density] %}
-{# 모두 보류면 최고점 후보 상세가 3장의 소절(h3)이 되고, 투자 권고면 1~5장(h2)이 된다 #}
-{% set H = 'h3' if hold else 'h2' %}
-{% set N = ['3.1', '3.2', '3.3', '3.4', '3.5'] if hold else ['1.', '2.', '3.', '4.', '5.'] %}
+{# 보고서 view(agents/report.py): summary [(라벨, 문장)], chapters [{title, lead, blocks}], ref_groups.
+   블록 종류: p(문단) · note(작은 규칙·설명 줄) · kv(굵은 라벨 목록) · ul(목록) · table(표) · h3(소제목) ·
+   cand(후보별 보류 사유 4줄) · box(ROI 참고치). density 0~3 은 5쪽을 넘을 때 조판 밀도를 올리는 단계다 #}
+{% set fs = [10.0, 9.5, 9.0, 8.6][density] %}
+{% set lh = [1.52, 1.47, 1.42, 1.37][density] %}
 <style>
   @page { size: A4; }
   * { box-sizing: border-box; }
@@ -17,157 +17,73 @@
   h1 { font-size: 14.5pt; margin: 0 0 2pt; color: #12213f; letter-spacing: -0.02em; }
   .meta { font-size: 8.3pt; color: #667085; margin-bottom: 8pt; }
   .badge { display: inline-block; padding: 1pt 8pt; border-radius: 10pt; font-weight: 800; font-size: 9pt; color: #fff;
-           background: {{ '#12806b' if decision == '투자' else '#b8650a' }}; margin-left: 6pt; vertical-align: 2pt; }
-  ul.idea { margin: 2pt 0 4pt; padding-left: 14pt; } ul.idea li { margin: 1.5pt 0; }
+           background: {{ '#12806b' if mode == 'invest' else '#b8650a' }}; margin-left: 6pt; vertical-align: 2pt; }
   h2 { font-size: {{ fs + 2 }}pt; color: #12213f; margin: {{ [11, 9, 8, 7][density] }}pt 0 3pt; padding-bottom: 2pt;
        border-bottom: 1.5pt solid #d8dee9; break-after: avoid; }
-  h3 { font-size: {{ fs + 0.5 }}pt; color: #12213f; margin: 6pt 0 2pt; break-after: avoid; }
+  h3 { font-size: {{ fs + 0.4 }}pt; color: #12213f; margin: 6pt 0 2pt; break-after: avoid; }
   h4 { font-size: {{ fs - 0.8 }}pt; color: #475467; margin: 4pt 0 1pt; break-after: avoid; }
   p { margin: 2pt 0 4pt; text-align: justify; }
+  p.lead { font-weight: 800; color: #12213f; margin: 1pt 0 4pt; }
+  p.note { font-size: {{ fs - 1.3 }}pt; color: #344054; margin: 1pt 0 2pt; }
   #summary { border: 1.6pt solid #12213f; border-radius: 6pt; padding: 7pt 11pt 6pt; background: #f5f7fb; }
   #summary h2 { margin-top: 0; border: none; font-size: 11pt; letter-spacing: 0.08em; }
   #summary ul { margin: 0; padding-left: 13pt; }
   #summary li { margin: 1.5pt 0; }
+  #summary li.conclusion { font-weight: 800; }
+  ul.kv, ul.plain { margin: 2pt 0 4pt; padding-left: 14pt; } ul.kv li, ul.plain li { margin: 1.5pt 0; }
+  .ul-title { font-size: {{ fs - 0.8 }}pt; font-weight: 700; color: #475467; margin: 4pt 0 0; }
   table { width: 100%; border-collapse: collapse; font-size: {{ fs - 1.2 }}pt; margin: 4pt 0 6pt; break-inside: auto; }
-  th, td { border: 0.6pt solid #cfd6e2; padding: 2.5pt 5pt; vertical-align: top; text-align: left; }
+  table.small { font-size: {{ fs - 1.6 }}pt; }
+  th, td { border: 0.6pt solid #cfd6e2; padding: 2.2pt 4.5pt; vertical-align: top; text-align: left; }
   th { background: #eef2f8; font-weight: 700; }
   tr { break-inside: avoid; }
-  td.yes { color: #12806b; font-weight: 800; text-align: center; } td.no { color: #b54708; font-weight: 800; text-align: center; }
-  td.num, td.nw { text-align: right; white-space: nowrap; } td.nw { text-align: left; }
   thead { display: table-header-group; }
-  .total { font-weight: 800; background: #f5f7fb; }
-  .small { font-size: {{ fs - 1.4 }}pt; color: #475467; }
-  .cand { border-left: 2.5pt solid #b8650a; padding: 1pt 0 1pt 7pt; margin: 4pt 0 6pt; break-inside: avoid; }
+  .cand { border-left: 2.5pt solid #b8650a; padding: 1pt 0 1pt 7pt; margin: 4pt 0 5pt; break-inside: avoid; }
   .cand h3 { margin-top: 0; }
-  .cand ul { margin: 1pt 0; padding-left: 12pt; } .cand li { margin: 1pt 0; }
+  .cand ul { margin: 1pt 0; padding-left: 12pt; } .cand li { margin: 0.8pt 0; }
+  .box { border: 1pt solid #9aa7bd; border-radius: 4pt; padding: 3pt 8pt; margin: 4pt 0 6pt; background: #fafbfd; break-inside: avoid; }
+  .box .box-title { font-weight: 800; font-size: {{ fs - 0.6 }}pt; color: #12213f; }
+  .box ul { margin: 1pt 0; padding-left: 12pt; font-size: {{ fs - 1.2 }}pt; }
+  .small { font-size: {{ fs - 1.4 }}pt; color: #475467; }
   ol.refs { font-size: {{ fs - 1.8 }}pt; padding-left: 16pt; margin: 1pt 0 3pt; word-break: break-all; }
   ol.refs li { margin: 1pt 0; }
-  ul.lim { margin: 2pt 0; padding-left: 14pt; }
 </style>
 </head>
 <body>
-  <h1>{{ title }}<span class="badge">{{ badge }}</span></h1>
-  {% if hold %}
-  <div class="meta">{{ domain }} · 적격 {{ pool.eligible }}곳 중 {{ pool.evaluated }}곳 심층 평가 · 최고점 {{ profile.official_name }} {{ scorecard.total }}점 (기준 {{ scorecard.threshold }}점) · 작성일 {{ run_date }}</div>
-  {% else %}
-  <div class="meta">{{ domain }} · 중심 검토 대상 {{ profile.official_name }} ({{ profile.stage }}{% if profile.round_date %}, {{ profile.round_date }}{% endif %}) · 작성일 {{ run_date }}</div>
+{% macro block(b) %}
+  {% if b.t == 'p' %}<p>{{ b.text }}</p>
+  {% elif b.t == 'note' %}<p class="note">{{ b.text }}</p>
+  {% elif b.t == 'kv' %}<ul class="kv">{% for k, v in b['items'] %}<li><b>{{ k }}</b> {{ v }}</li>{% endfor %}</ul>
+  {% elif b.t == 'ul' %}{% if b.title %}<div class="ul-title">{{ b.title }}</div>{% endif %}<ul class="plain">{% for x in b['items'] %}<li>{{ x }}</li>{% endfor %}</ul>
+  {% elif b.t == 'h3' %}<h3>{{ b.text }}</h3>
+  {% elif b.t == 'table' %}
+  <table class="{{ 'small' if b.small else '' }}">
+    <thead><tr>{% for h in b.head %}<th{% if b.widths and b.widths[loop.index0] %} style="width:{{ b.widths[loop.index0] }}"{% endif %}>{{ h }}</th>{% endfor %}</tr></thead>
+    {% for r in b.rows %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}
+  </table>
+  {% elif b.t == 'cand' %}
+  <div class="cand">
+    <h3>{{ b.title }} <span class="small">({{ b.sub }})</span></h3>
+    <ul>{% for k, v in b['items'] %}<li><b>{{ k }}</b> {{ v }}</li>{% endfor %}</ul>
+  </div>
+  {% elif b.t == 'box' %}
+  <div class="box"><div class="box-title">{{ b.title }}</div>
+    <ul>{% for k, v in b['items'] %}<li><b>{{ k }}</b> {{ v }}</li>{% endfor %}</ul></div>
   {% endif %}
+{% endmacro %}
+  <h1>{{ title }}<span class="badge">{{ badge }}</span></h1>
+  <div class="meta">{{ meta }}</div>
 
   <section id="summary">
     <h2>SUMMARY</h2>
-    <ul>{% for s in draft.summary %}<li>{{ s }}</li>{% endfor %}</ul>
+    <ul>{% for k, s in summary %}<li{% if k == '결론' %} class="conclusion"{% endif %}><b>{{ k }}</b> {{ s }}</li>{% endfor %}</ul>
   </section>
 
-  {% if hold %}
-  <h2>1. 후보 풀과 선정 과정</h2>
-  <table>
-    <tr><th style="width:22%">단계</th><th style="width:9%">후보 수</th><th style="width:8%">국내</th><th style="width:8%">해외</th><th>비고</th></tr>
-    {% for r in tables.pool %}<tr><td>{{ r.stage }}</td><td class="num">{{ r.total }}</td><td class="num">{{ r.kr }}</td><td class="num">{{ r.gl }}</td><td>{{ r.note }}</td></tr>{% endfor %}
-  </table>
-  {% if tables.unevaluated %}
-  <p class="small"><b>미평가 적격 후보 {{ tables.unevaluated | length }}곳</b> ({{ pool.why }}):
-    {% for u in tables.unevaluated %}{{ u.name }}({{ u.stage }}{% if u.search_failed %}, 검증 검색 실패{% endif %}){% if not loop.last %}, {% endif %}{% endfor %}</p>
-  {% endif %}
-
-  <h2>2. 후보별 보류 사유</h2>
-  {% for b in tables.blocks %}
-  <div class="cand">
-    <h3>2.{{ loop.index }} {{ b.name }} — {{ b.total }}점 {{ b.decision }} <span class="small">({{ b.kind }})</span></h3>
-    <ul>
-      <li><b>사업</b> {{ b.one_line }}</li>
-      <li><b>팀·단계</b> {{ b.facts }}</li>
-      <li><b>보류 사유</b> {{ b.why_not }} <span class="small">({{ b.reasons }})</span></li>
-      <li><b>재검토 조건</b> {{ b.recheck }}</li>
-    </ul>
-  </div>
+  {% for ch in chapters %}
+  <h2>{{ ch.title }}</h2>
+  <p class="lead">{{ ch.lead }}</p>
+  {% for b in ch.blocks %}{{ block(b) }}{% endfor %}
   {% endfor %}
-
-  <h2>3. 최고점 후보 상세 — {{ profile.official_name }}</h2>
-  {% endif %}
-
-  <{{ H }}>{{ N[0] }} 사업 아이디어{% if not hold %} — {{ profile.official_name }}{% endif %}</{{ H }}>
-  <ul class="idea">
-    <li><b>해결하는 문제</b> {{ draft.problem }}</li>
-    <li><b>제품·핵심 컨셉</b> {{ draft.product }}</li>
-    <li><b>수익 방식</b> {{ draft.revenue_model }}</li>
-    <li><b>투자 단계</b> {{ tables.stage }}</li>
-    {% if tables.growth %}<li><b>성장 신호</b> {{ tables.growth | join(' / ') }}</li>{% endif %}
-  </ul>
-
-  <{{ H }}>{{ N[1] }} 시장 규모와 성장성</{{ H }}>
-  <p>{{ draft.market }}</p>
-
-  <{{ H }}>{{ N[2] }} 기술력과 팀</{{ H }}>
-  <ul class="idea">
-    <li><b>팀</b> {{ tables.team }}{% if tables.nps %} · {{ tables.nps }}{% endif %}</li>
-    {% for f in tables.founders %}<li>{{ f }}</li>{% endfor %}
-  </ul>
-  <p>{{ draft.tech_team }}</p>
-  <p><b>업계 기술 수준 대비</b> {{ draft.industry_baseline }}</p>
-
-  <{{ H }}>{{ N[3] }} 경쟁 구도</{{ H }}>
-  <p>{{ draft.competition }}</p>
-  <table>
-    <thead><tr><th style="width:15%">경쟁사</th><th style="width:7%">국가</th><th style="width:25%">제품·접근</th><th style="width:15%">규모</th><th>{{ '대상 대비' if c2_verified else '대상 대비 (회사 측 주장 포함)' }}</th><th style="width:7%">근거</th></tr></thead>
-    {% for c in tables.competitors %}
-    <tr><td>{{ c.name }}</td><td>{{ c.country }}</td><td>{{ c.offering }}</td><td>{{ c.scale }}</td><td>{{ c.vs_target }}</td><td>{{ c.cite }}</td></tr>
-    {% endfor %}
-  </table>
-
-  <{{ H }}>{{ N[4] }} 사업 리스크</{{ H }}>
-  <table>
-    <thead><tr><th style="width:9%">유형</th><th style="width:50%">내용</th><th>실사 항목 · 투자 조건</th></tr></thead>
-    {% for r in tables.risks %}<tr><td>{{ r.type }}</td><td>{{ r.content }}</td><td>{{ r.due_diligence }}</td></tr>{% endfor %}
-  </table>
-
-  {% if hold %}
-  <h2>4. 투자 판단 요약</h2>
-  <table>
-    <thead><tr><th style="width:12%">후보 (가중치)</th>{% for n in dim_names %}<th>{{ n }}</th>{% endfor %}<th>총점</th><th>미확인</th><th>판단</th></tr></thead>
-    {% for s in tables.scores %}
-    <tr><td>{{ s.name }}</td>{% for x in s.dims %}<td class="num">{{ x.score }} <span class="small">({{ x.yes }}/{{ x.n }})</span></td>{% endfor %}
-        <td class="num"><b>{{ s.total }}</b></td><td class="num">{{ s.unknown }}%</td><td class="nw">{{ s.decision }}</td></tr>
-    {% endfor %}
-  </table>
-  <p class="small"><b>판단 규칙</b> 총점 {{ scorecard.threshold }}점 이상, 창업자·시장성 통과율 50% 이상, Deal-killer 없음, 미확인(공개 근거를 찾지 못한 문항, 0점) 40% 이하 → 투자. 칸의 (a/b)는 YES 문항 수/판정 문항 수.</p>
-  <h4>{{ profile.official_name }}의 결정적 미충족 문항 (24문항 중 반대 근거·미확인 핵심 {{ tables.decisive | length }}개)</h4>
-  <table class="small">
-    <tr><th style="width:5%">ID</th><th style="width:34%">질문</th><th style="width:9%">판정</th><th>이유</th></tr>
-    {% for r in tables.decisive %}
-    <tr><td>{{ r.qid }}</td><td>{{ r.question }}</td><td class="no">{{ r.answer }}</td><td>{{ r.rationale }}</td></tr>
-    {% endfor %}
-  </table>
-
-  <h2>5. 한계점</h2>
-  {% else %}
-  <h2>6. 투자 판단 — {{ profile.official_name }} {{ decision }} ({{ scorecard.total }}점 / 기준 {{ scorecard.threshold }}점)</h2>
-  <p>{{ draft.decision_rationale }}</p>
-  <table>
-    <tr><th style="width:27%">평가 항목 (Scorecard)</th><th style="width:9%">가중치</th><th style="width:13%">YES / 판정 문항</th><th style="width:10%">미확인</th><th style="width:9%">점수</th><th>비고</th></tr>
-    {% for x in scorecard.dims %}
-    <tr><td>{{ x.name }}</td><td class="num">{{ x.weight }}</td><td class="num">{{ x.yes }} / {{ x.n }}</td><td class="num">{{ x.unknown }}</td><td class="num">{{ x.score }}</td>
-        <td>{% if loop.first %}미확인 비율 {{ (scorecard.unknown_ratio * 100) | round | int }}%{% endif %}</td></tr>
-    {% endfor %}
-    <tr class="total"><td>합계</td><td class="num">100</td><td></td><td></td><td class="num">{{ scorecard.total }}</td><td>기준점 민감도 60·70·80점: {{ scorecard.sensitivity['60'] }}·{{ scorecard.sensitivity['70'] }}·{{ scorecard.sensitivity['80'] }}</td></tr>
-  </table>
-  <p class="small"><b>판단 규칙</b> 총점 {{ scorecard.threshold }}점 이상, 창업자·시장성 통과율 50% 이상, Deal-killer 없음, 미확인 40% 이하 → 투자.</p>
-  <table class="small">
-    <tr><th style="width:5%">ID</th><th style="width:40%">세부 질문 (YES 는 근거 원문 인용이 확인되어야 인정)</th><th style="width:9%">판정</th><th>근거·이유</th></tr>
-    {% for r in tables.rows %}
-    <tr><td>{{ r.qid }}</td><td>{{ r.question }}</td><td class="{{ 'yes' if r.answer == 'YES' else 'no' }}">{{ r.answer }}</td><td>{{ r.rationale }}</td></tr>
-    {% endfor %}
-  </table>
-  {% if tables.candidates | length > 1 %}
-  <h3>후보별 판단</h3>
-  <table class="small">
-    <tr><th style="width:12%">후보</th><th style="width:16%">분야·단계</th><th style="width:6%">총점</th><th style="width:6%">판단</th><th style="width:28%">사유</th><th>확인되지 않은 근거</th></tr>
-    {% for c in tables.candidates %}<tr><td>{{ c.name }}</td><td>{{ c.kind }}</td><td class="num">{{ c.total }}</td><td>{{ c.decision }}</td><td>{{ c.reasons }}</td><td>{{ c.gaps }}</td></tr>{% endfor %}
-  </table>
-  {% endif %}
-
-  <h2>7. 한계점</h2>
-  {% endif %}
-  <ul class="lim">{% for x in draft.limitations %}<li>{{ x }}</li>{% endfor %}</ul>
 
   <h2>REFERENCE</h2>
   {% for g in ref_groups %}
