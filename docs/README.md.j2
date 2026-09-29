@@ -5,17 +5,18 @@ SKALA {{ cfg.submission.campus }}캠퍼스 {{ cfg.submission['class'] }} {{ cfg.
 
 
 ## Overview
-- Objective : 국내외 AgTech AI 스타트업(비상장·Seed~Series C·Exit 전)의 창업팀, 시장성, 기술력, 경쟁 우위, 실적, 투자조건을 기준으로 투자 적합성 분석
-- Method : LangGraph Multi-Agent(7개), Agentic RAG(질문 분해·검색 경로 선택·관련성 판정·재작성), 근거 인용을 코드로 검증하는 24문항 평가표
+- Objective : 국내외 AgTech AI 스타트업(비상장·Seed~Series C·Exit 전)의 창업자, 시장성, 제품·기술력, 경쟁 우위, 실적, 투자조건을 기준으로 투자 적합성 분석
+- Method : LangGraph Multi-Agent(가이드 Graph(안) 6개 + 창업자 평가), Agentic RAG(도구 선택·관련성 판정·질의 재작성·답변 점검), 동종 기업 대비 Scorecard
 
 
 ## Features
-- 날짜가 찍힌 회사 사건(TIPS 선정, 투자 기사, 공공 선정 등 8개 채널)으로 후보 발굴 — 이번 실행 {{ disc.candidates }}곳
-- 적격성 관문 G1~G6: 상장 목록은 코드로 대조, 확인하지 못한 후보는 통과시키지 않음
-- 창업 시점 고정: TIPS 설립일·국민연금 최초 가입일 기준으로 창업 전 경력과 창업 후 성과를 나눠 평가
-- 시장성 Agentic RAG: 공공·연구 문서 {{ n_docs }}종({{ total_pages }}쪽) + 최신 뉴스
-- 평가표 YES·NO 는 원문 인용이 있어야 인정, 점수와 결론은 코드가 계산
-- 모두 보류면 후보별 불가 사유로 보고서 구성, 5쪽·SUMMARY 반쪽은 렌더링 후 검사
+- 날짜가 찍힌 회사 사건(TIPS 선정·투자 기사 등 8개 채널)으로 후보 발굴 — 이번 실행 {{ disc.candidates }}곳, 적격성 관문 G1~G6 통과 {{ n_eligible }}곳
+- 적격성 관문: 상장 목록은 코드로 대조하고, 확인하지 못한 후보는 통과시키지 않음
+- 창업 시점(t0) 고정: 창업 **전** 경력은 전문성, 창업 **후** 24개월 마일스톤은 실행력으로 나눠 평가
+- Agentic RAG: LLM 이 `search_documents`·`web_search` 도구를 고르고 → 관련성 판정 → 질의 재작성(최대 {{ cfg.rag.max_rewrites }}회) → 웹 보완 → 인용 달린 답변 → 답변 점검
+- 평가표 24문항 YES·NO 는 원문 인용이 있어야 인정. 점수와 결론은 코드가 계산 (동종 기업 평균 = 100, 기준 {{ thr100 }})
+- 보류면 다음 후보로 돌아가고, 보류 후보마다 '무엇이 확인되면 투자로 바뀌는지'(뒤집힘 조건)를 계산
+- 보고서는 결론에 따라 목차가 다름(투자 추천 / 모두 보류 / 후보 없음), SUMMARY 반쪽·REFERENCE 형식은 렌더링 후 코드로 검사
 - 검색 결과·LLM 응답을 `replay/` 에 담아 API 키 없이도 같은 보고서 재현
 
 
@@ -24,40 +25,43 @@ SKALA {{ cfg.submission.campus }}캠퍼스 {{ cfg.submission['class'] }} {{ cfg.
 - LLM/Generator : {{ cfg.models.generator }}
 - LLM/Judge : {{ cfg.models.judge }}
 - Retrieval : FAISS + Kiwi BM25 ({{ retrieval_label }}) - Hit Rate@4 {{ rt_hit4 }}, MRR@4 {{ rt_mrr4 }} (질문 70개, 실제 파이프라인 설정으로 측정)
-- Embedding : {{ cfg.embedding.model }} (오픈소스)
+- Embedding : {{ cfg.embedding.model }} (오픈소스, 한국어 검색 특화 · 후보 6종 비교로 선정)
 - 그 밖 : 웹 검색 {{ search_providers }}, 기사 원문 trafilatura, 국민연금 가입 사업장(공공데이터), 한국거래소 KIND, Playwright(PDF)
 
 
 ## Agents
-- 스타트업 발굴 : 공개 채널에서 후보를 모으고 교차 신호로 우선순위 (RAG: 문서 속 선정 기업)
-- 적격성 검증 : 비상장·Seed~C·Exit 전·AgTech AI·근거량 관문
-- 기술·팀 분석 : 제품·기술·성숙도·특허, 기사 본문에서 대표·기술 책임자 이력 (RAG: 분야 기술 기준선)
-- 시장성 평가 : 하위 질문으로 나눠 문서/웹 검색을 스스로 선택 (Agentic RAG)
-- 경쟁사 비교 : 제품 유형이 같은 국내외 경쟁사와 비교
-- 투자 판단 : 24문항 YES/NO/UNKNOWN, 인용·제3자·최근성 검사 후 점수 계산
-- 보고서 생성 : SUMMARY → 본문 → REFERENCE, 형식·평가표 일치 검사 후 PDF
+- 🔍 스타트업 탐색 : 발굴 → 적격성 관문 G1~G6 → 다음 후보 1곳 선택 (RAG: 문서 속 기관 선정 기업)
+- 👤 창업자 평가 (추가) : 창업 시점을 먼저 고정하고 창업 전 전문성·창업 후 실행력 판정 → 창업자 30%
+- 🗜️ 기술 요약 : 핵심 기술·장단점·차별점 주장 정리 (Agentic RAG: 분야 기술 기준선) → 제품·기술력 15%
+- 📊 시장성 평가 : 하위 질문마다 문서/웹 도구를 스스로 선택 (Agentic RAG) → 시장성 25%
+- 🥊 경쟁사 비교 : 제품 유형이 같은 국내외 경쟁사와 비교, 기술 요약의 차별점 주장 검증 → 경쟁 우위 10%
+- 🧮 투자 판단 : 실적·투자조건 판정, 6개 기준 종합(동종 대비 배수)·Deal-killer·뒤집힘 조건·ROI 참고치 → 투자/보류
+- 📝 보고서 생성 : 단계별 결과를 장마다 연결해 PDF, 형식·평가표 일치 검사
 
 
 ## Architecture
 ![architecture](docs/architecture.png)
 
-보류면 다음 후보 → 대기열이 비면 다시 발굴(최대 {{ cfg.workflow.max_discovery_rounds }}라운드) → 후보 소진 또는 평가 상한({{ cfg.workflow.max_evaluations }}곳, 공용 키 비용 관리) 시 보고서
+- 탐색 → 창업자 → 기술 → 시장성 → 경쟁사 → 투자 판단 → **투자면 보고서**, **보류면 탐색으로 돌아가 다음 후보**
+- 대기열이 비면 다시 발굴(최대 {{ cfg.workflow.max_discovery_rounds }}라운드) → 후보 소진 또는 평가 상한({{ cfg.workflow.max_evaluations }}곳, 공용 키 비용 관리) 시 보고서
+- Agentic RAG 서브그래프·State 표·간선 목록은 [docs/design.md](docs/design.md) D장
 
 
 ## Directory Structure
 ```
-├── data/            # RAG 문서 {{ n_docs }}종(corpus/), 문서 목록(manifest.yaml), 평가 정답(eval/)
-├── agents/          # 에이전트 7개
-├── graph/           # State, 그래프
-├── rag/             # 전처리·임베딩·하이브리드 검색·Agentic RAG
-├── tools/           # 웹 검색, 발굴 채널, 상장 목록, 국민연금, 기사 원문, 근거 저장소
+├── data/            # RAG 문서 {{ n_docs }}종 {{ total_pages }}쪽(corpus/), 문서 목록(manifest.yaml), 동종 기준 집단(reference_class.json), 평가 정답(eval/)
+├── agents/          # 에이전트 7개 (discovery·eligibility 는 탐색 에이전트의 내부 단계)
+├── graph/           # State, 메인 그래프, 탐색 서브그래프, 라우터
+├── rag/             # 전처리·임베딩·하이브리드 검색·Agentic RAG 서브그래프
+├── tools/           # 에이전트 도구(@tool), 웹 검색, 발굴 채널, 상장 목록, 국민연금, 기사 원문, 근거 저장소
+├── core/            # 설정, LLM, 평가표 판정(인용 검증)
 ├── prompts/         # 프롬프트 템플릿
 ├── report/          # 보고서 템플릿·PDF 렌더링
-├── eval/            # 검색·적격성·Judge 평가 스크립트
+├── eval/            # 검색·적격성·Judge 평가, 동종 기준 집단 스크립트
 ├── outputs/         # 투자 보고서 PDF, 실행 로그, 평가 결과
 ├── replay/          # 재현용 캐시
 ├── config.yaml      # 모델명·검색·상한·판단 기준
-├── rubric.yaml      # 평가표 24문항
+├── rubric.yaml      # 평가표 24문항·Deal-killer·결정 규칙
 ├── app.py           # 실행 스크립트
 └── README.md
 ```
@@ -70,39 +74,45 @@ uv run playwright install chromium
 uv run python app.py
 ```
 - pip 사용 시: `pip install -r requirements.txt` → `python -m playwright install chromium` → `python app.py`
-- `python app.py` 는 `replay/` 캐시로 제출본을 다시 만든다(API 키 불필요, 추가 비용 0). `--offline` 은 캐시에 없는 호출이 생기면 바로 실패시키는 재현 테스트다
-- 새로 평가하려면 `.env.example` 을 `.env` 로 복사해 키를 넣고 `python app.py --fresh` (LLM 약 ${{ run_cost }}/회)
-- 평가 재현(키 불필요): `python -m eval.eval_judge --n 20` · `eval.eval_eligibility` (`holdout`) · `eval.eval_positive_control`. 임베딩 6종 비교(`eval.eval_retrieval`)만 모델(수 GB)을 내려받는다
+- `python app.py` 는 `replay/` 캐시로 제출 보고서를 다시 만든다(API 키 불필요, 추가 비용 0). `--offline` 은 캐시에 없는 호출이 생기면 바로 실패시키는 재현 테스트다
+- 새로 평가하려면 `.env.example` 을 `.env` 로 복사해 키를 넣고 `python app.py --calibrate`(동종 기준 집단) → `python app.py --fresh`
+- 기준만 바꿔 보기: `python app.py --threshold 1.30 --out outputs/scenario_hold` (제출 보고서는 덮어쓰지 않음)
+- 평가 재현(키 불필요): `python -m eval.eval_judge` · `python -m eval.eval_eligibility`. 임베딩 6종 비교(`eval.eval_retrieval`)만 모델(수 GB)을 내려받는다
 
 
 ## Evaluation
 | 무엇을 | 결과 |
 |---|---|
 | 검색기 (질문 70개, 실제 설정) | {{ retrieval_label }} Hit@4 {{ rt_hit4 }} · MRR@4 {{ rt_mrr4 }} |
-| Agentic RAG 답변 (LLM Judge, 20문항) | {{ judge_line }} |
-| 적격성 판정 (정답 라벨 30개사, 이진) | 20개사 {{ elig_gold }} · 홀드아웃 10개사 {{ elig_holdout }}{% if elig_stale %} (현재 코드로 재측정 전){% endif %} |
-| 양성 대조 (실제 투자 유치 기업 3곳) | {{ pc_line }} |
-| 보고서 형식 | {{ r.checks.pages }}쪽 · SUMMARY A4의 {{ (r.checks.summary_ratio_of_a4 * 100) | round | int }}% · 평가표 불일치 {{ r.checks.scorecard_consistency_violations | length }}건 |
+| Agentic RAG 답변 (LLM Judge) | {{ judge_line }} |
+| Agentic RAG 실행 기록 (이번 실행) | {{ rag_line }} |
+| 적격성 판정 (정답 라벨 30개사, 이진) | 20개사 {{ elig_gold }} · 홀드아웃 10개사 {{ elig_holdout }} |
+| 양성 대조 (실제 투자 유치 기업 3곳, 동종 평균 대비) | {{ pc_line }} |
+| 보고서 형식 | {{ r.checks.pages }}쪽 · SUMMARY A4의 {{ (r.checks.summary_ratio_of_a4 * 100) | round | int }}% · 평가표 불일치 {{ r.checks.consistency_violations | length }}건 |
 
 
 ## 차별점
-1. 스타트업 조건(비상장·단계·Exit)을 LLM 추측이 아니라 코드로 확인할 수 있는 공개 사건으로 거른다
-2. LLM 판정은 원문 인용이 확인될 때만 인정한다 — 다른 회사 이야기, 대표 발언, 지난 전망은 자동 강등
-3. 창업자 평가를 창업 시점 기준으로 나눈다 (교수님 지적: 링크드인 팔로워는 창업 시점과 무관)
+1. **평가 기준을 임의로 정하지 않았다** — Scorecard 원 방법대로 '투자를 받은 동종 기업 평균 = 100'과 비교한다. 기준 {{ thr100 }}은 참고자료 예시 배수(112·116)보다 낮게 둔 가정이고, 기준을 바꿨을 때 결론이 어떻게 바뀌는지(민감도)를 함께 싣는다
+2. **'모르는 회사'와 '나쁜 회사'를 구분한다** — 미확인 문항은 감점하지 않고 동종 평균과 비교한다. 보류에는 유형(정보 부족·창업자 근거 없음·동종 대비 열위·Deal-killer)과 뒤집힘 조건을 붙인다
+3. **LLM 판정은 원문 인용이 확인될 때만 인정한다** — 다른 회사 이야기, 대표 발언, 지난 전망은 코드가 미확인으로 내린다. 확인 못 한 관문은 통과시키지 않는다
+4. **창업자 평가를 창업 시점 기준으로 나눈다** — 교수님 지적대로 링크드인 팔로워 같은 지표는 창업 시점과 무관하다
+5. **측정해서 고르고, 누구나 다시 돌려 볼 수 있다** — 임베딩 6종·검색 가중치를 실제 설정으로 측정해 골랐고, 키 없이 같은 보고서가 나온다
 
 
 ## 투자 보고서 핵심
-- 결론: **{{ r.decision }}** — 발굴 {{ disc.candidates }}곳 → 적격 {{ n_eligible }}곳 → 심층 평가 {{ evals | length }}곳{% if n_unevaluated %} (적격 {{ n_unevaluated }}곳 미평가){% endif %}
-{% for e in evals[:3] %}- {{ e.name }} {{ e.total }}점 — {{ e.knockouts | join(', ') }}
-{% endfor %}- 공통 원인: {{ common_cause }}
+- 결론: **{{ conclusion }}** — 발굴 {{ disc.candidates }}곳 → 적격 {{ n_eligible }}곳 → 심층 평가 {{ evals | length }}곳{% if n_unevaluated %} (적격 {{ n_unevaluated }}곳 미평가){% endif %}
+{% for e in evals[:3] %}- {{ e.name }} 동종 평균 대비 {{ e.s100 }} — {{ e.label }}
+{% endfor %}{% if flip_line %}- {{ flip_line }}
+{% endif %}{% if hold_mix %}- 보류 유형: {{ hold_mix }}
+{% endif %}
 
 
 ## Lessons Learned
-1. **형식 검사는 내용 오류를 못 잡는다** — 5쪽·반쪽 검사는 통과했지만, 과제 원문과 한 줄씩 대조하자 지난 전망·대표 발언을 근거로 쓴 판정이 나왔다
+1. **임의 기준은 설명할 수 없다** — v1 의 '100점 만점 70점' 기준은 실제 투자를 받은 기업 3곳도 모두 보류시켰다. 원 방법(동종 기업 비교)으로 돌아가 기준마다 근거를 붙였다
 2. **"근거 없음"과 "반대 근거"는 다르다** — LLM 은 근거가 없을 때 NO 를 썼다. NO 에도 반대 사실의 원문 인용을 요구했다
-3. **확인 못 한 것은 통과시키지 않는다** — 검색 한도 초과로 검증 검색이 비었던 후보가 통과된 적이 있어 탈락 처리로 바꿨다
-4. **지표는 실제 설정으로 재야 한다** — 후보 8개 기준으로 고른 검색기가, 앞 4개만 쓰는 실제 설정에서는 1위가 아니었다
-5. **투자 받은 기업도 '투자'가 안 나왔다** — 양성 대조 3곳이 모두 보류. 기준을 낮추지 않고 "실사 대상을 고르는 1차 도구"로 규정했다
+3. **형식 검사는 내용 오류를 못 잡는다** — 5쪽·반쪽 검사는 통과했지만, 과제 원문과 한 줄씩 대조하자 지난 전망·대표 발언을 근거로 쓴 판정이 나왔다
+4. **확인 못 한 것은 통과시키지 않는다** — 검색 한도 초과로 검증 검색이 비었던 후보가 통과된 적이 있어 탈락 처리로 바꿨다
+5. **지표는 실제 설정으로 재야 한다** — 후보 8개 기준으로 고른 검색기가, 앞 4개만 쓰는 실제 설정에서는 1위가 아니었다
 6. **날짜 함정** — 조회일·설립일을 게시일로 읽어 오래된 투자를 최근 투자로 판정했다. 날짜 출처를 코드로 가린다
 7. **AI 코딩 도구는 빨랐지만 검증은 사람 몫** — 코드 대부분을 AI 도구로 작성했고, 과제와 맞춰 보는 검증에 가장 오래 걸렸다
 

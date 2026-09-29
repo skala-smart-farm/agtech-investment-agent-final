@@ -56,7 +56,7 @@ class FakeLLM:
         self.answers = {k: list(v) for k, v in answers.items()}
         self.prompts: list[tuple[str, str]] = []
 
-    def __call__(self, schema, role: str = "generator"):
+    def __call__(self, schema, role: str = "generator", kind: str = "default"):
         llm = self
 
         class _Bound:
@@ -145,7 +145,7 @@ def test_nodes_call_web_search_with_v1_arguments(monkeypatch, judge_calls, no_en
     web = FakeWeb()
     for m in (fd, tc):
         monkeypatch.setattr(m, "web_search", web)
-    monkeypatch.setattr(fd, "structured", FakeLLM({"FounderAnalysis": [fd.FounderAnalysis(
+    monkeypatch.setattr(fd, "bounded", FakeLLM({"FounderAnalysis": [fd.FounderAnalysis(
         people=[], milestones=[], team_assessment="확인 불가", evidence_ids=[])]}))
     _patch_tech(monkeypatch, _tech_answer())
     c = kr_company(name="에이", official_name="에이")
@@ -191,7 +191,7 @@ def test_founder_node_contract_and_grounding(monkeypatch, judge_calls, no_enrich
     i_id, a_id = wid(i_url), wid(a_url)
     llm = FakeLLM({"FounderAnalysis": [_founder_answer(i_id, a_id)]})
     monkeypatch.setattr(fd, "web_search", web)
-    monkeypatch.setattr(fd, "structured", llm)
+    monkeypatch.setattr(fd, "bounded", llm)
     out = fd.founder_node(state_for(kr_company()))
 
     assert set(out) == {"founder", "registry", "log"}
@@ -226,7 +226,7 @@ def test_founder_retry_and_tips_ceo_fallback(monkeypatch, judge_calls, no_enrich
     empty = fd.FounderAnalysis(people=[], milestones=[], team_assessment="확인 불가", evidence_ids=[])
     llm = FakeLLM({"FounderAnalysis": [empty, empty]})
     monkeypatch.setattr(fd, "web_search", web)
-    monkeypatch.setattr(fd, "structured", llm)
+    monkeypatch.setattr(fd, "bounded", llm)
     f = fd.founder_node(state_for(kr_company()))["founder"]
     assert len(llm.prompts) == 2 and "people 이 비어 있다" in llm.prompts[1][1]
     assert f["people"] == [{"name": "김대표", "role": "대표", "background": "확인 불가 (TIPS 공개 목록의 대표자)",
@@ -287,7 +287,7 @@ class FakeTool:
 
 def _patch_tech(monkeypatch, answer, rag_calls: list | None = None, tool: FakeTool | None = None):
     llm = FakeLLM({"TechAnalysis": [answer]})
-    monkeypatch.setattr(tc, "structured", llm)
+    monkeypatch.setattr(tc, "bounded", llm)
     monkeypatch.setattr(tc, "get_chunks", lambda: [])
 
     def fake_answer(question, purpose, registry, agent, **kw):
@@ -387,6 +387,7 @@ def _market_patch(monkeypatch, subs: list[tuple[str, str]], size_source: str | N
     dec = mk.Decomposition(sub_questions=[mk.SubQuestion(question=q, purpose=p) for q, p in subs])
     llm = FakeLLM({"Decomposition": [dec], "MarketAnalysis": [ans]})
     monkeypatch.setattr(mk, "structured", llm)
+    monkeypatch.setattr(mk, "bounded", llm)
     templates: list[str] = []
 
     def spy_render(name, **kw):
@@ -477,6 +478,7 @@ def test_competition_node_claims_and_downgrade(monkeypatch, judge_calls):
     plan = comp.SearchPlan(product_type_ko="온실 AI 제어기", product_type_en="greenhouse AI controller", queries=[])
     llm = FakeLLM({"SearchPlan": [plan], "CompetitionAnalysis": [ans]})
     monkeypatch.setattr(comp, "structured", llm)
+    monkeypatch.setattr(comp, "bounded", llm)
     tech = {"product": "온실 AI 제어기", "core_technology": "생육 예측", "claims": ["난방비 30% 절감 [Wabc12]"],
             "pool_ids": [], "evidence_ids": []}
     out = comp.competition_node(state_for(kr_company(), tech=tech))
@@ -498,7 +500,7 @@ def test_competition_node_claims_and_downgrade(monkeypatch, judge_calls):
 def test_pool_accumulates_founder_to_tech(monkeypatch, judge_calls, no_enrich):
     i_url, a_url, web = _founder_web()
     monkeypatch.setattr(fd, "web_search", web)
-    monkeypatch.setattr(fd, "structured", FakeLLM({"FounderAnalysis": [_founder_answer(wid(i_url), wid(a_url))]}))
+    monkeypatch.setattr(fd, "bounded", FakeLLM({"FounderAnalysis": [_founder_answer(wid(i_url), wid(a_url))]}))
     monkeypatch.setattr(tc, "web_search", FakeWeb())
     _patch_tech(monkeypatch, _tech_answer())
     state = state_for(kr_company())

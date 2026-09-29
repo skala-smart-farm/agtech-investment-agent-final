@@ -39,34 +39,72 @@ def _runtime(cfg) -> tuple[str, str, str]:
     return label, f"{row['all']['Hit@4']:.3f}", f"{row['all']['MRR@4']:.3f}"
 
 
-def _elig_stale() -> bool:
-    res = path("outputs/eval/eligibility_eval_gold.json")
-    code = [path(p) for p in ("agents/eligibility.py", "prompts/eligibility.md", "tools/web_search.py")]
-    return not res.exists() or any(c.stat().st_mtime > res.stat().st_mtime for c in code)
+def _rag_line(traces: list[dict]) -> str:
+    """이번 실행의 Agentic RAG 기록(run_log.rag_traces) 요약: 도구 선택·재작성·재생성·점검 결과."""
+    answers = [t for t in traces if t.get("route")]
+    if not answers:
+        return "-"
+    steps = [s for t in answers for s in t.get("trace") or []]
+    routes = {k: sum(t["route"] == k for t in answers) for k in ("docs", "web", "both", "direct")}
+    route_ko = {"docs": "문서", "web": "웹", "both": "문서+웹", "direct": "바로 답"}
+    grounded = sum(t.get("status") == "grounded" for t in answers)
+    return (f"질문 {len(answers)}개 · 도구 선택 " + " / ".join(f"{route_ko[k]} {v}" for k, v in routes.items() if v)
+            + f" · 질의 재작성 {sum(s.get('step') == 'rewrite' for s in steps)}회"
+            + f" · 답변 재생성 {sum(bool(s.get('regeneration')) for s in steps)}회"
+            + f" · 점검 통과(grounded) {grounded}/{len(answers)}")
 
 
 def _pc_line() -> str:
+    """양성 대조(실제 투자를 받은 후기 기업 3곳) 결과: v2 판단으로 몇 곳이 투자 추천인지."""
     d = _j("outputs/eval/positive_control.json")
-    rows = d if isinstance(d, list) else (d.get("rows") or d.get("results") or [])
-    if not rows:
-        return "(미실행)"
-    inv = [r for r in rows if r.get("decision") == "투자"]
-    scored = [r for r in rows if r.get("total") is not None]
-    other = [f"{r['name']} {r['decision']}" for r in rows if r.get("total") is None]
-    best = max(scored, key=lambda r: r["total"]) if scored else None
-    return (f"{len(rows)}곳 중 투자 {len(inv)}곳"
-            + (f" · 최고 {best['name']} {best['total']}점" if best else "")
-            + (f" · {', '.join(other)}" if other else "")
-            + ("" if inv else " — 공개 정보만으로는 기준(70점)을 넘지 못함"))
+    rows = d if isinstance(d, list) else []
+    if not rows or not all("multiplier" in r for r in rows):
+        return "(v2 로 재측정 전 · v1 은 0/3)"
+    inv = [r["name"] for r in rows if r.get("decision") == "투자"]
+    parts = [f"{r['name']} {r['multiplier'] * 100:.0f}" + ("" if r.get("decision") == "투자" else f"({r.get('hold_type') or r['decision']})")
+             if r.get("multiplier") is not None else f"{r['name']} {r['decision']}" for r in rows]
+    return f"{len(rows)}곳 중 투자 추천 {len(inv)}곳 — " + " · ".join(parts) + " (v1 은 0/3)"
 
 
-def _common_cause(evals: list[dict]) -> str:
-    """보류 사유 중 가장 많이 겹친 것 (코드가 run_log 에서 센다)."""
+def _evals(run: dict) -> list[dict]:
+    """평가 결과를 동종 대비 배수 순으로 (보고서 표기: 동종 평균 = 100)."""
+    out = []
+    for e in run.get("evaluations", []):
+        m = e.get("multiplier")
+        label = "투자 추천" if e.get("decision") == "투자" else f"보류({e.get('hold_type') or '-'})"
+        out.append({"name": e["name"], "m": m if m is not None else -1, "s100": "-" if m is None else f"{m * 100:.0f}",
+                    "label": label, "flip": (e.get("flip") or {}), "decision": e.get("decision"),
+                    "hold_type": e.get("hold_type")})
+    return sorted(out, key=lambda e: -e["m"])
+
+
+def _conclusion(r: dict, evals: list[dict]) -> str:
+    mode = r.get("mode")
+    if mode == "invest":
+        return f"{r.get('target') or next((e['name'] for e in evals if e['decision'] == '투자'), '')} 투자 추천(실사 조건부)"
+    if mode == "hold":
+        return "투자 추천 없음 (평가한 후보 모두 보류)"
+    return "적격 후보 없음" if mode == "none" else "-"
+
+
+def _flip_line(evals: list[dict]) -> str:
+    """보류 결론이면 1위 후보의 뒤집힘 조건 한 줄."""
+    top = next((e for e in evals if e["decision"] == "보류"), None)
+    if not top or any(e["decision"] == "투자" for e in evals):
+        return ""
+    f = top["flip"]
+    if f.get("items") and f.get("new_multiplier") is not None:
+        tail = "투자 조건 충족" if f.get("reached") else "기준 미달"
+        return (f"뒤집힘 조건({top['name']}): {'·'.join(f['items'])} 이(가) 확인되면 동종 평균 대비 "
+                f"{f['new_multiplier'] * 100:.0f} → {tail}")
+    return f"뒤집힘 조건({top['name']}): {f.get('note') or '-'}"
+
+
+def _hold_mix(evals: list[dict]) -> str:
     from collections import Counter
 
-    c = Counter(re.sub(r"\(.*?\)", "", k).strip() for e in evals for k in e.get("knockouts", []))
-    c.pop("점수 미달", None)
-    return ", ".join(f"{k} {v}곳" for k, v in c.most_common(2)) or "점수 미달"
+    c = Counter(e["hold_type"] for e in evals if e["decision"] == "보류" and e["hold_type"])
+    return ", ".join(f"{k} {v}곳" for k, v in c.most_common())
 
 
 def _contributors() -> str:
@@ -83,20 +121,20 @@ def build() -> str:
     m = re.search(r"후보 (\d+)곳", " ".join(run.get("log", [])))
     team = cfg.submission
     members = "+".join(sorted(team.members))
-    evals = sorted(run.get("evaluations", []), key=lambda e: -e["total"])
-    screened = run.get("screened", [])
-    n_eligible = sum(1 for s in screened if s["eligible"])
+    evals = _evals(run)
+    n_eligible = sum(1 for s in run.get("screened", []) if s["eligible"])
     label, hit4, mrr4 = _runtime(cfg)
+    r = run.get("report", {})
     md = Environment(loader=FileSystemLoader(ROOT / "docs")).get_template("README.md.j2").render(
-        cfg=cfg, run=run, r=run.get("report", {}), evals=evals, search_providers=_search_providers(),
+        cfg=cfg, run=run, r=r, evals=evals, search_providers=_search_providers(),
         disc={"candidates": m.group(1) if m else "-"}, n_eligible=n_eligible,
-        n_unevaluated=max(0, n_eligible - len(evals)), common_cause=_common_cause(evals),
-        retrieval_label=label, rt_hit4=hit4, rt_mrr4=mrr4, pc_line=_pc_line(), elig_stale=_elig_stale(),
+        n_unevaluated=max(0, n_eligible - len(evals)), thr100=f"{cfg.decision.threshold * 100:.0f}",
+        conclusion=_conclusion(r, evals), flip_line=_flip_line(evals), hold_mix=_hold_mix(evals),
+        pc_line=_pc_line(), retrieval_label=label, rt_hit4=hit4, rt_mrr4=mrr4, rag_line=_rag_line(run.get("rag_traces", [])),
         judge_line=(f"Relevance {judge['relevance']:.2f} · Faithfulness {judge['faithfulness']:.2f} · "
-                    f"Correctness {judge['correctness']:.2f}") if judge else "-",
+                    f"Correctness {judge['correctness']:.2f} ({judge.get('n', '-')}문항)") if judge else "-",
         elig_gold=f"{gold.get('accuracy', 0):.2f}", elig_holdout=f"{hold.get('accuracy', 0):.2f}",
-        n_docs=len(load_manifest()), total_pages=total_pages(), run_cost=cfg.report.get("run_cost_usd", "0.4"),
-        contributors=_contributors(),
+        n_docs=len(load_manifest()), total_pages=total_pages(), contributors=_contributors(),
         report_pdf=f"RAG-Output_{team.campus}-{team['class']}_{members}.pdf")
     out = ROOT / "README.md"
     out.write_text(md, encoding="utf-8")

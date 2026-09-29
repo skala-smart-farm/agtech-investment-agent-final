@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from core import judge
 from core.config import get_segment, run_date
-from core.llm import structured
+from core.llm_bounded import bounded
 from core.prompts import render
 from rag import agentic_rag as rag  # 함수는 호출 시점에 찾는다(병합 순서와 무관하게 import 되고, 테스트에서 바꿔 끼우기 쉽게)
 from rag.index import get_chunks
@@ -239,7 +239,7 @@ def tech_node(state: dict) -> dict:
     ctx = dict(name=name, one_line=c.get("one_line", ""), segment=seg["name"],
                baseline=base.get("answer") or "(생성 답변 없음 — 아래 문서 근거 [D...] 를 직접 읽을 것)",
                homepage=summary or "(요약 없음)", evidence="\n\n".join(blocks.values()))
-    res: TechAnalysis = structured(TechAnalysis).invoke(render("tech", **ctx))
+    res: TechAnalysis = bounded(TechAnalysis).invoke(render("tech", **ctx))
 
     valid = set(ids)
     out = res.model_dump()

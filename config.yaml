@@ -16,6 +16,10 @@ models:
   generator: gpt-4.1-mini              # 분석·보고서 작성
   judge: gpt-4.1-mini                  # 문서 관련성 판정, 평가 기준 O/X 판정, RAG 답변 평가
   temperature: 0
+  max_output_tokens:                   # v2 에서 새로 부르는 구조화 출력의 출력 상한 (core/llm_bounded.py). 반복 퇴행 방지용
+    default: 2500                      # v1 실측 최대: 분석 944·판정 668 토큰
+    report: 4000                       # v1 실측 최대: 보고서 초안 1,947 토큰
+    summarize: 1500                    # 문서 요약 도구 한 조각
   price_per_mtok:                      # 비용 집계용 공개 가격 USD / 100만 토큰 [입력, 출력] (core/cost.py·eval/api_usage.py 가 읽음)
     gpt-4.1-mini: [0.40, 1.60]         # 프롬프트 캐시로 처리된 입력은 입력 가격의 1/4 로 계산
     gpt-4.1-nano: [0.10, 0.40]

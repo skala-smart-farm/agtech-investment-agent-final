@@ -28,6 +28,7 @@ from pydantic import BaseModel, Field
 
 from core.config import get_config, run_date
 from core.llm import get_llm, structured
+from core.llm_bounded import bounded
 from core.prompts import render
 from rag.index import get_chunks, get_hybrid_retriever
 from tools.agent_tools import make_tools
@@ -261,14 +262,14 @@ def parse_tool_calls(calls: list[dict], content: str, question: str, allow_web: 
 
 
 def _generate_llm(question: str, purpose: str, run_date: str, context: str, feedback: str) -> tuple[str, list[str]]:
-    res: Generated = structured(Generated).invoke(
+    res: Generated = bounded(Generated).invoke(
         render("rag_generate", question=question, purpose=purpose, run_date=run_date, context=context,
                feedback=feedback))
     return res.answer, res.cited_ids
 
 
 def _check_llm(question: str, purpose: str, answer: str, context: str) -> tuple[bool, bool, str]:
-    res: Check = structured(Check, "judge").invoke(
+    res: Check = bounded(Check, "judge").invoke(
         render("rag_check", question=question, purpose=purpose, answer=answer, context=context))
     return res.grounded, res.answers_question, res.reason
 

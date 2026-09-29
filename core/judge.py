@@ -31,7 +31,7 @@ from pydantic import BaseModel, Field
 from rank_bm25 import BM25Okapi
 
 from core.config import ROOT
-from core.llm import structured
+from core.llm_bounded import bounded
 from core.prompts import render
 from rag.index import kiwi_tokenize
 from rag.loader import load_manifest
@@ -305,7 +305,7 @@ def judge_dimension(dim_id: str, company: dict, pool_ids: list[str], reg: Source
     if passages:
         bm25 = BM25Okapi([kiwi_tokenize(p[1]) for p in passages])
         evidence = _evidence_for(d, c["official_name"], passages, bm25, reg)
-        judge = structured(Answers, "judge")
+        judge = bounded(Answers, "judge")
 
         def ask(questions: str) -> Answers:
             return judge.invoke(render("decision", dimension=d["name"], questions=questions, run_date=run_date,

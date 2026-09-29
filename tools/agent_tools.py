@@ -101,7 +101,7 @@ def summarize(reg: SourceRegistry, agent: str, source: str, focus: str) -> str:
     text = text[: cfg.summarize_max_chars]
     step = cfg.summarize_chunk_chars
     parts = [p for p in (text[i: i + step] for i in range(0, len(text), step)) if p.strip()][:2]
-    llm = get_llm("generator")
+    llm = get_llm("generator").bind(max_tokens=get_config().models.max_output_tokens["summarize"])  # 반복 퇴행 방지
     outs = [llm.invoke(render("summarize", focus=focus, text=p)).content.strip() for p in parts]
     summary = " ".join(o for o in outs if o)
     return f"{summary} [{sid}]" if summary else ""

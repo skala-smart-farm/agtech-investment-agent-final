@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 from agents.tech import CITE_ID, candidate_line, evidence_blocks, judge_own
 from core.config import get_config, get_segment, run_date
 from core.llm import structured
+from core.llm_bounded import bounded
 from core.prompts import render
 from rag import agentic_rag as rag  # answer_question·corpus_catalog 는 호출 시점에 찾는다
 from tools.sources import SourceRegistry
@@ -150,7 +151,7 @@ def market_node(state: dict) -> dict:
                           f"{a['answer'] or '(생성 답변 없음 — 아래 근거를 직접 읽을 것)'}"
                           for n, a in enumerate(answers, 1))
     evidence = "\n\n".join(evidence_blocks(reg, ids, keys=[], max_chars=700).values())
-    res: MarketAnalysis = structured(MarketAnalysis).invoke(
+    res: MarketAnalysis = bounded(MarketAnalysis).invoke(
         render("market", segment=seg["name"], run_date=date, answers=listing, evidence=evidence))
     valid = set(ids)
     out = res.model_dump()

@@ -83,6 +83,10 @@ class FakeLLM:
     def __init__(self, fail: bool = False):
         self.prompts, self.fail = [], fail
 
+    def bind(self, **kw):  # 출력 상한(max_tokens) 바인딩은 그대로 자기 자신
+        self.bound = kw
+        return self
+
     def invoke(self, prompt):
         if self.fail:
             raise RuntimeError("--offline: 재현용 캐시에 없는 LLM 호출입니다")

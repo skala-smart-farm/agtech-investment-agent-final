@@ -79,7 +79,7 @@ class _FakeLLM:
     def __init__(self, drafts: list[dict]):
         self.drafts, self.prompts = list(drafts), []
 
-    def __call__(self, schema, role: str = "generator"):
+    def __call__(self, schema, role: str = "generator", kind: str = "default"):
         fake = self
 
         class _Runner:
@@ -129,7 +129,7 @@ def run(monkeypatch, tmp_path, set_cfg, can_render):
 
     def _run(state: dict, drafts: list[dict]):
         llm = _FakeLLM(drafts)
-        monkeypatch.setattr(R, "structured", llm)
+        monkeypatch.setattr(R, "bounded", llm)
         rep = R.report_node(copy.deepcopy(state))["report"]
         md = Path(rep["md"]).read_text(encoding="utf-8") if rep.get("md") else ""
         return rep, md, llm

@@ -26,7 +26,7 @@ from pydantic import BaseModel, Field
 
 from core.config import ROOT, get_config, get_segment, path
 from core.judge import company_keys
-from core.llm import structured
+from core.llm_bounded import bounded
 from core.prompts import render
 from report.render import html_to_pdf, render_html
 from tools import web_search as search_tool
@@ -1189,7 +1189,7 @@ def report_node(state: dict) -> dict:
     max_rw = int(cfg.report.get("max_rewrites", 2))
     draft, feedback, probs, rewrites = None, "", [], 0
     for attempt in range(max_rw + 1):
-        draft = structured(schema).invoke(render("report", **ctx, feedback=feedback, shorten=False))
+        draft = bounded(schema, kind="report").invoke(render("report", **ctx, feedback=feedback, shorten=False))
         draft = schema.model_validate(_fix_cites(draft.model_dump()))
         probs = (_summary_problems([x for _, x in summary(draft)], cfg.report.summary_max_chars)
                  + _consistency_problems(draft, target, ranked, run_date))
@@ -1235,7 +1235,7 @@ def report_node(state: dict) -> dict:
         shorten_round += 1
         rewrites += 1
         density = 1
-        draft = structured(schema).invoke(render("report", **ctx, feedback="분량 초과", shorten=True))
+        draft = bounded(schema, kind="report").invoke(render("report", **ctx, feedback="분량 초과", shorten=True))
         draft = schema.model_validate(_fix_cites(draft.model_dump()))
         probs = (_summary_problems([x for _, x in summary(draft)], cfg.report.summary_max_chars)
                  + _consistency_problems(draft, target, ranked, run_date))

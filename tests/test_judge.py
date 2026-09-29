@@ -65,7 +65,7 @@ def _a(qid: str, verdict: str, quote: str = "", ids: tuple = ("W1",), why: str =
 def fake(monkeypatch):
     def install(replies):
         f = FakeJudge(replies)
-        monkeypatch.setattr(judge, "structured", lambda schema, role="generator": f)
+        monkeypatch.setattr(judge, "bounded", lambda schema, role="generator", kind="default": f)
         return f
     return install
 

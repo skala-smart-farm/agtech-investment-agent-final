@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 
 from agents.tech import CITE_ID, candidate_line, evidence_blocks, judge_own
 from core.config import get_segment, run_date
-from core.llm import structured
+from core.llm_bounded import bounded
 from core.prompts import render
 from tools.fetch import enrich
 from tools.grounding import norm
@@ -309,7 +309,7 @@ def founder_node(state: dict) -> dict:
     ctx = dict(name=name, one_line=c.get("one_line", ""), segment=get_segment(c["segment_id"])["name"],
                ceo=ceo or "미확인", t0=t0["t0"] or "확인 불가", t0_source=t0["t0_source"], run_date=until,
                nps=_nps_line(nps), evidence="\n\n".join(blocks.values()))
-    llm = structured(FounderAnalysis)
+    llm = bounded(FounderAnalysis)
     res: FounderAnalysis = llm.invoke(render("founder", **ctx, feedback=""))
     hints = _leader_hints(blocks, names, ceo)
     retried = False

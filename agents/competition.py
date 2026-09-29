@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 from agents.tech import candidate_line, evidence_blocks, judge_own
 from core.config import get_segment
 from core.llm import structured
+from core.llm_bounded import bounded
 from core.prompts import render
 from tools.grounding import norm
 from tools.sources import SourceRegistry
@@ -201,7 +202,7 @@ def competition_node(state: dict) -> dict:
                claims="\n".join(f"- {x}" for x in tech.get("claims", [])) or "(없음)",
                named="\n".join(f"- {m['name']} [{', '.join(m['evidence_ids'])}]: \"{m['quote']}\"" for m in named)
                or "(없음)", evidence=evidence)
-    llm = structured(CompetitionAnalysis)
+    llm = bounded(CompetitionAnalysis)
     res: CompetitionAnalysis = llm.invoke(render("competition", **ctx, feedback=""))
     bad = [x.name for x in res.competitors if _asserts(x.vs_target)] + (
         ["differentiation"] if _asserts(res.differentiation) else [])
