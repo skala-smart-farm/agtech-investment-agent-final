@@ -1,211 +1,415 @@
-"""🧮 투자 판단 에이전트.
+"""🧮 투자 판단 에이전트 (노드 decide).
 
-LLM 은 평가표 질문에 판정(YES/NO/UNKNOWN/N/A)·근거 id·근거 원문 인용만 답한다. 점수와 결론은 코드가 정한다.
-낙관 편향을 막는 장치
-- 항목(차원)별로 따로 호출한다 (한 항목의 인상이 다른 항목으로 번지는 후광 효과 방지)
-- 점수·기준점·"유망" 같은 표현을 LLM 에 보여 주지 않는다
-- YES 는 인용문이 실제 근거 본문에 있어야 인정한다 (코드가 문자열로 검사). 실패하면 UNKNOWN 으로 강등
-- NO 도 반대 사실을 적은 문장의 인용이 본문에 있어야 인정한다. "근거가 없다"는 NO 가 아니라 UNKNOWN
-  (판정 이유가 "추정·확인되지 않음·근거가 없음" 같은 근거 부족이면 코드가 UNKNOWN 으로 바꾼다)
-- 제3자 근거·최근 24개월·문서 근거 요구 조건을 코드가 검사한다
-  (제3자 문항은 기사에 실렸어도 인용 주변에 대표·회사 측 발언이나 목표·계획·예정 표현이 있으면 인정하지 않는다)
-- 상용 운영 문항은 인용 주변에 예정·목표·실증·PoC·시범 표현이 있거나 인용에 수량·고객이 없으면 인정하지 않는다
-- UNKNOWN 은 0점이고 분모를 줄이지 않는다 (정보를 감춘 회사가 유리해지지 않게)
+1) 판정: 실적(R1~R4)·투자조건(D1~D4)은 여기서 core.judge.judge_dimension 으로 판정한다. 창업자·시장성·제품/기술력·경쟁 우위는
+   각 분석 에이전트가 state[키]['criterion'] 에 둔 판정을 쓰고, 없거나 문항이 모자라면 여기서 최종 근거 풀로 보완 판정한다.
+2) 점수(코드): Payne Scorecard 의 비교 원리(동종 투자 유치 기업 평균 = 1.00)로 배수 M 을 구한다.
+   - 문항 신호 x: YES +1, NO −1, 미확인 0 (N/A 제외)
+   - 동종 평균 x̄: 보정 실행(app.py --calibrate)이 만든 data/reference_class.json 의 문항별 평균.
+     대상이 기준 집단에 있으면 자기 자신을 뺀 평균(LOO). 파일이 없거나 문항 목록이 옛것이거나 decision.reference_min_n 곳보다
+     적으면 x̄ = 0(fallback, 설계 가정)
+   - 기준 d 마다 c_d = clip(1 + step × 평균_q(x_q − x̄_q)), M = Σ (가중치/100) × c_d
+3) 결정(코드): 투자 ⇔ M ≥ decision.threshold ∧ 창업자 YES ≥ decision.min_founder_yes ∧ Deal-killer 없음.
+   보류 유형(보고서의 '왜 안 되는가' 이름표, 앞선 것 우선): Deal-killer > 창업자 근거 없음 > 정보 부족 > 동종 대비 열위.
+4) 보고서 재료(코드): 뒤집힘 조건, 실사 항목, Bessemer 10문, ROI 참고치, 기준 배수 민감도, 동종 순위.
+보정 실행(workflow.calibrate)에서는 기준 집단을 만드는 중이라 결정하지 않는다(decision None, 판정·신호만 기록).
 """
 from __future__ import annotations
 
+import json
 import re
-from datetime import date, datetime
-from functools import lru_cache
-from typing import Literal
+from datetime import datetime
+from pathlib import Path
 
-from pydantic import BaseModel, Field
-
-from core.config import get_config
+from core.config import ROOT, get_config
+from core.judge import SIGNAL, evidence_pool, judge_dimension
 from core.judge import load_rubric  # 판정 공용 모듈로 옮김. agents.report 가 이 이름으로 import 하므로 재수출
-from core.llm import structured
-from core.prompts import render
-from rank_bm25 import BM25Okapi
-
-from rag.index import kiwi_tokenize
-from rag.loader import load_manifest
-from tools.grounding import fuzzy_in, norm
+from tools.grounding import norm
 from tools.sources import SourceRegistry
 
 AGENT = "decision"
-DB_SITES = {"THE VC", "혁신의숲"}
-# 아래 표지들은 공백·기호를 뺀 소문자 글자(norm)에서 찾는다
-# 제3자 근거 문항: 기사에 실렸어도 대표·회사 측 발언이나 목표·계획이면 제3자가 확인한 사실이 아니다
-COMPANY_VOICE = ("대표는", "대표가", "대표이사는", "대표의설명", "라고말했다", "라고밝혔다", "설명했다", "설명이다",
-                 "회사측", "회사는", "목표", "계획", "예정")
-# 영어 발화 표지는 공백을 지우면 'has aided' 같은 오탐이 생겨 원문에서 단어 경계로 찾는다
-COMPANY_VOICE_EN = re.compile(r"\b(said|says|plans to|aims to|according to the company)\b", re.I)
-# 상용 운영 문항: 예정·실증 단계를 뜻하는 표현
-PLANNED = re.compile(r"상용화를기점|상용화예정|출시예정|목표|실증|poc|proofofconcept|시범|(?<!auto)pilot")
-# 상용 운영 문항 YES 요건(설치 수·면적·두수·고객명): 숫자, 한글 수량 표현, 농협·법인 같은 고객 이름
-SCALE = re.compile(r"\d|농협|영농조합|농업회사법인")
-SCALE_WORD = re.compile(r"(?<![가-힣])(한|두|세|네|다섯|여섯|일곱|여덟|아홉|수십|수백|수천)\s*(곳|개소|농가|농장|마리)")
-# NO 판정 이유에 이런 말이 있으면 반대 사실이 아니라 근거 부족이다
-NO_HEDGE = re.compile(r"추정|불분명|명확하지않|확인되지않|없어|없으므로|근거가없")
-# 인용문 자체가 부정을 말하면("특허 없음", "인증을 받지 않았다") 이유에 '없어'가 있어도 반대 사실로 본다
-NEGATED = re.compile(r"없|않|아니|불가|미보유|미등록|\bno\b|\bnot\b|\bnever\b", re.I)
+HOLD_TYPES = ("Deal-killer", "창업자 근거 없음", "정보 부족", "동종 대비 열위")   # 앞선 것 우선
 UNDISCLOSED = ("비공개", "미공개", "undisclosed", "비밀", "n/a")
 
-
-class Answer(BaseModel):
-    qid: str
-    quote: str = Field(description="판정을 뒷받침하는 근거 원문 그대로의 짧은 인용 (80자 이내). 없으면 빈 문자열")
-    evidence_ids: list[str] = Field(description="인용이 나온 근거 id")
-    verdict: Literal["YES", "NO", "UNKNOWN", "N/A"]
-    rationale: str = Field(description="한 문장 이유")
+__all__ = ["decision_node", "load_rubric", "load_reference", "write_reference_class", "write_threshold_sensitivity",
+           "payne_multiplier", "decide_rule", "flip_conditions", "bessemer_panel", "roi", "parse_amount"]
 
 
-class Answers(BaseModel):
-    answers: list[Answer]
+# ── 공통 계산 도우미
+def _x(r: dict) -> int | None:
+    """문항 신호. 행에 x 가 있으면 그 값, 없으면 판정 값으로 정한다 (v1 행에는 x 가 없음)."""
+    return r["x"] if "x" in r else SIGNAL.get(r.get("answer"), 0)
 
 
-_norm = norm
+def _qids(rubric: dict) -> list[str]:
+    return [q["id"] for d in rubric["dimensions"] for q in d["questions"]]
 
 
-def _quote_sources(quote: str, cited: list[str], pool: list[str], reg: SourceRegistry) -> list[str]:
-    """인용문이 실제로 들어 있는 근거 id. LLM 이 id 를 잘못 적어도 후보의 근거 전체에서 찾아 바로잡는다."""
-    hit = [i for i in cited if fuzzy_in(quote, reg.text(i))]
-    return hit or [i for i in pool if fuzzy_in(quote, reg.text(i))]
+def _questions(rubric: dict) -> dict:
+    """qid → 문항 정의 (dim 포함)."""
+    return {q["id"]: {**q, "dim": d["id"]} for d in rubric["dimensions"] for q in d["questions"]}
 
 
-def _around(quote: str, text: str, window: int) -> str | None:
-    """인용문과 그 앞뒤 window 글자(공백·기호를 뺀 글자 기준). 근거 본문에서 위치를 못 찾으면 None."""
-    t, q = _norm(text), _norm(quote)
-    pos = t.find(q[:12]) if len(q) >= 12 else t.find(q)
-    if pos < 0:  # 인용이 조금 달라 위치를 못 찾으면 인용 앞부분 여러 조각으로 다시 찾는다
-        pos = next((t.find(q[i:i + 10]) for i in range(0, max(1, len(q) - 10), 10) if t.find(q[i:i + 10]) >= 0), -1)
-    if pos < 0:
-        return None
-    return t[max(0, pos - window): pos + len(q) + window]
+def _founder_yes(rows: list[dict]) -> int:
+    return sum(r["answer"] == "YES" for r in rows if r["dim"] == "founder")
 
 
-def _near_company(quote: str, text: str, keys: list[str], window: int = 300) -> bool:
-    """인용문이 나온 위치 앞뒤 window 글자 안에 회사명이 있는지 (문서 어딘가에 회사명만 있으면 되는 허점 차단)."""
-    near = _around(quote, text, window)
-    return near is not None and any(k in near for k in keys)
+def _killers(rows: list[dict], rubric: dict) -> list[str]:
+    """rubric deal_killers 의 조건(예: P4 = NO)을 모두 만족하는 Deal-killer id."""
+    v = {r["qid"]: r["answer"] for r in rows}
+    return [k["id"] for k in rubric["deal_killers"] if all(v.get(q) == a for q, a in k["when"].items())]
 
 
-def _company_voice(quote: str, text: str, keys: list[str], window: int = 120) -> bool:
-    """인용 앞뒤 window 글자 안에 대표·회사 측 발언이나 목표·계획 표지가 있으면 True (제3자 근거 아님).
-    신문 기사라도 대표 인터뷰를 옮긴 문장이면 회사 자체 주장이다. 인용 위치를 못 찾으면 발화자를 확인할 수 없어 True."""
-    near = _around(quote, text, window)
-    if near is None:
-        return True
-    raw_pos = text.find(quote[:20])
-    raw = text[max(0, raw_pos - window): raw_pos + len(quote) + window] if raw_pos >= 0 else ""
-    return (any(v in near for v in COMPANY_VOICE) or any(k + "에따르면" in near for k in [*keys, "회사", "업체"])
-            or bool(COMPANY_VOICE_EN.search(raw)))
+def _decide(M: float, founder_yes: int, killers: list[str], threshold: float, min_founder_yes: int) -> str:
+    return "투자" if M >= threshold and founder_yes >= min_founder_yes and not killers else "보류"
 
 
-def _planned(quote: str, texts: list[str], window: int = 120) -> bool:
-    """상용 운영 문항: 인용이나 그 앞뒤 window 글자에 예정·목표·실증·PoC·시범 표현이 있으면 True."""
-    zones = [_norm(quote)] + [z for t in texts if (z := _around(quote, t, window))]
-    return any(PLANNED.search(z) for z in zones)
-
-
-def _has_scale(quote: str, keys: list[str]) -> bool:
-    """상용 운영 문항 YES 요건: 인용에 설치 수·면적·두수 같은 수량이나 고객 이름이 있는지 (회사 자신의 이름은 빼고 본다)."""
-    q = _norm(quote)
-    for k in keys:
-        q = q.replace(k, "")
-    return bool(SCALE.search(q) or SCALE_WORD.search(quote))
-
-
-def _passages(pool: list[str], reg: SourceRegistry, size: int = 520, step: int = 420) -> list[tuple[str, str]]:
-    out = []
-    for sid in pool:
-        t = reg.text(sid)
-        for k in range(0, max(1, len(t) - 80), step):
-            out.append((sid, t[k:k + size]))
+def _with_yes(rows: list[dict], i: int) -> list[dict]:
+    """i 번째 문항을 YES 로 바꾼 사본 (뒤집힘·실사 영향 계산용)."""
+    out = list(rows)
+    out[i] = {**rows[i], "answer": "YES", "x": 1}
     return out
 
 
-def _evidence_for(dim: dict, company: str, passages: list[tuple[str, str]], bm25, reg: SourceRegistry,
-                  per_q: int = 6, cap: int = 24) -> str:
-    """문항마다 관련 깊은 근거 문단을 따로 찾아 합친다 (후보가 모은 근거에 대한 작은 RAG).
-    항목 전체를 한 번에 검색하면 특정 문항(예: 날짜가 있는 마일스톤)의 근거가 밀려나기 때문."""
-    picked: list[int] = []
-    for q in dim["questions"]:
-        # 괄호 안 설명("예정·실증은 상용 운영 아님" 등)은 판정 규칙이지 검색어가 아니라서 뺀다 (넣으면 제외할 문장을 더 끌어옴)
-        need = re.sub(r"\(.*?\)", "", q["need"])
-        scores = bm25.get_scores(kiwi_tokenize(f"{company} {q['text']} {need}"))
-        for i in sorted(range(len(passages)), key=lambda i: -scores[i])[:per_q]:
-            if i not in picked:
-                picked.append(i)
-    lines = []
-    for i in picked[:cap]:
-        sid, text = passages[i]
-        s = reg.get(sid)
-        head = (f"{s['site']}, {s['date'] or '게시일 미상'}" if s["kind"] == "web"
-                else f"{s['publisher']} {s['year']}, p.{s['page']}")
-        lines.append(f"[{sid}] ({head}) {text}")
-    return "\n\n".join(lines)
+def _rows_from_signals(signals: dict, rubric: dict) -> list[dict]:
+    """기준 집단 파일의 신호 {qid: 1|-1|0|None} → 판정 행 (배수·Deal-killer 계산용)."""
+    answer = {1: "YES", -1: "NO", 0: "UNKNOWN", None: "N/A"}
+    return [{"dim": d["id"], "qid": q["id"], "answer": answer[signals.get(q["id"], 0)], "x": signals.get(q["id"], 0)}
+            for d in rubric["dimensions"] for q in d["questions"]]
 
 
-def _is_third_party(s: dict, company_keys: list[str]) -> bool:
-    if s["kind"] == "doc":
-        return True
-    host = s["url"].split("/")[2].lower() if s["url"].count("/") >= 2 else ""
-    return not any(k and k in _norm(host) for k in company_keys)
+# ── 동종 기준 집단 (계약 C10)
+def _ref_path(p: str | None = None) -> Path:
+    p = Path(p or get_config().decision.reference_file)
+    return p if p.is_absolute() else ROOT / p
 
 
-@lru_cache(maxsize=1)
-def _doc_years() -> dict:
-    """문서 코퍼스(data/manifest.yaml)의 doc_id → 발행 연도."""
-    return {m["doc_id"]: m.get("year") for m in load_manifest()}
-
-
-def _is_recent(s: dict, run_date: str) -> bool:
-    if s["kind"] == "doc" or s.get("id", "").startswith("D"):  # 문서는 manifest 의 발행 연도 ≥ 기준 연도 - 2 (쪽마다 날짜가 없음)
-        year = _doc_years().get(s.get("doc_id")) or s.get("year")
-        try:
-            return int(year) >= int(run_date[:4]) - 2
-        except (TypeError, ValueError):
-            return False
-    if s["kind"] == "web" and s.get("site") in DB_SITES:
-        return True  # 기업 DB 프로필은 현재 정보
-    d = s.get("date") if s["kind"] == "web" else None
-    if not d:
-        return False
+def _read_json(p: Path) -> dict | None:
     try:
-        days = (datetime.strptime(run_date, "%Y-%m-%d").date() - date.fromisoformat(d)).days
-    except ValueError:
-        return False
-    return 0 <= days <= 730
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
 
 
-def _events_too_old(text: str, run_date: str) -> bool:
-    """문장 속 사건 날짜(2024년 6월, 2024-06, 2024.06)가 있고, 그 모두가 24개월보다 오래됐으면 True.
-    LLM 은 날짜 계산을 자주 틀리므로 코드로 확인한다. 날짜가 없으면 판단하지 않는다(False)."""
-    run = datetime.strptime(run_date, "%Y-%m-%d")
-    months = [(int(y), int(m)) for y, m in re.findall(r"(20\d{2})\s*[년.\-/]\s*(\d{1,2})", text) if 1 <= int(m) <= 12]
-    if not months:
-        return False
-    return all((run.year - y) * 12 + (run.month - m) > 24 for y, m in months)
+def _mean(members: list[dict], qids: list[str]) -> dict:
+    """문항별 평균 신호 (N/A 인 구성원은 그 문항 평균에서 뺀다. 모두 N/A 면 0)."""
+    out = {}
+    for q in qids:
+        v = [m["signals"][q] for m in members if m["signals"].get(q) is not None]
+        out[q] = sum(v) / len(v) if v else 0.0
+    return out
 
 
-def _round_rule(c: dict, run_date: str) -> tuple[str, list[str], str]:
-    """D1: 최근 24개월 라운드의 단계·금액·시점. 적격성 검증 단계에서 원문 인용으로 확인된 값만 쓴다."""
-    ids, rd, amount = c.get("stage_evidence_ids") or [], str(c.get("round_date") or ""), str(c.get("round_amount") or "")
-    m = re.match(r"(20\d{2})(?:-(\d{1,2}))?", rd)
-    if not ids or not m:
-        return "UNKNOWN", [], "라운드 시점이 확인되지 않음 (코드 판정)"
-    y, mo = int(m.group(1)), int(m.group(2) or 6)
-    run = datetime.strptime(run_date, "%Y-%m-%d")
-    months = (run.year - y) * 12 + (run.month - mo)
-    if months > 24:
-        return "NO", ids, f"최근 라운드가 {rd} 로 24개월보다 오래됨 (코드 판정)"
-    # 금액은 숫자가 있고 '비공개·미공개' 같은 표현이 없을 때만 확인된 것으로 본다 ('비공개' 문자열을 금액으로 세지 않게)
-    if not re.search(r"\d", amount) or any(u in amount.lower() for u in UNDISCLOSED):
-        return "UNKNOWN", [], f"{rd} {c.get('stage')} 라운드 금액 비공개{f' ({amount})' if amount else ''} (코드 판정)"
-    return "YES", ids, f"{rd} {c.get('stage')} {amount} — 적격성 검증에서 원문 인용으로 확인 (코드 판정)"
+def _reference(data: dict | None, exclude: str | None, rubric: dict, min_n: int) -> dict:
+    """기준 집단 파일 내용 → 이번 평가에 쓸 동종 평균. exclude 와 이름이 같은 구성원은 뺀다(LOO)."""
+    qids = _qids(rubric)
+    members = list((data or {}).get("members") or [])
+    note = None
+    if data is None:
+        note = "기준 집단 파일 없음"
+    elif data.get("rubric_qids") != qids:
+        note, members = "기준 집단 파일의 문항 목록이 현재 평가표와 다름(옛 파일)", []
+    used = [m for m in members if not (exclude and norm(m["name"]) == norm(exclude))]
+    ok = note is None and len(used) >= min_n
+    if note is None and not ok:
+        note = f"기준 집단 {len(used)}곳 < 최소 {min_n}곳"
+    return {"mean": _mean(used, qids) if ok else {q: 0.0 for q in qids}, "n": len(used), "loo": len(used) < len(members),
+            "source": "calibration" if ok else "fallback", "members": [m["name"] for m in used],
+            "run_date": (data or {}).get("run_date"), "note": None if ok else f"{note} → 동종 평균 신호 0 (설계 가정)"}
 
 
+def load_reference(exclude: str | None = None) -> dict:
+    """동종 기준 집단(config decision.reference_file)의 문항별 평균 신호.
+    exclude: 평가 대상 이름 — 기준 집단에 있으면 빼고 평균을 낸다(자기 제외, LOO).
+    파일이 없거나, 문항 목록이 현재 rubric 과 다르거나, 빼고 남은 구성원이 decision.reference_min_n 보다 적으면
+    평균 0(source 'fallback')이다.
+    반환: {'mean': {qid: float}, 'n': int, 'loo': bool, 'source': 'calibration'|'fallback', 'members': [이름],
+          'run_date': str|None, 'note': fallback 사유 또는 None}"""
+    return _reference(_read_json(_ref_path()), exclude, load_rubric(), get_config().decision.reference_min_n)
+
+
+def _reference_data(evaluations: list[dict], run_date: str, created_by: str) -> dict:
+    rubric = load_rubric()
+    qids = _qids(rubric)
+    members: dict[str, dict] = {}
+    for e in evaluations:
+        rows = (e.get("scorecard") or {}).get("rows") or e.get("rows") or []
+        if not rows:
+            continue
+        sig = {r["qid"]: _x(r) for r in rows}
+        members[norm(e["name"])] = {"name": e["name"], "region": e.get("region"), "stage": e.get("stage"),
+                                    "segment_id": e.get("segment_id"), "signals": {q: sig.get(q, 0) for q in qids}}
+    ms = list(members.values())   # 같은 이름을 두 번 평가했으면 마지막 평가를 쓴다
+    return {"version": 1, "run_date": run_date, "rubric_qids": qids, "created_by": created_by, "n": len(ms),
+            "members": ms, "mean": {q: round(v, 4) for q, v in _mean(ms, qids).items()}}
+
+
+def _write_json(p: str | Path, data: dict) -> None:
+    p = Path(p) if Path(p).is_absolute() else ROOT / p
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def write_reference_class(evaluations: list[dict], path: str, run_date: str) -> dict:
+    """보정 실행(app.py --calibrate)의 평가 결과로 동종 기준 집단 파일을 쓴다.
+    evaluations 원소의 scorecard.rows(없으면 rows)에서 문항 신호를 읽는다. 같은 이름은 마지막 평가만 남긴다.
+    파일 형식: {'version': 1, 'run_date', 'rubric_qids': [24개], 'created_by': 'app.py --calibrate', 'n',
+               'members': [{'name','region','stage','segment_id','signals': {qid: 1|-1|0|None}}], 'mean': {qid: float}}
+    반환: 쓴 내용(dict)."""
+    data = _reference_data(evaluations, run_date, "app.py --calibrate")
+    _write_json(path, data)
+    return data
+
+
+def _peer_scores(data: dict, rubric: dict) -> list[dict]:
+    """기준 집단 구성원마다 자기 제외(LOO) 동종 평균으로 구한 배수·창업자 YES·Deal-killer."""
+    d = get_config().decision
+    out = []
+    for m in data.get("members") or []:
+        rows = _rows_from_signals(m["signals"], rubric)
+        ref = _reference(data, m["name"], rubric, d.reference_min_n)
+        M, _ = payne_multiplier(rows, ref["mean"], rubric, d.step, d.clip)
+        out.append({"name": m["name"], "multiplier": M, "founder_yes": _founder_yes(rows),
+                    "killers": _killers(rows, rubric)})
+    return out
+
+
+def write_threshold_sensitivity(ref_path: str, out_path: str) -> dict:
+    """기준 집단 구성원마다 자기 제외 배수(multiplier_loo)를 구하고, config decision.sensitivity 의 각 기준 배수에서의 결정을 기록한다.
+    파일 형식: {'thresholds': [...], 'threshold': 현재 기준, 'reference_n': int,
+               'members': [{'name','multiplier_loo','founder_yes','killers','decision_at': {'1.10': '투자'|'보류', …}}],
+               'invest_count_at': {'1.00': int, …}}   (members 는 배수 내림차순)
+    반환: 쓴 내용(dict)."""
+    d = get_config().decision
+    data = _read_json(_ref_path(ref_path))
+    if data is None:
+        raise FileNotFoundError(f"기준 집단 파일을 읽을 수 없음: {ref_path}")
+    rubric = load_rubric()
+    keys = [(f"{t:.2f}", t) for t in d.sensitivity]
+    members = [{"name": p["name"], "multiplier_loo": p["multiplier"], "founder_yes": p["founder_yes"],
+                "killers": p["killers"],
+                "decision_at": {k: _decide(p["multiplier"], p["founder_yes"], p["killers"], t, d.min_founder_yes)
+                                for k, t in keys}}
+               for p in sorted(_peer_scores(data, rubric), key=lambda p: -p["multiplier"])]
+    out = {"thresholds": [t for _, t in keys], "threshold": d.threshold, "reference_n": len(members),
+           "members": members,
+           "invest_count_at": {k: sum(m["decision_at"][k] == "투자" for m in members) for k, _ in keys}}
+    _write_json(out_path, out)
+    return out
+
+
+# ── 점수와 결정 (계약 C7)
+def payne_multiplier(rows: list[dict], mean: dict, rubric: dict, step: float, clip: list) -> tuple[float, list[dict]]:
+    """Payne Scorecard 의 비교 원리(동종 평균 = 1.00)로 배수 M 을 구한다.
+    기준 d 마다 c_d = clip(1 + step × 평균_q(x_q − x̄_q)) (N/A 문항 제외, 문항이 없으면 1.0), M = Σ (weight/100) × c_d.
+    반환: (M 소수 4자리, criteria) — criteria 원소 {dim, name, weight, yes, no, unknown, n, pct, peer_mean, contribution}
+    pct = c_d × 100 (동종 평균 100 대비), peer_mean = 그 기준 문항들의 동종 평균 신호 x̄ 평균, contribution = weight/100 × c_d."""
+    lo, hi = clip
+    M, criteria = 0.0, []
+    for d in rubric["dimensions"]:
+        rs = [r for r in rows if r["dim"] == d["id"]]
+        used = [(r["qid"], _x(r)) for r in rs if _x(r) is not None]
+        diffs = [x - mean.get(q, 0.0) for q, x in used]
+        c = min(hi, max(lo, 1 + step * sum(diffs) / len(diffs))) if diffs else 1.0
+        contribution = d["weight"] / 100 * c
+        M += contribution
+        criteria.append({"dim": d["id"], "name": d["name"], "weight": d["weight"],
+                         "yes": sum(r["answer"] == "YES" for r in rs), "no": sum(r["answer"] == "NO" for r in rs),
+                         "unknown": sum(r["answer"] == "UNKNOWN" for r in rs), "n": len(used),
+                         "pct": round(c * 100, 1),
+                         "peer_mean": round(sum(mean.get(q, 0.0) for q, _ in used) / len(used), 3) if used else 0.0,
+                         "contribution": round(contribution, 4)})
+    return round(M, 4), criteria
+
+
+def decide_rule(M: float, founder_yes: int, killers: list[str], unknown_ratio: float, cfg) -> tuple[str, str | None, list[str]]:
+    """투자 ⇔ M ≥ decision.threshold ∧ founder_yes ≥ decision.min_founder_yes ∧ Deal-killer 없음.
+    보류 유형 우선순위: 'Deal-killer' > '창업자 근거 없음' > '정보 부족'(unknown_ratio ≥ info_gap_ratio) > '동종 대비 열위'.
+    '정보 부족'과 '동종 대비 열위'는 둘 다 M 이 기준에 못 미친 경우이고, 미확인 비율로 이름만 나눈다.
+    반환: (결정 '투자'|'보류', 보류 유형 또는 None, 사람이 읽는 사유 문장 목록 — 보류면 보류 유형의 사유가 맨 앞)"""
+    d = cfg.decision
+    t, need, gap = d.threshold, d.min_founder_yes, d.info_gap_ratio
+    score = f"Scorecard {M * 100:.1f}점(동종 평균 100)"
+    if _decide(M, founder_yes, killers, t, need) == "투자":
+        return "투자", None, [f"{score} ≥ 기준 {t * 100:.0f}점", f"창업자 문항(F1~F4) YES {founder_yes}개 (최소 {need}개)",
+                            "Deal-killer 없음"]
+    text = {k["id"]: k["text"] for k in load_rubric()["deal_killers"]}
+    reasons = [f"Deal-killer {k}: {text.get(k, '')}" for k in killers]
+    if founder_yes < need:
+        reasons.append(f"창업자 문항(F1~F4) YES {founder_yes}개 — 최소 {need}개 필요")
+    if M < t and unknown_ratio >= gap:
+        reasons.append(f"미확인 문항 {unknown_ratio:.0%} (≥ {gap:.0%}) — 공개 정보로는 판단하기 어려움")
+    if M < t:
+        reasons.append(f"{score} — 기준 {t * 100:.0f}점 미달")
+    hold = ("Deal-killer" if killers else "창업자 근거 없음" if founder_yes < need
+            else "정보 부족" if unknown_ratio >= gap else "동종 대비 열위")
+    return "보류", hold, reasons
+
+
+def flip_conditions(rows: list[dict], mean: dict, rubric: dict, cfg, founder_ok: bool, killers: list[str]) -> dict | None:
+    """보류 후보의 뒤집힘 조건: 미확인 문항 중 YES 로 확인되면 M 이 가장 많이 오르는 문항을 하나씩(탐욕적으로) 골라,
+    투자 조건(M ≥ 기준, 창업자 요건)을 채우거나 decision.flip_max_items 개가 될 때까지 더하고 새 배수 M' 을 계산한다.
+    창업자 요건이 모자라면(founder_ok False) 창업자 문항을 먼저 넣는다.
+    Deal-killer 가 있으면 미확인 문항으로는 뒤집을 수 없어 new_multiplier None 과 'Kx 해소 필요'를 돌려준다.
+    반환: {'qids': [str], 'items': [str], 'new_multiplier': float|None, 'reached': bool, 'note': str}
+    (호출하는 decision_node 는 보류일 때만 부르고, 투자면 flip 을 None 으로 둔다)"""
+    d = cfg.decision
+    info = _questions(rubric)
+    if killers:
+        rule = {k["id"]: k for k in rubric["deal_killers"]}
+        qids = list(dict.fromkeys(q for k in killers for q in rule[k]["when"]))
+        return {"qids": qids, "items": [f"{q} {info[q]['short']}" for q in qids], "new_multiplier": None,
+                "reached": False, "note": " · ".join(f"{k} 해소 필요({rule[k]['text']})" for k in killers)}
+    cur = list(rows)
+    M, _ = payne_multiplier(cur, mean, rubric, d.step, d.clip)
+    fy, picked = _founder_yes(cur), []
+
+    def done() -> bool:
+        return M >= d.threshold and fy >= d.min_founder_yes
+
+    while not done() and len(picked) < d.flip_max_items:
+        cand = [i for i, r in enumerate(cur) if r["answer"] == "UNKNOWN"]
+        if not founder_ok and fy < d.min_founder_yes:
+            cand = [i for i in cand if cur[i]["dim"] == "founder"]   # 창업자 요건부터 채운다
+        if not cand:
+            break
+        gain = {i: payne_multiplier(_with_yes(cur, i), mean, rubric, d.step, d.clip)[0] for i in cand}
+        best = max(cand, key=lambda i: (gain[i], -i))                 # 같으면 평가표 순서
+        cur, M = _with_yes(cur, best), gain[best]
+        fy += cur[best]["dim"] == "founder"
+        picked.append(cur[best]["qid"])
+    t = f"{d.threshold * 100:.0f}"
+    if not picked:
+        note = ("창업자 문항에 미확인이 없어(모두 NO) 미확인 문항 확인만으로는 뒤집을 수 없음" if fy < d.min_founder_yes
+                else "미확인 문항이 없어 뒤집힘 조건 없음")
+    elif done():
+        note = f"{'·'.join(picked)} 이(가) YES 로 확인되면 Scorecard {M * 100:.1f}점 ≥ 기준 {t}점 → 투자"
+    else:
+        note = (f"미확인 {len(picked)}문항({'·'.join(picked)})이 YES 로 확인돼도 Scorecard {M * 100:.1f}점"
+                f"{f', 창업자 YES {fy}개' if fy < d.min_founder_yes else ''} — 기준 미달(최대 {d.flip_max_items}문항)")
+    return {"qids": picked, "items": [f"{q} {info[q]['short']}" for q in picked], "new_multiplier": round(M, 4),
+            "reached": done(), "note": note}
+
+
+def _dd_items(rows: list[dict], mean: dict, rubric: dict, cfg, killers: list[str]) -> list[dict]:
+    """실사 항목: 미확인·NO 문항 중 YES 로 확인될 때 배수가 크게 오르는 순서(Deal-killer 문항은 맨 앞)로
+    decision.dd_max_items 개를 rubric dd_item 문구로 만든다. 반환 [{qid, item, why}]."""
+    d = cfg.decision
+    info = _questions(rubric)
+    base, _ = payne_multiplier(rows, mean, rubric, d.step, d.clip)
+    rule = {k["id"]: k for k in rubric["deal_killers"]}
+    killer_q = {q: k for k in killers for q in rule[k]["when"]}
+    cand = []
+    for i, r in enumerate(rows):
+        if r["answer"] not in ("UNKNOWN", "NO"):
+            continue
+        gain = payne_multiplier(_with_yes(rows, i), mean, rubric, d.step, d.clip)[0] - base
+        why = f"{'NO(반대 근거 있음)' if r['answer'] == 'NO' else '미확인'} — YES 로 확인되면 배수 +{gain:.3f}"
+        if r["qid"] in killer_q:
+            why += f", Deal-killer {killer_q[r['qid']]} 관련"
+        cand.append((r["qid"] not in killer_q, -gain, i, {"qid": r["qid"], "item": info[r["qid"]]["dd_item"], "why": why}))
+    return [c[3] for c in sorted(cand)[:d.dd_max_items]]
+
+
+def bessemer_panel(rows: list[dict], rubric: dict) -> list[dict]:
+    """rubric.yaml bessemer 10문마다 via 문항의 판정으로 답을 정한다(NO 가 하나라도 있으면 NO, 그다음 YES, 그 밖은 미확인).
+    결론은 Scorecard 규칙으로만 내고, 이 표는 점검용이다.
+    반환: [{'q': int, 'text': str, 'answer': 'YES'|'NO'|'미확인', 'via': [qid], 'proxy': bool}] (10행)"""
+    v = {r["qid"]: r["answer"] for r in rows}
+    out = []
+    for b in rubric["bessemer"]:
+        ans = [v.get(q) for q in b["via"]]
+        out.append({"q": b["q"], "text": b["text"], "answer": "NO" if "NO" in ans else "YES" if "YES" in ans else "미확인",
+                    "via": list(b["via"]), "proxy": bool(b.get("proxy"))})
+    return out
+
+
+# ── ROI 참고치 (점수·결정에 쓰지 않음)
+_NUM = r"\d[\d,]*(?:\.\d+)?"
+_KR_PART = re.compile(rf"({_NUM})\s*(조|억|천만|백만|만)")
+_EN_PART = re.compile(rf"({_NUM})\s*(billion|bn|million|mn|thousand|[bmk])(?![a-z])", re.I)
+_KR_UNIT = {"조": 1e12, "억": 1e8, "천만": 1e7, "백만": 1e6, "만": 1e4}
+_EN_UNIT = {"billion": 1e9, "bn": 1e9, "b": 1e9, "million": 1e6, "mn": 1e6, "m": 1e6, "thousand": 1e3, "k": 1e3}
+_USD = re.compile(r"\$|usd|달러|dollar", re.I)
+_KRW = re.compile(r"₩|krw|원|won", re.I)
+_OTHER = re.compile(r"€|£|¥|eur|euro|유로|gbp|jpy|엔화|cad|aud|chf|cny|위안", re.I)
+
+
+def _num(s: str) -> float:
+    return float(s.replace(",", ""))
+
+
+def parse_amount(s: str) -> dict | None:
+    """라운드 금액 문자열 → {'krw': float|None, 'usd_m': float|None}. 예: '30억 원' → krw 3e9, '$12M'·'12 million' → usd_m 12.
+    - 첫 금액 표현만 읽는다. 한국식 단위는 이어진 조각을 더한다('259억 9991만원' → 259.9991억, '1,500만 달러' → usd_m 15).
+    - 통화: 금액 바로 앞뒤 4글자의 $·달러·USD / 원·KRW 표기. 표기가 없으면 조·억·만 단위는 원화, million·M 단위는 달러로 본다.
+    - '비공개'·빈 문자열처럼 금액이 없거나, 단위·통화 표기 없는 숫자만 있거나, 달러·원화가 아닌 통화(€ 등)면 None."""
+    t = str(s or "").strip()
+    if not re.search(r"\d", t) or any(u in t.lower() for u in UNDISCLOSED):
+        return None
+    kr, en = _KR_PART.search(t), _EN_PART.search(t)
+    if kr and (not en or kr.start() <= en.start()):
+        value, start, end = 0.0, kr.start(), kr.start()
+        for part in _KR_PART.finditer(t, kr.start()):
+            if t[end:part.start()].strip():
+                break
+            value += _num(part.group(1)) * _KR_UNIT[part.group(2)]
+            end = part.end()
+        default = "KRW"
+    elif en:
+        value, start, end, default = _num(en.group(1)) * _EN_UNIT[en.group(2).lower()], en.start(), en.end(), "USD"
+    else:
+        m = re.search(_NUM, t)
+        value, start, end, default = _num(m.group()), m.start(), m.end(), None
+    near = t[max(0, start - 4):start] + " " + t[end:end + 4]   # 금액 바로 앞뒤 4글자의 통화 표기
+    cur = ("USD" if _USD.search(near) else "KRW" if _KRW.search(near) else None if _OTHER.search(near) else default)
+    if cur == "USD":
+        return {"krw": None, "usd_m": value / 1e6}
+    if cur == "KRW":
+        return {"krw": value, "usd_m": None}
+    return None
+
+
+def roi(current: dict, market: dict, cfg) -> dict:
+    """ROI 참고치 (점수에 쓰지 않음). 두 가지만 계산한다.
+    1) 라운드 금액 대 단계별 중앙값: config roi.stage_median_usd_m (AgFunder 2026 p.13)
+    2) VC Method 필요 Exit(가정): post-money = 금액 ÷ 지분율 가정(roi.stake_assumption), 필요 Exit = post-money × roi.target_multiple
+    라운드 금액을 모르면 computable=False. 가정 값은 assumptions 에 '가정'을 붙인 문장으로 남긴다.
+    market 은 계약 시그니처라 받지만 쓰지 않는다(세부 시장 규모 대비 회수 여력 경고는 넣지 않기로 함).
+    반환: {'computable','round_amount_raw','round_amount_usd_m','stage','stage_median_usd_m','vs_stage_median',
+           'stake_assumption','post_money_usd_m': [lo, hi]|None,'target_multiple','required_exit_usd_m': [lo, hi]|None,
+           'assumptions': [str],'source_ids': [str],'stage_median_source': str,'note': str|None}"""
+    r = cfg.roi
+    raw, stage = str(current.get("round_amount") or ""), str(current.get("stage") or "")
+    stakes, target = list(r.stake_assumption), r.target_multiple
+    amt = parse_amount(raw)
+    usd_m, assumptions = None, []
+    if amt and amt["usd_m"] is not None:
+        usd_m = amt["usd_m"]
+    elif amt and amt["krw"] is not None:
+        usd_m = amt["krw"] / r.fx_krw_per_usd / 1e6
+        assumptions.append(f"환율 가정: 1달러 = {r.fx_krw_per_usd:,}원")
+    median = r.stage_median_usd_m.get(stage)
+    if median is not None and stage.startswith("Pre-"):
+        assumptions.append(f"{stage} 중앙값은 앞 단계 값(${median}M)을 쓴 가정")
+    note = None
+    if usd_m is None:
+        note = (f"라운드 금액 '{raw}' 을(를) 달러·원화로 읽을 수 없어 산정 불가 (실사 항목)" if raw.strip()
+                else "라운드 금액 비공개 → 산정 불가 (실사 항목)")
+    else:
+        assumptions += [f"지분율 가정 {stakes[0]:.0%}~{stakes[-1]:.0%}: post-money = 라운드 금액 ÷ 지분율",
+                        f"목표 회수 배수 가정 {target}배(VC Method): 필요 Exit = post-money × {target}"]
+    post = [round(usd_m / max(stakes), 2), round(usd_m / min(stakes), 2)] if usd_m is not None else None
+    return {"computable": usd_m is not None, "round_amount_raw": raw,
+            "round_amount_usd_m": round(usd_m, 2) if usd_m is not None else None, "stage": stage,
+            "stage_median_usd_m": median,
+            "vs_stage_median": round(usd_m / median, 2) if usd_m is not None and median else None,
+            "stake_assumption": stakes, "post_money_usd_m": post, "target_multiple": target,
+            "required_exit_usd_m": [round(v * target, 1) for v in post] if post else None,
+            "assumptions": assumptions, "source_ids": list(current.get("stage_evidence_ids") or []),
+            "stage_median_source": r.get("stage_median_source", ""), "note": note}
+
+
+# ── 노드
 def _nps_line(n: dict) -> str:
     if n.get("status") != "matched":
         return "국민연금 가입 사업장 목록에서 확인 안 됨 (3인 미만 법인이거나 사명 다름)"
@@ -214,221 +418,117 @@ def _nps_line(n: dict) -> str:
 
 
 def _analysis_text(state: dict) -> str:
-    c, t, m, k = state["current"], state.get("tech", {}), state.get("market", {}), state.get("competition", {})
-    founders = "; ".join(f"{f['name']}({f['role']}): {f['background']}" for f in t.get("founders", [])) or "확인 불가"
+    """판정 프롬프트의 [분석 요약]. v1 형식을 따르되 창업자·팀은 👤 창업자 에이전트 결과(state['founder'])에서 읽는다."""
+    c, f = state["current"], state.get("founder") or {}
+    t, m, k = state.get("tech") or {}, state.get("market") or {}, state.get("competition") or {}
+    people = "; ".join(f"{p['name']}({p.get('role')}): {p.get('background')}" for p in f.get("people", [])) or "확인 불가"
+    t0 = f"창업 시점 {f['t0']} ({f.get('t0_source')})" if f.get("t0") else "창업 시점 확인 불가"
     return "\n".join([
         f"[후보] {c['official_name']} | 단계 {c.get('stage')} ({c.get('round_date') or '시점 미상'}, "
         f"{c.get('round_amount') or '금액 미상'}) | 설립 {c.get('founded_year') or '확인 불가'} | {c.get('one_line')}",
         f"[기술] 제품: {t.get('product')} / 핵심 기술: {t.get('core_technology')} / 성숙도: {t.get('maturity')} "
         f"({t.get('maturity_evidence')}) / 특허·인증: {t.get('ip_evidence')}",
-        f"[팀] {t.get('team_assessment')} / 창업자: {founders}",
-        f"[고용·창업 시기] {_nps_line(c.get('nps') or {})}",
+        f"[팀] {f.get('team_assessment')} / 창업자: {people}",
+        f"[고용·창업 시기] {_nps_line(c.get('nps') or {})} / {t0}",
         f"[시장] 규모: {m.get('market_size')} / 성장: {m.get('growth')} / 지불 의향: {m.get('willingness_to_pay')}",
         f"[경쟁] 차별성: {k.get('differentiation')} / 진입장벽: {k.get('entry_barriers')}",
     ])
 
 
+def _complete(crit: dict | None, dim: dict) -> bool:
+    """분석 에이전트의 criterion 이 이 차원의 문항을 빠짐없이 판정했는지."""
+    rows = (crit or {}).get("rows") or []
+    return [r.get("qid") for r in rows] == [q["id"] for q in dim["questions"]] and all("answer" in r for r in rows)
+
+
+def _ranking(data: dict | None, ref: dict, name: str, me: dict, rubric: dict, cfg) -> tuple[list[dict], int | None, int]:
+    """동종 순위: 기준 집단 구성원(자기 제외 배수)과 이번 대상을 배수 내림차순으로. fallback 이면 순위를 만들지 않는다."""
+    if ref["source"] != "calibration":
+        return [], None, 0
+    d = cfg.decision
+    out = [{**p, "decision": _decide(p["multiplier"], p["founder_yes"], p["killers"], d.threshold, d.min_founder_yes),
+            "is_target": False}
+           for p in _peer_scores(data, rubric) if norm(p["name"]) != norm(name)]
+    out.append({**me, "is_target": True})
+    out.sort(key=lambda e: -e["multiplier"])
+    return out, next(i + 1 for i, e in enumerate(out) if e["is_target"]), len(out)
+
+
 def decision_node(state: dict) -> dict:
     cfg = get_config()
+    dc = cfg.decision
     rubric = load_rubric()
     reg = SourceRegistry(state.get("registry"))
     c = state["current"]
+    name = c["official_name"]
     run_date = state.get("run_date") or datetime.now().strftime("%Y-%m-%d")
-    pool = list(dict.fromkeys(
-        c.get("evidence_ids", []) + state.get("tech", {}).get("pool_ids", [])
-        + state.get("market", {}).get("pool_ids", []) + state.get("competition", {}).get("pool_ids", [])))
-    pool = [i for i in pool if reg.get(i)]
-    company_keys = [_norm(x) for x in (c.get("name_en"), c.get("official_name"), c.get("name")) if x and len(_norm(x)) >= 2]
+    pool = evidence_pool(state)
     analysis = _analysis_text(state)
-    passages = _passages(pool, reg)
-    bm25 = BM25Okapi([kiwi_tokenize(p[1]) for p in passages])
-    judge = structured(Answers, "judge")
 
-    rows, dims, rejected, retried = [], [], [], 0
+    # 1) 판정: 실적·투자조건은 여기서, 나머지는 담당 에이전트의 criterion (없거나 문항이 모자라면 여기서 보완)
+    crits, here = {}, []
     for d in rubric["dimensions"]:
-        qlist = "\n".join(f"- {q['id']}: {q['text']} (YES 요건: {q['need']})" for q in d["questions"])
-        evidence = _evidence_for(d, c["official_name"], passages, bm25, reg)
-        res: Answers = judge.invoke(render("decision", dimension=d["name"], questions=qlist, run_date=run_date,
-                                           analysis=analysis, evidence=evidence))
-        got = {a.qid: a for a in res.answers}
-        missing = [q for q in d["questions"] if q["id"] not in got]
-        if missing:  # 판정을 빠뜨린 문항만 다시 묻는다
-            again: Answers = judge.invoke(render(
-                "decision", dimension=d["name"], analysis=analysis, evidence=evidence, run_date=run_date,
-                questions="\n".join(f"- {q['id']}: {q['text']} (YES 요건: {q['need']})" for q in missing)))
-            got.update({a.qid: a for a in again.answers})
-        # 인용이 [근거] 원문에 없는 YES·NO 는 한 번만 다시 묻는다 (분석 요약에서 베껴 온 인용 등). 그래도 없으면 아래에서 UNKNOWN
-        bad = [q for q in d["questions"] if q["id"] != "D1" and (a := got.get(q["id"])) and a.verdict in ("YES", "NO")
-               and a.quote.strip()
-               and not _quote_sources(a.quote, [i for i in a.evidence_ids if i in pool], pool, reg)]
-        if bad:
-            again = judge.invoke(render(
-                "decision", dimension=d["name"], analysis=analysis, evidence=evidence, run_date=run_date,
-                questions="\n".join(f"- {q['id']}: {q['text']} (YES 요건: {q['need']}) — 직전 인용 \"{got[q['id']].quote[:60]}\" 은 "
-                                    f"[근거] 원문에 없다. [근거]에서 글자 그대로 다시 복사하거나, 없으면 UNKNOWN" for q in bad)))
-            got.update({a.qid: a for a in again.answers if a.qid in {q["id"] for q in bad}})
-            retried += len(bad)
-        yes = unknown = na = 0
-        for q in d["questions"]:
-            a = got.get(q["id"])
-            verdict = a.verdict if a else "UNKNOWN"
-            ev = [i for i in (a.evidence_ids if a else []) if i in pool]
-            note = a.rationale if a else "판정 누락"
-            quote = a.quote if a else ""
-            if verdict == "N/A" and not q.get("na_allowed"):
-                verdict, note = "UNKNOWN", "N/A 불가 문항 — " + note
-            if q["id"] == "D1":  # 투자 라운드는 적격성 검증에서 인용 검증을 마친 값으로 코드가 판정 (LLM 판정은 쓰지 않음)
-                verdict, ev, note = _round_rule(c, run_date)
-                quote = c.get("stage_quote") or ""  # 적격성 검증에서 원문 확인을 마친 인용 (LLM 인용은 검증 전이라 쓰지 않음)
-            elif verdict == "YES":
-                fail = None
-                ev = _quote_sources(a.quote, ev, pool, reg)
-                if not ev:
-                    fail = "인용문이 근거 본문에서 확인되지 않음"
-                elif not q.get("market_level") and not any(_near_company(a.quote, reg.text(i), company_keys) for i in ev):
-                    fail = "인용 주변(±300자)에 회사명이 없음 (업계 일반론이 아니라 이 회사 이야기여야 함)"
-                elif q.get("doc_required") and not any(i.startswith("D") for i in ev):
-                    fail = "공공·연구기관 문서 근거 없음"
-                elif q.get("third_party") and not any(_is_third_party(reg.get(i), company_keys) for i in ev):
-                    fail = "회사 자체 발표만 있음 (제3자 근거 필요)"
-                elif q.get("third_party") and not any(_is_third_party(reg.get(i), company_keys)
-                                                      and not _company_voice(a.quote, reg.text(i), company_keys)
-                                                      for i in ev):
-                    fail = "회사 측 발언·계획(제3자 근거 아님)"
-                elif q.get("commercial") and _planned(a.quote, [reg.text(i) for i in ev]):
-                    fail = "실증·예정 단계 (인용 주변에 예정·목표·실증·PoC·시범 표현)"
-                elif q.get("commercial") and not _has_scale(a.quote, company_keys):
-                    fail = "상용 규모 근거 없음 (인용에 설치 수·면적·두수·고객명이 없음)"
-                elif q.get("recent") and not any(_is_recent(reg.get(i), run_date) for i in ev):
-                    fail = "최근 24개월 이내 근거 아님"
-                elif q.get("recent") and not q.get("market_level") and _events_too_old(f"{a.quote} {a.rationale}", run_date):
-                    fail = "언급된 사건 날짜가 모두 평가 기준일로부터 24개월보다 오래됨 (코드 날짜 검사)"
-                if fail:
-                    verdict, note = "UNKNOWN", f"{fail} → UNKNOWN 강등 ({note})"
-                    rejected.append({"qid": q["id"], "reason": fail, "quote": a.quote})
-            elif verdict == "NO":  # "근거가 없다"는 NO 가 아니라 UNKNOWN. 반대 사실을 적은 문장이 원문에 있어야 NO
-                ev = _quote_sources(a.quote, ev, pool, reg) if a.quote.strip() else []
-                if not ev:
-                    verdict, note = "UNKNOWN", f"반대 근거 인용이 원문에서 확인되지 않음 → NO 대신 UNKNOWN ({note})"
-                elif not q.get("market_level") and not any(_near_company(a.quote, reg.text(i), company_keys) for i in ev):
-                    # 업계 일반론(예: '농업용 로봇은 시범 운영 단계')은 이 회사에 대한 반대 사실이 아니다
-                    verdict, note = "UNKNOWN", f"반대 근거가 이 회사 이야기가 아님(인용 주변에 회사명 없음) → NO 대신 UNKNOWN ({note})"
-                elif NO_HEDGE.search(re.sub(r"\s+", "", a.rationale)) and not NEGATED.search(a.quote):
-                    # 이유가 "추정·확인되지 않음·근거가 없어" 류이고 인용문 자체에 부정 표현도 없으면 근거 부족
-                    verdict, note = "UNKNOWN", f"반대 사실이 아니라 근거 부족 → NO 대신 UNKNOWN ({note})"
-            yes += verdict == "YES"
-            unknown += verdict == "UNKNOWN"
-            na += verdict == "N/A"
-            rows.append({"dim": d["id"], "qid": q["id"], "question": q["text"], "bessemer": q.get("bessemer", ""),
-                         "answer": verdict, "evidence_ids": ev if verdict in ("YES", "NO") else [],
-                         "quote": quote if verdict in ("YES", "NO") else "", "rationale": note})
-        n = len(d["questions"]) - na
-        score = d["weight"] * yes / n if n else 0.0
-        dims.append({"id": d["id"], "name": d["name"], "weight": d["weight"], "yes": yes, "unknown": unknown,
-                     "n": n, "score": round(score, 1)})
+        crit = None if d["owner"] == AGENT else (state.get(d["owner"]) or {}).get("criterion")
+        if not _complete(crit, d):
+            crit = judge_dimension(d["id"], c, pool, reg, analysis, run_date)
+            here.append(d["id"])
+        crits[d["id"]] = crit
+    rows = [r for d in rubric["dimensions"] for r in crits[d["id"]]["rows"]]
+    founder_yes, killers = _founder_yes(rows), _killers(rows, rubric)
+    judged = [r for r in rows if r["answer"] != "N/A"]
+    unknown_ratio = round(sum(r["answer"] == "UNKNOWN" for r in judged) / len(judged), 3) if judged else 1.0
+    base = {"rows": rows, "threshold": dc.threshold, "founder_yes": founder_yes, "unknown_ratio": unknown_ratio,
+            "deal_killers": killers, "bessemer": bessemer_panel(rows, rubric), "roi": roi(c, state.get("market") or {}, cfg),
+            "rejected_yes": [x for cr in crits.values() for x in cr.get("rejected_yes", [])],
+            "quote_retried": sum(cr.get("quote_retried", 0) for cr in crits.values()), "judged_in_decide": here}
+    counts = f"YES {sum(r['answer'] == 'YES' for r in rows)} · NO {sum(r['answer'] == 'NO' for r in rows)} · 미확인 {unknown_ratio:.0%}"
 
-    total = round(sum(x["score"] for x in dims), 1)
-    verdict_of = {r["qid"]: r["answer"] for r in rows}
-    reasons = []
-    for k in rubric["deal_killers"]:
-        if all(verdict_of.get(q) == v for q, v in k["when"].items()):
-            reasons.append(f"Deal-killer {k['id']}")
-    ratio = {x["id"]: (x["yes"] / x["n"] if x["n"] else 0) for x in dims}
-    for dim_id, min_r in cfg.decision.min_dimension_ratio.items():
-        if ratio.get(dim_id, 0) < min_r:
-            label = {"founder": "창업자", "market": "시장성"}.get(dim_id, dim_id)
-            reasons.append(f"핵심 항목 미달({label} {ratio.get(dim_id, 0):.0%})")
-    judged = sum(x["n"] for x in dims)
-    unknown_ratio = round(sum(x["unknown"] for x in dims) / judged, 3) if judged else 1.0
-    if unknown_ratio > cfg.decision.max_unknown_ratio:
-        reasons.append(f"정보 부족(UNKNOWN {unknown_ratio:.0%})")
-    threshold = cfg.decision.invest_threshold
-    if total < threshold:
-        reasons.insert(0, f"점수 미달({total}점)")
-    decision = "보류" if reasons else "투자"
-    sensitivity = {str(t): ("투자" if total >= t and not [r for r in reasons if not r.startswith("점수 미달")] else "보류")
-                   for t in (60, 70, 80)}
-    scorecard = {"dims": dims, "rows": rows, "total": total, "threshold": threshold, "reasons": reasons,
-                 "rejected_yes": rejected, "quote_retried": retried,
-                 "knockouts": reasons, "unknown_ratio": unknown_ratio, "decision": decision,
-                 "sensitivity": sensitivity}
-    msg = (f"[투자 판단] {c['official_name']}: {total}점, UNKNOWN {unknown_ratio:.0%} → {decision}"
-           + (f" ({'; '.join(reasons)})" if reasons else ""))
+    if cfg.workflow.get("calibrate"):
+        # 2') 보정 실행: 기준 집단을 만드는 중이라 배수·결정을 내지 않고 판정·신호만 남긴다
+        _, criteria = payne_multiplier(rows, {}, rubric, dc.step, dc.clip)
+        criteria = [{**x, "pct": None, "peer_mean": None, "contribution": None} for x in criteria]
+        decision = hold_type = flip = M = score100 = None
+        reasons = ["보정 실행: 동종 기준 집단을 만드는 중이라 결정하지 않음"]
+        scorecard = {**base, "criteria": criteria, "multiplier": None, "score100": None, "reference": None,
+                     "decision": None, "hold_type": None, "reasons": reasons, "flip": None, "dd_items": [],
+                     "sensitivity": {}, "ranking": [], "target_rank": None, "peer_n": 0}
+        msg = f"[투자 판단·보정] {name}: 판정만 기록 ({counts}, 창업자 YES {founder_yes}, Deal-killer {killers or '없음'})"
+    else:
+        # 2) 점수: 동종 기준 집단 대비 배수 (대상이 기준 집단에 있으면 자기 제외)
+        data = _read_json(_ref_path())
+        ref = _reference(data, name, rubric, dc.reference_min_n)
+        M, criteria = payne_multiplier(rows, ref["mean"], rubric, dc.step, dc.clip)
+        score100 = round(M * 100, 1)
+        # 3) 결정과 보고서 재료
+        decision, hold_type, reasons = decide_rule(M, founder_yes, killers, unknown_ratio, cfg)
+        flip = (flip_conditions(rows, ref["mean"], rubric, cfg, founder_yes >= dc.min_founder_yes, killers)
+                if decision == "보류" else None)
+        ranking, target_rank, peer_n = _ranking(
+            data, ref, name, {"name": name, "multiplier": M, "founder_yes": founder_yes, "killers": killers,
+                              "decision": decision}, rubric, cfg)
+        scorecard = {**base, "criteria": criteria, "multiplier": M, "score100": score100,
+                     "reference": {k: ref[k] for k in ("n", "loo", "source", "members", "run_date", "note")},
+                     "decision": decision, "hold_type": hold_type, "reasons": reasons, "flip": flip,
+                     "dd_items": _dd_items(rows, ref["mean"], rubric, cfg, killers),
+                     "sensitivity": {f"{t:.2f}": _decide(M, founder_yes, killers, t, dc.min_founder_yes)
+                                     for t in dc.sensitivity},
+                     "ranking": ranking, "target_rank": target_rank, "peer_n": peer_n}
+        msg = (f"[투자 판단] {name}: Scorecard {score100}점(동종 평균 100, 기준 {dc.threshold * 100:.0f}, "
+               f"기준 집단 {ref['n']}곳{' 자기 제외' if ref['loo'] else ''}{' · fallback' if ref['source'] == 'fallback' else ''}) "
+               f"· {counts} · 창업자 YES {founder_yes} · Deal-killer {killers or '없음'} → {decision}"
+               + (f" ({hold_type})" if hold_type else ""))
+    if here:
+        msg += f" [여기서 판정한 기준: {', '.join(here)}]"
     print(msg)
-    summary = {"name": c["official_name"], "region": c["region"], "segment_id": c["segment_id"],
-               "stage": c.get("stage"), "round_date": c.get("round_date"), "total": total, "decision": decision,
-               "knockouts": reasons, "dims": dims, "unknown_ratio": unknown_ratio, "sensitivity": sensitivity}
-    return {"scorecard": scorecard, "decision": decision, "log": [msg],
-            "evaluations": [{**summary, "tech": state.get("tech"), "market": state.get("market"),
-                             "competition": state.get("competition"), "scorecard": scorecard, "profile": c}]}
 
-
-# ── v2 공개 함수 (계약 C10). P0 계약 커밋에서는 시그니처만 두고, P3 가 구현한 뒤 decision_node 를 v2 규칙으로 바꾼다.
-# 위의 decision_node 는 아직 v1 규칙(100점 만점, invest_threshold 70)으로 동작한다.
-
-def load_reference(exclude: str | None = None) -> dict:
-    """동종 기준 집단(config decision.reference_file)의 문항별 평균 신호.
-    exclude: 평가 대상 이름 — 기준 집단에 있으면 빼고 평균을 낸다(자기 제외, LOO).
-    기준 집단이 decision.reference_min_n 보다 작거나 파일이 없으면 평균 0(source 'fallback').
-    반환: {'mean': {qid: float}, 'n': int, 'loo': bool, 'source': 'calibration'|'fallback', 'members': [이름]}"""
-    raise NotImplementedError("P3")
-
-
-def write_reference_class(evaluations: list[dict], path: str, run_date: str) -> dict:
-    """보정 실행(app.py --calibrate)의 평가 결과로 동종 기준 집단 파일을 쓴다.
-    파일 형식: {'version': 1, 'run_date', 'rubric_qids': [24개], 'created_by': 'app.py --calibrate', 'n',
-               'members': [{'name','region','stage','segment_id','signals': {qid: 1|-1|0|None}}], 'mean': {qid: float}}
-    반환: 쓴 내용(dict)."""
-    raise NotImplementedError("P3")
-
-
-def write_threshold_sensitivity(ref_path: str, out_path: str) -> dict:
-    """기준 집단 구성원마다 자기 제외 배수(multiplier_loo)를 구하고, config decision.sensitivity 의 각 기준 배수에서의 결정을 기록한다.
-    파일 형식: {'thresholds': [...], 'members': [{'name','multiplier_loo','founder_yes','killers','decision_at': {'1.10': '투자'|'보류', …}}],
-               'invest_count_at': {'1.00': int, …}}
-    반환: 쓴 내용(dict)."""
-    raise NotImplementedError("P3")
-
-
-def payne_multiplier(rows: list[dict], mean: dict, rubric: dict, step: float, clip: list) -> tuple[float, list[dict]]:
-    """Payne Scorecard 의 비교 원리(동종 평균 = 1.00)로 배수 M 을 구한다.
-    기준 d 마다 c_d = clip(1 + step × 평균_q(x_q − x̄_q)) (N/A 문항 제외, 문항이 없으면 1.0), M = Σ (weight/100) × c_d.
-    반환: (M, criteria) — criteria 원소 {dim, name, weight, yes, no, unknown, n, pct, peer_mean, contribution}"""
-    raise NotImplementedError("P3")
-
-
-def decide_rule(M: float, founder_yes: int, killers: list[str], unknown_ratio: float, cfg) -> tuple[str, str | None, list[str]]:
-    """투자 ⇔ M ≥ decision.threshold ∧ founder_yes ≥ decision.min_founder_yes ∧ Deal-killer 없음.
-    보류 유형 우선순위: 'Deal-killer' > '창업자 근거 없음' > '정보 부족'(unknown_ratio ≥ info_gap_ratio) > '동종 대비 열위'.
-    반환: (결정 '투자'|'보류', 보류 유형 또는 None, 사람이 읽는 사유 문장 목록)"""
-    raise NotImplementedError("P3")
-
-
-def flip_conditions(rows: list[dict], mean: dict, rubric: dict, cfg, founder_ok: bool, killers: list[str]) -> dict | None:
-    """보류 후보의 뒤집힘 조건: 미확인 문항 중 YES 로 확인되면 M 이 가장 많이 오르는 문항을 decision.flip_max_items 개까지 골라
-    새 배수 M' 을 계산한다. 창업자 요건이 모자라면 창업자 문항을 먼저 넣는다. Deal-killer 가 있으면 None.
-    반환: {'qids': [str], 'items': [str], 'new_multiplier': float, 'note': str} 또는 None"""
-    raise NotImplementedError("P3")
-
-
-def bessemer_panel(rows: list[dict], rubric: dict) -> list[dict]:
-    """rubric.yaml bessemer 10문마다 via 문항의 판정으로 답을 정한다(NO 가 하나라도 있으면 NO, 그다음 YES, 그 밖은 미확인).
-    반환: [{'q': int, 'text': str, 'answer': 'YES'|'NO'|'미확인', 'via': [qid], 'proxy': bool}] (10행)"""
-    raise NotImplementedError("P3")
-
-
-def roi(current: dict, market: dict, cfg) -> dict:
-    """ROI 참고치 (점수에 쓰지 않음). 두 가지만 계산한다.
-    1) 라운드 금액 대 단계별 중앙값: config roi.stage_median_usd_m (AgFunder 2026 p.13)
-    2) VC Method 필요 Exit(가정): post-money = 금액 ÷ 지분율 가정(roi.stake_assumption), 필요 Exit = post-money × roi.target_multiple
-    라운드 금액을 모르면 computable=False. 가정 값은 assumptions 에 문장으로 남긴다.
-    반환: {'computable','round_amount_raw','round_amount_usd_m','stage','stage_median_usd_m','vs_stage_median',
-           'stake_assumption','post_money_usd_m': [lo, hi]|None,'target_multiple','required_exit_usd_m': [lo, hi]|None,
-           'assumptions': [str],'source_ids': [str]}"""
-    raise NotImplementedError("P3")
-
-
-def parse_amount(s: str) -> dict | None:
-    """라운드 금액 문자열 → {'krw': float|None, 'usd_m': float|None}. 예: '30억 원' → krw 3e9, '$12M'·'12 million' → usd_m 12.
-    '비공개'·빈 문자열처럼 금액이 없으면 None."""
-    raise NotImplementedError("P3")
+    evaluation = {"name": name, "region": c.get("region"), "segment_id": c.get("segment_id"), "stage": c.get("stage"),
+                  "round_date": c.get("round_date"), "round_amount": c.get("round_amount"), "decision": decision,
+                  "hold_type": hold_type, "multiplier": M, "score100": score100, "reasons": reasons, "flip": flip,
+                  "criteria": criteria, "scorecard": scorecard, "founder": state.get("founder"), "tech": state.get("tech"),
+                  "market": state.get("market"), "competition": state.get("competition"), "profile": c}
+    out = {"scorecard": scorecard, "decision": decision, "evaluations": [evaluation], "log": [msg]}
+    if decision == "투자" and cfg.workflow.get("stop_on_invest", True):
+        out["end_reason"] = "invest_found"
+    elif state.get("iterations", 0) >= cfg.workflow.max_evaluations:
+        out["end_reason"] = "max_evaluations"
+    return out

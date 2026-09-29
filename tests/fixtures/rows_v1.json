@@ -1,0 +1,1526 @@
+{
+  "run_date": "2026-09-30",
+  "source": "outputs/run_log.json",
+  "companies": [
+    {
+      "name": "메타파머스",
+      "region": "KR",
+      "stage": "Pre-A",
+      "segment_id": "robotics",
+      "rows": [
+        {
+          "dim": "founder",
+          "qid": "F1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "founder",
+          "qid": "F2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "founder",
+          "qid": "F3",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "founder",
+          "qid": "F4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M4",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "product",
+          "qid": "P1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P3",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "product",
+          "qid": "P4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C4",
+          "answer": "NO",
+          "x": -1
+        },
+        {
+          "dim": "traction",
+          "qid": "R1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D4",
+          "answer": "YES",
+          "x": 1
+        }
+      ]
+    },
+    {
+      "name": "Nature Robots",
+      "region": "GLOBAL",
+      "stage": "Seed",
+      "segment_id": "robotics",
+      "rows": [
+        {
+          "dim": "founder",
+          "qid": "F1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D4",
+          "answer": "UNKNOWN",
+          "x": 0
+        }
+      ]
+    },
+    {
+      "name": "리비타",
+      "region": "KR",
+      "stage": "Seed",
+      "segment_id": "agdata",
+      "rows": [
+        {
+          "dim": "founder",
+          "qid": "F1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P3",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "product",
+          "qid": "P4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C3",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "competition",
+          "qid": "C4",
+          "answer": "NO",
+          "x": -1
+        },
+        {
+          "dim": "traction",
+          "qid": "R1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D4",
+          "answer": "UNKNOWN",
+          "x": 0
+        }
+      ]
+    },
+    {
+      "name": "새팜",
+      "region": "KR",
+      "stage": "Pre-A",
+      "segment_id": "diagnosis",
+      "rows": [
+        {
+          "dim": "founder",
+          "qid": "F1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F3",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "founder",
+          "qid": "F4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M4",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "product",
+          "qid": "P1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "product",
+          "qid": "P3",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "product",
+          "qid": "P4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C4",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "traction",
+          "qid": "R1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D4",
+          "answer": "UNKNOWN",
+          "x": 0
+        }
+      ]
+    },
+    {
+      "name": "Upside Robotics",
+      "region": "GLOBAL",
+      "stage": "Seed",
+      "segment_id": "robotics",
+      "rows": [
+        {
+          "dim": "founder",
+          "qid": "F1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D4",
+          "answer": "UNKNOWN",
+          "x": 0
+        }
+      ]
+    },
+    {
+      "name": "퓨처커넥트",
+      "region": "KR",
+      "stage": "Series A",
+      "segment_id": "greenhouse",
+      "rows": [
+        {
+          "dim": "founder",
+          "qid": "F1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "founder",
+          "qid": "F2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "founder",
+          "qid": "F3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M4",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "product",
+          "qid": "P1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C4",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "traction",
+          "qid": "R1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D4",
+          "answer": "YES",
+          "x": 1
+        }
+      ]
+    },
+    {
+      "name": "트랙팜",
+      "region": "KR",
+      "stage": "Seed",
+      "segment_id": "agdata",
+      "rows": [
+        {
+          "dim": "founder",
+          "qid": "F1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "product",
+          "qid": "P2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D1",
+          "answer": "NO",
+          "x": -1
+        },
+        {
+          "dim": "deal",
+          "qid": "D2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D4",
+          "answer": "UNKNOWN",
+          "x": 0
+        }
+      ]
+    },
+    {
+      "name": "Bonsai Robotics",
+      "region": "GLOBAL",
+      "stage": "Series A",
+      "segment_id": "robotics",
+      "rows": [
+        {
+          "dim": "founder",
+          "qid": "F1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F3",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "founder",
+          "qid": "F4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D3",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D4",
+          "answer": "UNKNOWN",
+          "x": 0
+        }
+      ]
+    },
+    {
+      "name": "에임비랩",
+      "region": "KR",
+      "stage": "Pre-A",
+      "segment_id": "livestock",
+      "rows": [
+        {
+          "dim": "founder",
+          "qid": "F1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "founder",
+          "qid": "F3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P3",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "product",
+          "qid": "P4",
+          "answer": "N/A",
+          "x": null
+        },
+        {
+          "dim": "competition",
+          "qid": "C1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R3",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "traction",
+          "qid": "R4",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D1",
+          "answer": "NO",
+          "x": -1
+        },
+        {
+          "dim": "deal",
+          "qid": "D2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D4",
+          "answer": "UNKNOWN",
+          "x": 0
+        }
+      ]
+    },
+    {
+      "name": "바르카",
+      "region": "KR",
+      "stage": "Pre-A",
+      "segment_id": "agdata",
+      "rows": [
+        {
+          "dim": "founder",
+          "qid": "F1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "founder",
+          "qid": "F2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "founder",
+          "qid": "F4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M1",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "market",
+          "qid": "M3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "market",
+          "qid": "M4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P1",
+          "answer": "NO",
+          "x": -1
+        },
+        {
+          "dim": "product",
+          "qid": "P2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "product",
+          "qid": "P4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "competition",
+          "qid": "C4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R2",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "traction",
+          "qid": "R4",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D1",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D2",
+          "answer": "YES",
+          "x": 1
+        },
+        {
+          "dim": "deal",
+          "qid": "D3",
+          "answer": "UNKNOWN",
+          "x": 0
+        },
+        {
+          "dim": "deal",
+          "qid": "D4",
+          "answer": "UNKNOWN",
+          "x": 0
+        }
+      ]
+    }
+  ]
+}
