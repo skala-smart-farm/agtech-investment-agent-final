@@ -257,8 +257,31 @@ def title_key(s: dict) -> str | None:
     return t if s["kind"] == "web" and len(t) >= 12 else None
 
 
+# 게시일이 없는 웹페이지는 REFERENCE 에 조회일을 적는다. 이 사실은 목록 줄이 아니라 보고서 한계점에 한 줄로 밝힌다
+# (과제: REFERENCE 는 '실제로 활용한 자료 목록만' 기재)
+ACCESS_DATE_NOTE = "게시일이 없는 웹페이지는 REFERENCE 에 조회일을 적었다"
+# 과제 지정 형식 3유형 (보고서 형식 검사용). 줄 끝에 괄호 주석을 붙이지 않는다
+REFERENCE_FORMATS = {
+    "기관 보고서": re.compile(r"^\S.*\((?:19|20)\d{2}\)\. .+\. https?://.+$"),
+    "학술 논문": re.compile(r"^\S.*\((?:19|20)\d{2}\)\. .+\. .+\.$"),
+    "웹페이지": re.compile(r"^\S.*\((?:19|20)\d{2}-\d{2}-\d{2}\)\. .+\. .+, https?://.+$"),
+}
+
+
+def _list_page_org(host: str) -> str | None:
+    return next((v for k, v in LIST_PAGES.items() if host == k or host.endswith("." + k)), None)
+
+
+def uses_access_date(s: dict) -> bool:
+    """REFERENCE 날짜로 게시일 대신 조회일을 쓰는 웹페이지인지 (게시일 미상, 또는 목록·DB 페이지)."""
+    if s["kind"] != "web":
+        return False
+    return bool(_list_page_org(_host(unquote(s["url"]).split("#")[0]))) or not s.get("date")
+
+
 def format_reference(s: dict) -> str:
-    """과제에서 지정한 REFERENCE 표기 형식. 게시일을 찾지 못한 웹페이지는 조회일을 쓰고 끝에 그 사실을 밝힌다."""
+    """과제에서 지정한 REFERENCE 표기 형식 그대로 쓴다(줄 끝 주석 없음).
+    게시일을 찾지 못한 웹페이지와 목록·DB 페이지는 조회일을 쓴다(uses_access_date, 한계점에서 밝힘)."""
     if s["kind"] == "doc":
         if reference_group(s) == "학술 논문":
             vol = f"{s.get('volume') or ''}({s['issue']})" if s.get("issue") else str(s.get("volume") or "")
@@ -271,13 +294,11 @@ def format_reference(s: dict) -> str:
     if host.endswith(PORTALS):
         outlet, reporter = _origin(s)
         site, who = outlet or site, reporter or who or outlet
-    org = next((v for k, v in LIST_PAGES.items() if host == k or host.endswith("." + k)), None)
+    org = _list_page_org(host)
     who = who or org or site
-    if org or not s["date"]:  # 목록·DB 페이지의 날짜(설립일·자료 기준월)는 게시일이 아니다
-        when, note = s["access_date"], " (게시일 미상, 조회일 표기)"
-    else:
-        when, note = s["date"], ""
-    return f"{who}({when}). {_ref_title(s)}. {site}, {url}{note}"
+    # 목록·DB 페이지의 날짜(설립일·자료 기준월)는 게시일이 아니다
+    when = s["access_date"] if uses_access_date(s) else s["date"]
+    return f"{who}({when}). {_ref_title(s)}. {site}, {url}"
 
 
 def reference_key(s: dict) -> str:
