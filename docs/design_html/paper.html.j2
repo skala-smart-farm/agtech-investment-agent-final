@@ -40,8 +40,8 @@ td:first-child{white-space:normal}
 blockquote{margin:6pt 0 8pt 6mm;padding:0 0 0 8pt;border-left:1.6pt solid #9a9a9a;color:#333;font-size:9pt}
 blockquote p{margin:2pt 0}
 /* 목차 */
-nav.toc{border:.6pt solid #bbb;padding:6pt 10pt;margin:0 0 8pt;font-size:8.6pt;line-height:1.6}
-nav.toc ul{list-style:none;padding:0;margin:0} nav.toc li{margin:1pt 0}
+nav.toc{border:.6pt solid #bbb;padding:9pt 12pt;margin:0 0 8pt;font-size:9pt;line-height:1.75;break-after:page}
+nav.toc ul{list-style:none;padding:0;margin:0} nav.toc li{margin:3pt 0}
 /* 표: 3선 표 */
 .cap{font-size:8.4pt;margin:10pt 0 3pt;text-align:left;break-after:avoid;color:#111}
 .cap b{font-weight:800;margin-right:4pt}
@@ -53,9 +53,25 @@ tr{break-inside:avoid} thead{display:table-header-group}
 /* 그림 */
 pre.mermaid{margin:8pt 0 2pt;text-align:center;background:#fff;break-inside:avoid;font-family:"Pretendard",sans-serif}
 pre.mermaid svg{max-width:100%;height:auto}
-pre.m1 svg{max-height:470px} pre.m2 svg{max-height:230px} pre.m3 svg{max-height:450px}
-.figcap{font-size:8.4pt;text-align:center;margin:3pt 0 12pt;color:#111}
+pre.m1 svg{max-height:560px} pre.m2 svg{max-height:230px} pre.m3 svg{max-height:550px}
+.figcap{font-size:8.4pt;text-align:center;margin:3pt 0 12pt;color:#111;break-before:avoid}
 .figcap b{font-weight:800;margin-right:4pt}
+/* 쪽 나눔: 표는 캡션과 한 덩어리로 옮기고(쪽보다 짧은 표는 쪼개지 않음), 굵은 한 줄 소제목은 다음 내용과 붙인다 */
+.tblock{break-inside:avoid;page-break-inside:avoid}
+p.lead{break-after:avoid;page-break-after:avoid}
+li{break-inside:avoid}
+p,li{orphans:2;widows:2}
+/* 그림 바로 위 소제목은 그림 캡션과 같은 말이므로 PDF 에서는 캡션만 남긴다 */
+h4:has(+ pre.mermaid){display:none}
+/* 평가표 문항 표(C.2)는 여섯 표의 열 너비를 맞춘다 */
+table.rubric{table-layout:fixed}
+.rubric th:nth-child(1){width:22%} .rubric th:nth-child(2){width:46%} .rubric th:nth-child(3){width:32%}
+/* State 키 표(D.1)는 세 묶음으로 나뉘므로 열 너비를 맞춘다 */
+table.state{table-layout:fixed}
+.state th:nth-child(1){width:17%} .state th:nth-child(2){width:12%} .state th:nth-child(3){width:15%} .state th:nth-child(4){width:21%} .state th:nth-child(5){width:35%}
+/* 부록 가이드 추적표는 설계 요지 열이 좁아지지 않게 한다 */
+table.trace{table-layout:fixed}
+.trace th:nth-child(1){width:34%} .trace th:nth-child(2){width:12%} .trace th:nth-child(3){width:29%} .trace th:nth-child(4){width:25%}
 .pb{break-after:page}
 </style>
 </head>
@@ -69,22 +85,54 @@ pre.m1 svg{max-height:470px} pre.m2 svg{max-height:230px} pre.m3 svg{max-height:
 
 <section class="abstract">
   <div class="abstract-h">요 약</div>
-  <p>본 설계는 국내외 AgTech AI 스타트업(비상장·Seed~Series C·Exit 전) 가운데 투자할 곳을 공개 정보만으로 찾아, 근거를 달아
-  ‘투자’ 또는 ‘보류’로 판정하는 LangGraph 멀티 에이전트를 정의한다. 과제 가이드의 Graph(안) 여섯 에이전트(스타트업 탐색·기술 요약·시장성 평가·경쟁사 비교·투자 판단·보고서 생성)에
-  창업자 평가 에이전트를 더해, 평가표의 여섯 기준을 에이전트 하나가 하나씩 맡도록 책임을 나누었다(B.1).</p>
-  <p>기술 요약과 시장성 평가는 공공·연구 문서 {{ corpus | length }}종 {{ total_pages }}쪽을 검색하는 Agentic RAG 를 쓴다. 임베딩은 오픈소스 후보 6종을
-  우리 문서로 만든 질문 70개로 직접 비교해 {{ cfg.embedding.model }} 과 Kiwi BM25 의 하이브리드({{ rt[0] }})를 골랐고, 실제 설정에서 Hit@4 {{ rt[1] }}, MRR@4 {{ rt[2] }} 를 얻었다(B.5).</p>
-  <p>투자 판단 기준은 임의로 정하지 않고 두 가지 표준에서 가져왔다. 기준과 가중치는 Bill Payne 의 Scorecard(창업자 30·시장성 25·제품/기술 15·경쟁 우위 10·실적 10·투자조건 10),
-  질문은 Bessemer 체크리스트 10문을 따른다. 원 방법대로 ‘투자를 받은 동종 기업 평균 = 100’과 비교해, 배수 {{ '%.0f' % (dec.threshold * 100) }} 이상이면서
-  창업자 근거가 {{ dec.min_founder_yes }}개 이상이고 Deal-killer 가 없을 때만 투자를 추천한다(C.3·C.4). 보류이면 다음 후보를 평가하는 루프를 두되 평가는 최대 {{ cfg.workflow.max_evaluations }}곳으로 제한했다(D.2).</p>
-  {% if calib.n %}<p>보정 실행에서 동종 기준 집단 {{ calib.n }}곳을 만들고 자기 제외 평균으로 다시 계산한 결과, 기준 {{ '%.2f' % dec.threshold }}에서 투자 추천은
-  {{ calib.sens.get('%.2f' % dec.threshold, '-') }}곳{% if run.target %}({{ run.target }}, 동종 평균 대비 {{ '%.1f' % (run.multiplier * 100) }}){% endif %}이었고,
-  기준을 1.00~1.20 으로 바꾸면 {{ calib.sens.values() | list | join('·') }}곳으로 달라진다(C.8). 이 기준으로 투자 추천 여부를 판정해도 될지 검토를 요청한다.</p>{% endif %}
+  <p>투자 추천은 ‘투자를 받은 동종 기업 평균 = 100’ 대비 {{ '%.0f' % (dec.threshold * 100) }} 이상이면서 창업자 문항 YES 가 {{ dec.min_founder_yes }}개 이상이고
+  Deal-killer 가 없을 때만 한다. 평가의 틀은 두 표준에서 가져온다. 6개 기준과 가중치(창업자 30·시장성 25·제품/기술 15·경쟁 우위 10·실적 10·투자조건 10)는 과제 가이드 표를 따르고,
+  비교 방식은 Bill Payne Scorecard 의 ‘투자를 받은 평균 기업 = 100%’ 원리를 가져온다. 질문은 과제 가이드의 Bessemer 체크리스트 10문을 AgTech 실패 요인과 함께 24개 이진 문항으로 푼 것이다.
+  표준에 없는 설계 가정은 기준 {{ '%.0f' % (dec.threshold * 100) }}·창업자 YES ≥ {{ dec.min_founder_yes }}·비교율 계수({{ dec.step }}, {{ dec.clip[0] }}~{{ dec.clip[1] }}) 등이며,
+  결론을 가장 크게 좌우하는 기준 {{ '%.0f' % (dec.threshold * 100) }} 은 1.00~1.20 민감도를 보고서에 함께 싣는다(C.1~C.4, C.8).</p>
+  <p>에이전트는 과제 가이드 Graph(안)의 여섯(스타트업 탐색·기술 요약·시장성 평가·경쟁사 비교·투자 판단·보고서 생성)에 창업자 평가를 더한 일곱이며,
+  분석 에이전트가 평가표 기준을 나눠 맡는다(투자 판단은 실적·투자조건). 투자 판단이 보류면 탐색으로 돌아가 다음 후보를 평가하고, 반 공용 API 키의 비용을 고려해 평가는 최대 {{ cfg.workflow.max_evaluations }}곳으로 제한한다(B.1, D.2).</p>
+  <p>RAG 는 과제 가이드 표에서 O 로 표시된 탐색·기술 요약·시장성 평가 세 에이전트에 모두 적용한다. 공공·연구 문서 중심 {{ corpus | length }}종(민간 AgFunder 1종 포함) {{ total_pages }}쪽을 검색하며,
+  임베딩은 오픈소스 6종을 우리 문서로 만든 질문 70개로 비교한 사전 선정 실험에서 가장 좋은 {{ cfg.embedding.model.split('/') | last }} 과 Kiwi BM25 의 하이브리드(BM25 {{ cfg.rag.ensemble_weights[0] }} : Dense {{ cfg.rag.ensemble_weights[1] }}, Hit@4 {{ rt[1] }})로 정한다(B.4·B.5).</p>
+  <p>보고서는 SUMMARY 반 장(상황 → 결론 → 근거 → 요청)으로 시작해 본문 5장 이내, REFERENCE 로 끝나며, 결과에 따라 투자 추천·모두 보류·후보 없음 세 가지 목차를 쓴다(E).</p>
   <div class="kw"><b>주제어</b> LangGraph, Agentic RAG, 멀티 에이전트, Scorecard Valuation, Bessemer Checklist, AgTech 스타트업 투자 평가</div>
 </section>
 
 {{ body }}
 
+<script>
+/* 표 캡션과 표를 한 덩어리(.tblock)로 묶고, 굵은 글씨만 있는 문단은 소제목(.lead)으로 표시한다 */
+document.querySelectorAll('div.cap').forEach(function (cap) {
+  var t = cap.nextElementSibling;
+  if (!t || t.tagName !== 'TABLE') return;
+  var box = document.createElement('div');
+  box.className = 'tblock';
+  cap.parentNode.insertBefore(box, cap);
+  box.appendChild(cap);
+  box.appendChild(t);
+});
+document.querySelectorAll('table').forEach(function (t) {
+  var th = t.querySelector('th');
+  if (th && th.textContent.trim().indexOf('문항 · 평가 포인트') === 0) t.classList.add('rubric');
+  var ths = t.querySelectorAll('th');
+  if (ths.length === 4 && ths[0].textContent.trim() === '가이드 요구') t.classList.add('trace');
+  if (ths.length === 5 && ths[0].textContent.trim() === '키' && ths[1].textContent.trim().indexOf('타입') === 0) t.classList.add('state');
+});
+/* 절 번호만 있는 칸(예: B.1, D.2, D.4)은 줄바꿈하지 않는다 */
+document.querySelectorAll('td').forEach(function (td) {
+  if (/^[A-E]\.\d[\d.,~·\s A-E]*$/.test(td.textContent.trim())) td.style.whiteSpace = 'nowrap';
+});
+document.querySelectorAll('p').forEach(function (p) {
+  var c = p.children;
+  if (c.length === 1 && c[0].tagName === 'STRONG' && p.textContent.trim() === c[0].textContent.trim()) p.classList.add('lead');
+  /* 표를 소개하는 짧은 한 문장은 표와 같은 쪽에 둔다 */
+  var n = p.nextElementSibling;
+  if (n && n.classList.contains('tblock') && p.textContent.trim().length < 90) p.classList.add('lead');
+  /* 굵은 말로 시작하는 짧은 머리 문단(예: 'REFERENCE 표기 (…)')은 뒤따르는 목록과 붙인다 */
+  if (n && /^(UL|OL)$/.test(n.tagName) && p.firstElementChild && p.firstElementChild.tagName === 'STRONG'
+      && p.textContent.trim().indexOf(p.firstElementChild.textContent.trim()) === 0 && p.textContent.trim().length < 60) p.classList.add('lead');
+});
+</script>
 <script>
 mermaid.initialize({startOnLoad:true, theme:"neutral", securityLevel:"loose",
   themeVariables:{fontFamily:"Pretendard, Apple SD Gothic Neo, sans-serif", fontSize:"14px"},

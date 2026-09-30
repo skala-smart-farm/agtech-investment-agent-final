@@ -1,0 +1,114 @@
+## D. 그래프 설계
+
+### D.1 State 설계
+State 는 데이터를 담는 그릇이 아니라 **에이전트 사이의 인터페이스 규격**이다(교수님 표현). 설계 규칙은 세 가지다. ① 키마다 쓰는 노드와 읽는 노드를 정한다. ② 노드는 **바뀐 키만** 딕셔너리로 반환한다. ③ 다음 에이전트가 이어 써야 하는 키에만 Reducer 를 붙이고, 나머지는 덮어쓴다.
+
+**에이전트 간 데이터 흐름**
+
+| 보내는 노드 | 키 | 받는 노드 | 용도 |
+|---|---|---|---|
+| 탐색 | `current` | 창업자 · 투자 판단 | 단계·라운드 금액·대표·설립일·국민연금 → 창업 시점 t0, D1·ROI |
+| 창업자 · 기술 요약 · 시장성 | 근거 id | 뒤 분석 에이전트 | 판정 근거 풀 공유(예: 시장성의 수요 문항이 기술 요약이 모은 회사 기사를 읽음) |
+| 기술 요약 | `tech.claims` | 경쟁사 비교 | 차별점 주장 검증 |
+| 분석 에이전트 4개 | 기준 판정 | 투자 판단 | 6개 기준 종합 |
+| 투자 판단 | `evaluations` | 보고서 | 후보별 누적 → A안·B안 |
+| 모든 에이전트 | `registry` | 보고서 | REFERENCE |
+
+키 {{ n_state }}개. Reducer 는 `operator.add`(이어 붙이기), `merge_dict`(키 단위 병합), `add_unique`(중복 없이 추가) 세 가지이고, 표시가 없는 키는 덮어쓴다. discover 뒤 괄호(발굴·관문·선택·소진)는 탐색 에이전트의 내부 단계다.
+
+{% set _names = state_rows | map(attribute='name') | list -%}
+{% set _c1 = _names.index('founder') -%}
+{% set _c2 = _names.index('evaluations') -%}
+{% for title, rows in [('State 키 정의 ① 공통·탐색 키', state_rows[:_c1]),
+                       ('State 키 정의 ② 분석·판단 키', state_rows[_c1:_c2]),
+                       ('State 키 정의 ③ 누적·종료·보고 키', state_rows[_c2:])] -%}
+**{{ title }}**
+
+| 키 | 타입 · Reducer | 쓰는 노드 | 읽는 노드 | 설명 |
+|---|---|---|---|---|
+{% for f in rows %}{% set t = f.type.split(' (') %}{% set r = t[1][:-1] %}| `{{ f.name }}` | {{ t[0] }}{% if r != '덮어쓰기' %}<br>`{{ r }}`{% endif %} | {{ f.writer | replace('app(초기값)', '시작 입력') | replace('discover(', '<span style="white-space:nowrap">discover(') | replace(')', ')</span>') }} | {{ f.reader | replace('app(run_log)', '실행 기록') }} | {{ f.desc }} |
+{% endfor %}
+{% endfor %}
+
+### D.2 메인 그래프 (Workflow · Branch · Loop)
+메인 그래프는 가이드 Graph(안)의 순차 흐름 **정보 수집(탐색) → 분석(창업자·기술·시장·경쟁) → 평가(투자 판단) → 보고서**를 그대로 따르고, 창업자 평가 노드 하나만 더한다(B.1).
+
+```mermaid
+{{ main_mermaid }}
+```
+
+**분기 조건과 종료 사유**
+
+| 분기 지점 | 조건 | 다음 노드 | 종료 사유 |
+|---|---|---|---|
+| 탐색 뒤 | 평가 대상 있음 | 창업자 평가 | — |
+| 탐색 뒤 | 후보 소진(대기열 없음 ∧ 발굴 {{ cfg.workflow.max_discovery_rounds }}라운드 소진) | 보고서 | 평가 0곳 = no_eligible(C안), 그 밖 = exhausted(B안) |
+| 투자 판단 뒤 | **투자 추천** | 보고서(A안) | invest_found |
+| 투자 판단 뒤 | 보류 ∧ 평가 {{ cfg.workflow.max_evaluations }}곳 도달 | 보고서(B안, 미평가 적격 후보 명시) | max_evaluations |
+| 투자 판단 뒤 | **보류**(평가 {{ cfg.workflow.max_evaluations }}곳 미만) | 탐색(다른 스타트업) | — |
+
+- **보정 모드**(동종 기준 집단 생성)도 같은 그래프를 쓴다. 투자 추천이 나와도 멈추지 않고 평가 상한 또는 후보 소진까지 평가한 뒤, 같은 간선으로 보고서 노드를 거쳐 끝난다. 이 모드의 보고서 노드는 보고서를 만들지 않으므로 간선은 그림과 같다.
+- 구현 시 설계 그림의 노드·간선과 코드의 노드·간선이 1:1 인지, State 키가 표의 정의와 같은지 검증한다.
+
+**반복 상한**
+
+| 반복(Loop) | 상한 | 근거 |
+|---|---|---|
+| 후보 루프(보류 → 탐색) | 심층 평가 {{ cfg.workflow.max_evaluations }}곳 | 반 공용 API 키 비용 · 루프마다 최대 반복 횟수를 둔다 |
+| 발굴 라운드 | {{ cfg.workflow.max_discovery_rounds }} | 표현을 바꿔 한 번 더 |
+| RAG 도구 선택 | 질문당 1회 | — |
+| RAG 질의 재작성 | {{ cfg.rag.max_rewrites }} | 재작성 뒤에도 부족하면 웹 보완 |
+| RAG 답변 재생성 | {{ rag2.max_regenerations }} | 검색은 충분한데 답이 근거를 벗어나면 답변만 다시 |
+| 보고서 재작성 | 2 | 5쪽 초과 시 조판 밀도 조정 → 2/3 축약 |
+| 안전장치 | recursion_limit 메인 {{ wf2.recursion_limit }} · RAG {{ rag2.rag_recursion_limit }} | 모든 루프에 명확한 종료 조건 |
+
+**협업 패턴**
+- 'Graph(안) 순차 파이프라인 + 조건부 루프'다. 최종 판정의 책임은 투자 판단 노드에 있다.
+- 관리자 에이전트가 하위 결과를 받아 재작업을 지시하는 구조가 아니므로 Supervisor 패턴으로 부르지 않는다.
+- 병렬 실행은 쓰지 않는다. 경쟁사 비교가 `tech.claims` 를, 뒤 에이전트가 앞 에이전트의 근거 풀을 받아 쓰는 순서 의존이 있기 때문이다.
+
+### D.3 탐색 에이전트 내부 흐름
+탐색 에이전트는 대기열을 먼저 보고, 비어 있을 때만 발굴한다. 내부는 발굴 → 적격성 관문 → 다음 후보 선택의 3단계이며, 발굴 {{ cfg.workflow.max_discovery_rounds }}라운드 뒤에도 적격 후보가 없으면 후보 소진으로 보고서 노드에 넘긴다.
+
+```mermaid
+{{ discovery_mermaid }}
+```
+
+- 선택 단계는 후보 1곳을 꺼내면서 후보별 결과 키(`founder`·`tech`·`market`·`competition`·`scorecard`)를 비운다.
+- 누적 키(`screened`·`log`·`rag_traces`)는 **새 기록만** 돌려주고, 메인 State 의 Reducer 가 중복 없이 이어 붙인다.
+- 발굴·관문 결과는 재현용 캐시로 남긴다.
+
+### D.4 Agentic RAG 서브그래프
+RAG 는 한 번 도는 파이프라인이 아니라 **에이전트가 상황에 맞게 고르는 목적성 있는 도구**로 둔다. 검색 여부와 검색처(문서·웹)는 에이전트가 판단하고, 수업의 Agentic RAG 흐름(검색 선택 → 검색 → 관련성 평가 → 답변 → 환각 점검 → 질문 적합성 점검)대로 단계마다 점검한다.
+
+**호출 위치**
+
+| 에이전트 | 쓰는 방식 |
+|---|---|
+| 기술 요약 | 분야 기술 기준선 1문항 |
+| 시장성 | 시장 질문을 하위 질문 3~6개로 분해(투자 사이클 질문 포함)하고, 하위 질문마다 호출 |
+| 탐색 | 기업명 추출이 목적이므로 **교정형 경로(retrieve → grade → rewrite → web)만** 쓰고 답변은 생성하지 않음 |
+
+- 에이전트 호출에서는 '검색 없이 직접 답하기'를 쓰지 않는다. 수치 질문이 근거 없이 답해지는 것을 막기 위해서다.
+- 질의 확장(expansion)은 쓰지 않고 재작성과 분해만 쓴다. 경로(도구 선택·재작성·웹 보완·재생성)는 `rag_traces` 에 쌓아 실행 기록으로 남긴다.
+
+#### Agentic RAG 서브그래프 흐름
+
+```mermaid
+{{ rag_mermaid }}
+```
+
+**서브그래프 노드 역할**
+
+| 노드 | 하는 일 |
+|---|---|
+| `agent` | LLM 이 **문서 검색·웹 검색 중 고른다**(둘 다 가능). 시장 수치·정책·기술 기준선은 문서 우선, 개별 기업·최근 사건은 웹(최근 1년 우선). 선택과 이유를 기록한다 |
+| `retrieve` | Kiwi BM25 {{ cfg.rag.ensemble_weights[0] }} + KURE-v1 {{ cfg.rag.ensemble_weights[1] }} (RRF), 검색기마다 후보 {{ cfg.rag.candidate_k }}개 |
+| `grade` | Judge LLM 이 조각마다 관련 O/X(이진). 관련 조각은 검색 순위대로 앞 {{ cfg.rag.top_k }}개만 쓴다 |
+| `rewrite` | 관련 조각이 {{ cfg.rag.min_relevant }}개 미만이면 질의 재작성(최대 {{ cfg.rag.max_rewrites }}회) |
+| `web` | 재작성 뒤에도 부족하면 웹 검색으로 보완(Corrective RAG) |
+| `generate` | 남은 근거만으로 짧게 답한다. 문장마다 근거 id, 수치에는 기준 연도·기관. 근거가 없으면 '근거에서 확인되지 않음'(채점 항목 '컨텍스트 활용') |
+| `check` | 규칙 대조(답변 속 수치가 인용 근거에 있나) 뒤 Judge 가 이진 두 문항(근거로 뒷받침되나 / 질문에 답했나)을 판정. **grounded** → 종료, **not_grounded** → 검색은 두고 답변만 재생성(최대 {{ rag2.max_regenerations }}회), **not_useful** → 질의 재작성부터. 상한에 닿으면 점검한 답 중 가장 나은 것(grounded > not_useful > not_grounded)을 내어, 재생성한 답이 더 나빠져도 앞의 답을 잃지 않게 한다 |
+| `finish` | 실제로 인용된 근거만 저장소에 남기고 {답변, 근거 id, 상태, 경로 기록}을 돌려준다 |
+
+---

@@ -1,0 +1,64 @@
+{#- 목차는 각 장(p1~p7)의 ##·### 제목에서 만든다: 장 제목을 고치면 목차도 따라 바뀐다.
+    제목의 ' — 부연'은 빼고, 절(###) 제목의 한글 괄호 부연도 뺀다(영문 괄호는 남김).
+    ### 가 없는 장(E)은 '**A안 — …**' 굵은 소제목에서 시나리오 이름을 가져온다. -#}
+{%- set toc_src -%}
+{%- for p in ['p1_a', 'p2_b_agents_tools_discovery', 'p3_b_rag_embedding', 'p4_c_criteria',
+              'p5_c_bessemer_roi_check', 'p6_d_graph', 'p7_e_report_appendix'] %}
+{% include 'design_md/' ~ p ~ '.md.j2' ignore missing %}
+{% endfor -%}
+{%- endset -%}
+{%- macro short(title, sub=false) -%}
+{%- set head = title.replace('`', '').split(' — ')[0].strip() -%}
+{%- set paren = head.split(' (', 1)[1] if ' (' in head else '' -%}
+{%- if sub and paren and (paren | list | select('ge', '가') | select('le', '힣') | list) -%}
+{%- set head = head.split(' (', 1)[0] -%}
+{%- endif -%}
+{{ head.replace(' · ', '·').replace(' (', '(') }}
+{%- endmacro -%}
+{%- set case_name = {'A안': 'A안 투자 추천', 'B안': 'B안 모두 보류', 'C안': 'C안 적격 후보 없음'} -%}
+{%- set ns = namespace(sections=[], appendix=[], in_appendix=false) -%}
+{%- for line in toc_src.split('\n') -%}
+{%- if line.startswith('## ') -%}
+{%- set t = short(line[3:]) -%}
+{%- if t.startswith('부록') -%}
+{%- set ns.in_appendix = true -%}
+{%- set ns.appendix = ns.appendix + [t[2:].lstrip('. ').strip()] -%}
+{%- else -%}
+{%- set ns.in_appendix = false -%}
+{%- set ns.sections = ns.sections + [{'title': t, 'subs': [], 'cases': []}] -%}
+{%- endif -%}
+{%- elif ns.sections and not ns.in_appendix -%}
+{%- if line.startswith('### ') -%}
+{%- set _ = ns.sections[-1].subs.append(short(line[4:], true)) -%}
+{%- elif line.startswith('**') and line[2:3] in 'ABC' and line[3:4] == '안' -%}
+{%- set _ = ns.sections[-1].cases.append(case_name.get(line[2:4], line[2:4])) -%}
+{%- endif -%}
+{%- endif -%}
+{%- endfor -%}
+# AgTech AI 스타트업 투자 평가 에이전트 — 설계 산출물
+
+> SKALA {{ team.campus }}캠퍼스 {{ team['class'] }} {{ team.team }} · {{ members_line }} · 작성일 {{ today }}
+
+## 목차
+
+{% for s in ns.sections %}- **{{ s.title }}**{% if s.subs or s.cases %} — {{ (s.subs or s.cases) | join(' · ') }}{% endif %}
+{% endfor %}{% if ns.appendix %}- **부록** — {{ ns.appendix | join(' · ') }}
+{% endif %}
+**용어 정리**
+
+| 용어 | 뜻 | 절 |
+|---|---|---|
+| 관문(Gate) | 평가 전에 과제의 스타트업 조건(비상장·Seed~Series C·Exit 전·AgTech AI)을 확인하는 통과/탈락 검사 | B.3 |
+| Agentic RAG | LLM 이 질문마다 찾을 곳(문서/웹)을 고르고, 검색 결과와 답변을 스스로 점검하는 RAG | B.4·D.4 |
+| Hit@K · MRR@K | Hit@K: 정답 조각이 검색 결과 앞 K개 안에 든 질문의 비율. MRR@K: 정답 순위 역수의 평균(1위=1, 2위=0.5 …) | B.5 |
+| RRF | 여러 검색기의 순위를 역수로 더해 합치는 방법. 키워드 검색(BM25)과 의미 검색(Dense)을 섞을 때 쓴다 | B.5 |
+| YES / NO / 미확인 | 문항 판정. YES·NO 는 원문 인용이 있어야 하고, 근거가 없으면 미확인(0점이 아니라 동종 평균과 비교) | C.2·C.3 |
+| Deal-killer | 점수와 관계없이 보류시키는 조건(K1~K3) | C.2·C.4 |
+| 동종 기준 집단 | 적격성 관문을 통과해 같은 절차로 평가한 후보들. Scorecard 의 '평균 기업 = 100%' 자리 | C.3 |
+| Scorecard 배수(M) | 6개 기준의 '동종 평균 대비 비율'을 비중대로 더한 값. 1.00 = 동종 평균(보고서 표기 100) | C.3 |
+| 뒤집힘 조건 | 보류 후보의 미확인 문항 중 무엇이 확인되면 결론이 '투자 추천'으로 바뀌는지 | C.6 |
+| 실사 항목 | 공개 정보로 답하지 못해 투자 전에 회사에 직접 확인할 질문 | C.6 |
+| Reducer | LangGraph State 의 같은 키에 여러 번 쓸 때 덮어쓰지 않고 합치는 함수 | D.1 |
+| 답변 점검 결과 | grounded(근거로 뒷받침됨) · not_grounded(근거에 없는 내용 있음) · not_useful(질문에 답하지 못함) | D.4 |
+| 재현용 캐시 | 검색 결과·LLM 응답을 저장해 두고 재실행 때 그대로 써서, 같은 입력에 같은 보고서가 나오게 한다 | A.2·D.3 |
+
