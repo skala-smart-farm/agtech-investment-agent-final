@@ -38,7 +38,7 @@ def require_keys() -> None:
     if not any(os.getenv(k) for k in ("SERPER_API_KEY", "TAVILY_API_KEY")):
         missing.append("검색 키(SERPER_API_KEY 또는 TAVILY_API_KEY)")
     if missing:
-        raise RuntimeError(f"캐시에 없는 호출이라 {', '.join(missing)} 가 필요합니다. .env.example 을 참고해 .env 를 만드세요.")
+        raise RuntimeError(f"캐시에 없는 호출이라 {', '.join(missing)} 가 필요합니다. 저장소 루트에 .env 를 만들어 OPENAI_API_KEY 와 SERPER_API_KEY(또는 TAVILY_API_KEY)를 넣으세요.")
 
 
 def run_date() -> str:

@@ -6,10 +6,9 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 
-# Env & secrets (.env.example 은 키 이름만 담은 양식이라 올린다)
+# Env & secrets
 .env
 .env.*
-!.env.example
 
 # OS / Editor
 .DS_Store
