@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgTech AI 스타트업 투자 평가 에이전트 — 설계 보고</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reset.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root { --ink:#111418; --sub:#5f6670; --faint:#a3a9b1; --line:#e4e7eb; --green:#12804f; --green-soft:#e8f4ee; --bg:#ffffff; }
+  html, body { background: var(--bg); }
+  .reveal { font-family: "Pretendard", "Apple SD Gothic Neo", sans-serif; color: var(--ink); font-size: 30px; font-weight: 500;
+            letter-spacing: -0.02em; word-break: keep-all; }
+  .reveal .slides { text-align: left; }
+  .reveal .slides section { width: 1280px !important; height: 720px !important; padding: 0 !important; box-sizing: border-box !important; }
+  .reveal .slides section > .in { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; padding: 70px 96px 64px; box-sizing: border-box; }
+  .reveal h1, .reveal h2, .reveal h3 { font-family: inherit; color: var(--ink); text-transform: none; letter-spacing: -0.035em; margin: 0; }
+  .reveal h1 { font-size: 76px; line-height: 1.16; font-weight: 800; }
+  .reveal h2 { font-size: 58px; line-height: 1.2; font-weight: 800; }
+  .reveal p { margin: 0; line-height: 1.5; }
+  .reveal em { font-style: normal; color: var(--green); }
+  .kicker { font-size: 20px; font-weight: 700; color: var(--sub); letter-spacing: 0.02em; margin-bottom: 26px; }
+  .lede { font-size: 30px; color: var(--sub); line-height: 1.55; margin-top: 30px; max-width: 980px; }
+  .lede b { color: var(--ink); font-weight: 700; }
+  .src { position: absolute; left: 96px; bottom: 34px; font-size: 15px; color: var(--faint); font-weight: 500; }
+  .pg { position: absolute; right: 96px; bottom: 34px; font-size: 15px; color: var(--faint); font-weight: 600; }
+  .huge { font-size: 190px; font-weight: 800; line-height: 1; letter-spacing: -0.05em; }
+  .big { font-size: 110px; font-weight: 800; line-height: 1; letter-spacing: -0.045em; }
+  .unit { font-size: 40px; font-weight: 700; margin-left: 6px; color: var(--sub); letter-spacing: -0.02em; }
+  .row { display: flex; gap: 72px; align-items: flex-start; }
+  .col { flex: 1; }
+  .cap { font-size: 22px; color: var(--sub); margin-top: 14px; line-height: 1.45; }
+  .rule { height: 2px; background: var(--ink); width: 64px; margin: 34px 0 30px; }
+  .green { color: var(--green); }
+  .muted { color: var(--faint); }
+  /* 표지 */
+  section.cover { background: var(--ink); color: #fff; }
+  section.cover h1 { color: #fff; font-size: 70px; }
+  section.cover .kicker { color: #9aa3ad; }
+  section.cover .who { position: absolute; left: 96px; bottom: 60px; font-size: 20px; color: #c9ced4; line-height: 1.6; }
+  section.cover .who b { color: #fff; }
+  section.cover em { color: #5fd49a; }
+  /* 깔때기 */
+  .funnel { display: flex; align-items: flex-end; gap: 28px; margin-top: 40px; }
+  .funnel .st { flex: 1; border-top: 3px solid var(--ink); padding-top: 16px; }
+  .funnel .st.hl { border-color: var(--green); }
+  .funnel .n { font-size: 96px; font-weight: 800; letter-spacing: -0.045em; line-height: 1; }
+  .funnel .l { font-size: 22px; color: var(--sub); margin-top: 10px; line-height: 1.45; }
+  /* 막대 */
+  .bars { margin-top: 26px; position: relative; }
+  .bar { display: grid; grid-template-columns: 200px 1fr 88px; align-items: center; gap: 18px; height: 38px; }
+  .bar .nm { font-size: 21px; font-weight: 600; color: var(--sub); text-align: right; white-space: nowrap; }
+  .bar .tr { position: relative; height: 18px; }
+  .bar .fl { position: absolute; left: 0; top: 0; bottom: 0; background: #cfd4da; border-radius: 2px; }
+  .bar .v { font-size: 21px; font-weight: 700; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .bar.hl .nm, .bar.hl .v { color: var(--ink); font-weight: 800; }
+  .bar.hl .fl { background: var(--green); }
+  .refline { position: absolute; top: -12px; bottom: -6px; border-left: 2px dashed var(--ink); }
+  .refline span { position: absolute; top: -26px; left: -30px; font-size: 16px; font-weight: 700; white-space: nowrap; }
+  /* 인용 */
+  .quote { font-size: 34px; line-height: 1.55; font-weight: 600; border-left: 4px solid var(--green); padding-left: 30px; margin-top: 34px; max-width: 1000px; }
+  .quote small { display: block; font-size: 19px; color: var(--sub); font-weight: 500; margin-top: 16px; }
+  /* 흐름 */
+  .flow { display: flex; margin-top: 54px; }
+  .flow .s { flex: 1; border-top: 3px solid var(--ink); padding-top: 16px; padding-right: 14px; }
+  .flow .s b { display: block; font-size: 27px; font-weight: 800; }
+  .flow .s span { display: block; font-size: 19px; color: var(--sub); margin-top: 8px; line-height: 1.45; }
+  .flow .s.g { border-color: var(--green); }
+  .loop { margin-top: 34px; font-size: 24px; color: var(--sub); }
+  .loop b { color: var(--ink); }
+  /* 타임라인 */
+  .tl { position: relative; margin-top: 70px; height: 170px; }
+  .tl .axis { position: absolute; left: 0; right: 0; top: 64px; height: 3px; background: var(--ink); }
+  .tl .t0 { position: absolute; left: 46%; top: 30px; width: 3px; height: 70px; background: var(--green); }
+  .tl .t0 span { position: absolute; top: -40px; left: -34px; font-size: 22px; font-weight: 800; color: var(--green); white-space: nowrap; }
+  .tl .lt { position: absolute; left: 0; width: 44%; top: 90px; font-size: 22px; color: var(--sub); line-height: 1.5; }
+  .tl .rt { position: absolute; left: 50%; width: 50%; top: 90px; font-size: 22px; color: var(--sub); line-height: 1.5; }
+  .tl b { color: var(--ink); font-size: 26px; }
+  /* 목록 */
+  ol.plain, ul.plain { list-style: none; margin: 34px 0 0; padding: 0; }
+  ol.plain li, ul.plain li { font-size: 28px; line-height: 1.5; padding: 14px 0; border-top: 1px solid var(--line); }
+  ol.plain li:last-child, ul.plain li:last-child { border-bottom: 1px solid var(--line); }
+  ol.plain li b, ul.plain li b { font-weight: 800; }
+  ol.plain li span, ul.plain li span { color: var(--sub); font-size: 23px; margin-left: 12px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; margin-top: 44px; }
+  .two .k { font-size: 22px; font-weight: 800; color: var(--sub); margin-bottom: 12px; }
+  .two p { font-size: 27px; line-height: 1.5; }
+  .ask { font-size: 26px; line-height: 1.6; margin-top: 44px; }
+  .ask div { padding: 14px 0; border-top: 1px solid var(--line); }
+  .ask div:last-child { border-bottom: 1px solid var(--line); }
+  .ask b { display: inline-block; width: 120px; }
+  .reveal .slide-number { display: none; }
+  .funnel + .lede { margin-top: 44px; }
+</style>
+</head>
+<body>
+<div class="reveal"><div class="slides">
+
+<!-- 1 -->
+<section class="cover">
+  <div class="kicker">설계 보고 · AgTech AI 스타트업 투자 평가 에이전트</div>
+  <h1>유망해 보이는 회사가 아니라<br><em>투자할 근거가 있는 회사</em>를<br>찾습니다</h1>
+  <div class="who"><b>SKALA 울산캠퍼스 2반 1조</b><br>김가연 · 김진녕 · 문지후 · 이준희 · 정승우 · 2026. 9. 30.</div>
+  <aside class="notes">안녕하십니까, 울산 2반 1조입니다. 저희가 설계한 것은 AgTech AI 스타트업 가운데 '좋아 보이는 회사'가 아니라 '투자할 근거가 있는 회사'를 골라내는 에이전트입니다. 10분 동안 왜 이렇게 설계했는지 말씀드리겠습니다.</aside>
+</section>
+
+<!-- 2 -->
+<section>
+  <div class="kicker">시장</div>
+  <h2>AgTech 투자는 식었습니다.<br>이제는 <em>옥석을 가릴</em> 때입니다.</h2>
+  <div class="row" style="margin-top:56px">
+    <div class="col"><div class="big">$16.2B</div><div class="cap">2025년 글로벌 애그리푸드테크 투자<br>전년과 비슷(−3%) · 후기 투자자는 신중</div></div>
+    <div class="col"><div class="big">2~3년</div><div class="cap">과열 이후 이어진 조정 국면<br>한국은 오히려 투자가 늘었습니다</div></div>
+  </div>
+  <div class="src">출처: AgFunder, Global AgriFoodTech Investment Report 2026</div><div class="pg">2</div>
+  <aside class="notes">먼저 시장입니다. 작년 글로벌 애그리푸드테크 투자는 162억 달러로 전년과 거의 같았고, 후기 투자자들은 신중해졌습니다. 2~3년 전 과열이 끝나고 조정 국면입니다. 이런 시장에서 필요한 건 유망해 보이는 회사를 더 많이 찾는 게 아니라, 투자할 만한 회사를 가려내는 일입니다.</aside>
+</section>
+
+<!-- 3 -->
+<section>
+  <div class="kicker">문제</div>
+  <h2>좋아 보이는 회사는 많습니다.<br>투자할 수 있는 회사는 적습니다.</h2>
+  <div class="funnel">
+    <div class="st"><div class="n">77</div><div class="l">공개 정보에서 찾은 후보<br>TIPS·투자 기사 등 8개 채널</div></div>
+    <div class="st"><div class="n">18</div><div class="l">조건을 검증한 후보<br>국내·해외를 섞어 검증</div></div>
+    <div class="st hl"><div class="n green">14</div><div class="l">비상장 · Seed~Series C ·<br>Exit 전이 확인된 후보</div></div>
+  </div>
+  <p class="lede">확인하지 못한 조건은 통과시키지 않습니다. <b>모르면 탈락입니다.</b></p>
+  <div class="src">제출 실행 기록 (outputs/run_log.json) · 설계서 B.3</div><div class="pg">3</div>
+  <aside class="notes">공개 정보에서 후보 77곳을 찾았습니다. 그중 18곳을 검증했고, 비상장이면서 Seed부터 Series C 사이, 아직 Exit하지 않은 것이 확인된 곳은 14곳이었습니다. 여기서 원칙 하나는 확인하지 못한 조건은 통과시키지 않는다는 것입니다.</aside>
+</section>
+
+<!-- 4 -->
+<section>
+  <div class="kicker">첫 번째 설계</div>
+  <h2>처음 만든 평가표는 실패했습니다.</h2>
+  <div class="row" style="margin-top:50px">
+    <div class="col"><div class="big">10<span class="unit">곳 중 0곳</span></div><div class="cap">평가한 후보 10곳이 모두 '보류'</div></div>
+    <div class="col"><div class="big">3<span class="unit">곳 중 0곳</span></div><div class="cap">실제로 투자를 받은 회사 3곳도<br>투자 추천은 0곳</div></div>
+  </div>
+  <p class="lede">'100점 만점에 70점'이라는 기준은 <b>모르는 회사와 나쁜 회사를 구분하지 못했습니다.</b><br>그리고 누가 "그 70점은 어디서 나왔습니까?" 물으면 답할 수 없었습니다.</p>
+  <div class="src">v1 결과 (v1-safe) · 설계서 서두 'v2 로 다시 설계한 이유'</div><div class="pg">4</div>
+  <aside class="notes">솔직하게 말씀드리면, 처음 만든 평가표는 실패했습니다. 10곳을 평가해서 10곳 모두 보류였고, 실제로 투자를 받은 회사 3곳을 넣어 봐도 투자 추천은 한 곳도 없었습니다. 원인은 기준이었습니다. 공개 정보가 부족한 회사와 실제로 나쁜 회사를 똑같이 감점했고, 70점이라는 숫자에는 근거가 없었습니다.</aside>
+</section>
+
+<!-- 5 -->
+<section>
+  <div class="kicker">기준</div>
+  <h2>그래서 기준을 새로 만들지 않고,<br>투자업계의 기준을 가져왔습니다.</h2>
+  <div class="row" style="margin-top:46px;align-items:flex-start">
+    <div class="col"><div class="huge">100</div><div class="cap"><b style="color:#111">투자를 받은 평균 기업</b><br>Bill Payne Scorecard — 같은 단계에서 투자받은<br>회사들과 비교해 평균을 100으로 둡니다</div></div>
+    <div class="col"><div class="huge green">110</div><div class="cap"><b style="color:#111">저희의 추천 기준</b><br>평균보다 10% 앞서고, 창업자 근거가 있고,<br>치명적 결함(Deal-killer)이 없을 때만</div></div>
+  </div>
+  <div class="src">Payne Scorecard(ACA 2019) 가중치 창업자 30 · 시장성 25 · 제품/기술 15 · 경쟁 10 · 실적 10 · 투자조건 10 · 질문은 Bessemer 체크리스트 10문 · 설계서 C.1~C.4</div><div class="pg">5</div>
+  <aside class="notes">그래서 기준을 저희가 만들지 않았습니다. 엔젤 투자에서 쓰는 Bill Payne의 Scorecard를 가져왔습니다. 핵심은 '같은 단계에서 투자를 받은 평균 기업을 100으로 놓고 비교한다'는 것입니다. 저희는 그 평균보다 10% 앞서는 110을 추천 기준으로 잡았습니다. 참고 자료의 예시 배수 112와 116보다 조금 낮게 둔 설계 가정이고, 기준을 바꿨을 때 결과가 어떻게 달라지는지도 계산해 두었습니다. 무엇을 물을지는 과제에서 주신 Bessemer 체크리스트 10문을 24개 질문으로 풀었습니다.</aside>
+</section>
+
+<!-- 6 -->
+<section>
+  <div class="kicker">증거</div>
+  <h2>모든 판단에는 원문이 붙습니다.</h2>
+  <div class="quote">“대표인 저는 서울대학교 기계공학부 박사 과정 중 스마트팩토리 구축 경험을 통해 실제 현장에 적용 가능한 자동화 솔루션 개발에 관한 다양한 경험을 갖고 있습니다.”
+    <small>메타파머스 · 질문 F1 '창업 전 전문성' → YES (인용문이 원문에 있는지 코드가 확인)</small></div>
+  <p class="lede">인용이 원문에 없으면 YES도 NO도 인정하지 않습니다. <b>모르면 '미확인'</b>이고, 미확인은 0점 처리하지 않고 동종 기업과 비교합니다.</p>
+  <div class="src">제출 실행 판정 기록 · 설계서 C.2</div><div class="pg">6</div>
+  <aside class="notes">두 번째 원칙은 근거입니다. AI가 'YES'라고 판단하면 반드시 원문 인용을 붙여야 하고, 그 인용이 실제 원문에 있는지는 코드가 확인합니다. 이 문장은 메타파머스 대표의 인터뷰에서 나온 실제 인용입니다. 인용이 없으면 판단을 인정하지 않고 '미확인'으로 둡니다. 그리고 미확인을 0점으로 처리하지 않고 동종 기업과 비교합니다. 첫 번째 설계의 실패를 여기서 고쳤습니다.</aside>
+</section>
+
+<!-- 7 -->
+<section>
+  <div class="kicker">창업자</div>
+  <h2>링크드인 팔로워는 보지 않습니다.<br>창업 전에 무엇을 했는지 봅니다.</h2>
+  <div class="tl">
+    <div class="axis"></div>
+    <div class="t0"><span>창업 시점 t0</span></div>
+    <div class="lt"><b>창업 전 경력</b><br>분야 연구·실무·이전 창업 → 전문성</div>
+    <div class="rt"><b>창업 후 24개월</b><br>투자·수상·선정·출시 같은 날짜 있는 사건 → 실행력</div>
+  </div>
+  <p class="lede" style="margin-top:10px">팔로워는 계정을 만든 날부터 쌓입니다. 창업 시점과 맞지 않습니다. 그래서 창업일부터 먼저 고정합니다 — TIPS 설립일, 국민연금 첫 가입일 순으로.</p>
+  <div class="src">설계서 B.3 · 창업자 평가 에이전트(agents/founder.py)</div><div class="pg">7</div>
+  <aside class="notes">교수님께서 링크드인 팔로워 이야기를 하셨습니다. 팔로워는 계정을 만든 날부터 쌓이기 때문에 창업 시점과 맞지 않습니다. 그래서 저희는 창업자 평가를 따로 떼어 에이전트를 하나 더 두었고, 먼저 창업일을 공공 데이터로 고정합니다. 그 이전의 경력은 전문성으로, 이후 24개월의 날짜 있는 성과는 실행력으로 나눠 봅니다.</aside>
+</section>
+
+<!-- 8 -->
+<section>
+  <div class="kicker">작동 방식</div>
+  <h2>일곱 명의 심사역이<br>한 회사를 차례로 봅니다.</h2>
+  <div class="flow">
+    <div class="s"><b>탐색</b><span>다음 후보 1곳</span></div>
+    <div class="s g"><b>창업자</b><span>30%</span></div>
+    <div class="s"><b>기술</b><span>15% · 문서 검색</span></div>
+    <div class="s"><b>시장</b><span>25% · 문서 검색</span></div>
+    <div class="s"><b>경쟁</b><span>10%</span></div>
+    <div class="s"><b>판단</b><span>실적·조건 20%<br>종합</span></div>
+    <div class="s"><b>보고서</b><span>5쪽</span></div>
+  </div>
+  <p class="loop"><b>투자가 아니면 다음 회사로 돌아갑니다.</b> 비용 때문에 최대 10곳, 발굴은 2라운드까지만.</p>
+  <div class="src">LangGraph 메인 그래프 · 가이드 Graph(안) 6개 + 창업자 평가 · 설계서 B.1 · D.2</div><div class="pg">8</div>
+  <aside class="notes">구조는 단순합니다. 과제 가이드의 그래프 안을 그대로 따랐고, 창업자 평가 하나만 더했습니다. 일곱 명의 심사역이 한 회사를 차례로 보는 구조이고, 각자 평가표의 한 기준을 맡습니다. 투자 판단이 보류면 다음 회사로 돌아갑니다. 반 전체가 쓰는 API 키라서 최대 10곳까지만 평가하도록 상한을 두었습니다.</aside>
+</section>
+
+<!-- 9 -->
+<section>
+  <div class="kicker">문서 검색 (RAG)</div>
+  <h2>시장 숫자는 기억이 아니라<br>문서에서 꺼냅니다.</h2>
+  <div class="row" style="margin-top:48px">
+    <div class="col"><div class="big">196<span class="unit">쪽</span></div><div class="cap">공공·연구 문서 13종<br>한도 200쪽 안에서 골랐습니다</div></div>
+    <div class="col"><div class="big">98.6<span class="unit">%</span></div><div class="cap">정답 조각을 상위 4개 안에 찾은 비율<br>오픈소스 임베딩 6종을 우리 질문 70개로 비교</div></div>
+    <div class="col"><div class="big">20<span class="unit">/20</span></div><div class="cap">답변 평가 — 관련성 · 근거 충실 ·<br>정확도 모두 통과</div></div>
+  </div>
+  <div class="src">임베딩 KURE-v1 + Kiwi BM25 하이브리드(0.4:0.6) · Hit@4 0.986 · MRR@4 0.833 · LLM Judge 20문항 · 설계서 B.4 · B.5 · D.4</div><div class="pg">9</div>
+  <aside class="notes">시장 규모 같은 숫자를 AI의 기억에 맡기지 않습니다. 정부와 연구기관 문서 13종, 196쪽을 넣었습니다. 임베딩 모델은 리더보드 순위가 아니라, 저희 문서로 만든 질문 70개로 6개 모델을 직접 겨뤄서 골랐습니다. 정답을 상위 4개 안에 찾는 비율이 98.6%였고, 최종 답변 20개를 평가했을 때 관련성, 근거 충실도, 정확도가 모두 통과했습니다.</aside>
+</section>
+
+<!-- 10 -->
+<section>
+  <div class="kicker">결과</div>
+  <h2>10곳을 평가해, <em>1곳</em>만 기준을 넘었습니다.</h2>
+  <div class="bars">
+    <div class="refline" style="left:calc(200px + 18px + (100% - 200px - 18px - 88px - 18px) * 0.8)"><span>기준 110</span></div>
+    <div class="bar hl"><div class="nm">메타파머스</div><div class="tr"><div class="fl" style="width:80.4%"></div></div><div class="v">110.1</div></div>
+    <div class="bar"><div class="nm">리비타</div><div class="tr"><div class="fl" style="width:58.4%"></div></div><div class="v">104.6</div></div>
+    <div class="bar"><div class="nm">퓨처커넥트</div><div class="tr"><div class="fl" style="width:55.6%"></div></div><div class="v">103.9</div></div>
+    <div class="bar"><div class="nm">새팜</div><div class="tr"><div class="fl" style="width:41.6%"></div></div><div class="v">100.4</div></div>
+    <div class="bar"><div class="nm">트랙팜</div><div class="tr"><div class="fl" style="width:41.6%"></div></div><div class="v">100.4</div></div>
+    <div class="bar"><div class="nm">Upside Robotics</div><div class="tr"><div class="fl" style="width:30.4%"></div></div><div class="v">97.6</div></div>
+    <div class="bar"><div class="nm">에임비랩</div><div class="tr"><div class="fl" style="width:30.4%"></div></div><div class="v">97.6</div></div>
+    <div class="bar"><div class="nm">Bonsai Robotics</div><div class="tr"><div class="fl" style="width:28.8%"></div></div><div class="v">97.2</div></div>
+    <div class="bar"><div class="nm">바르카</div><div class="tr"><div class="fl" style="width:22.4%"></div></div><div class="v">95.6</div></div>
+    <div class="bar"><div class="nm">Nature Robots</div><div class="tr"><div class="fl" style="width:11.2%"></div></div><div class="v">92.8</div></div>
+  </div>
+  <div class="src">보정 실행(동종 기준 집단 10곳, 자기 제외 평균) · 막대 눈금 90~115 · 설계서 C.8</div><div class="pg">10</div>
+  <aside class="notes">실제로 돌려 봤습니다. 적격 후보 10곳을 평가해서 서로를 비교 기준으로 삼았고, 기준 110을 넘은 곳은 메타파머스 한 곳이었습니다. 나머지는 대부분 평균 근처에 있습니다. 무조건 보류도, 무조건 투자도 아닌, 근거가 뚜렷한 소수만 통과하는 구조입니다.</aside>
+</section>
+
+<!-- 11 -->
+<section>
+  <div class="kicker">메타파머스 · Pre-A 30억 원</div>
+  <h2>넘은 이유는 <em>사람과 조건</em>이었습니다.</h2>
+  <div class="bars" style="margin-top:40px">
+    <div class="refline" style="left:calc(200px + 18px + (100% - 200px - 18px - 88px - 18px) * 0.4)"><span>평균 100</span></div>
+    <div class="bar hl"><div class="nm">투자조건</div><div class="tr"><div class="fl" style="width:84.4%"></div></div><div class="v">122</div></div>
+    <div class="bar hl"><div class="nm">창업자·팀</div><div class="tr"><div class="fl" style="width:76.2%"></div></div><div class="v">118</div></div>
+    <div class="bar"><div class="nm">제품/기술</div><div class="tr"><div class="fl" style="width:62.2%"></div></div><div class="v">111</div></div>
+    <div class="bar"><div class="nm">시장성</div><div class="tr"><div class="fl" style="width:51.2%"></div></div><div class="v">106</div></div>
+    <div class="bar"><div class="nm">실적</div><div class="tr"><div class="fl" style="width:40%"></div></div><div class="v">100</div></div>
+    <div class="bar"><div class="nm">경쟁 우위</div><div class="tr"><div class="fl" style="width:28.8%"></div></div><div class="v">94</div></div>
+  </div>
+  <p class="lede" style="margin-top:26px">대표·CTO 모두 로봇·기계 분야 전공, 기관투자자 3곳(스마일게이트인베스트먼트 · 퓨처플레이 · 옥타곤벤처파트너스).<br>약점은 경쟁 우위 — <b>투자 전 실사에서 확인할 항목 5개</b>로 보고서에 넘깁니다.</p>
+  <div class="src">제출 실행 판정 기록 · 막대 눈금 80~130 · 투자 보고서 4장</div><div class="pg">11</div>
+  <aside class="notes">메타파머스가 넘은 이유는 사람과 투자 조건이었습니다. 대표와 CTO가 모두 분야 전공자이고, 기관투자자 세 곳이 들어와 있습니다. 반대로 경쟁 우위는 평균보다 낮았습니다. 이런 약점은 숨기지 않고, 투자 전에 회사에 직접 확인할 실사 항목 5개로 보고서에 넘깁니다.</aside>
+</section>
+
+<!-- 12 -->
+<section>
+  <div class="kicker">검증</div>
+  <h2>실제로 투자받은 회사는<br>정확히 <em>평균</em>에 놓였습니다.</h2>
+  <div class="row" style="margin-top:48px">
+    <div class="col"><div class="big">99.8</div><div class="cap">Source.ag (Series B)</div></div>
+    <div class="col"><div class="big">100.0</div><div class="cap">아이오크롭스</div></div>
+    <div class="col"><div class="big muted">—</div><div class="cap">Agtonomy<br>대기업 계열로 관문에서 제외</div></div>
+  </div>
+  <p class="lede">'투자받은 평균 기업 = 100'이라는 척도가 뜻대로 작동한다는 뜻입니다. 110은 그보다 <b>확실히 나은 곳</b>만 고르는 선입니다.</p>
+  <div class="src">양성 대조 실험 (outputs/eval/positive_control.json) · 첫 설계에서는 3곳 모두 투자 추천 0</div><div class="pg">12</div>
+  <aside class="notes">마지막으로 저희 척도가 맞는지 확인했습니다. 실제로 투자를 받은 회사들을 넣어 봤더니, 정확히 평균인 100 근처에 놓였습니다. 투자받은 평균 기업이 100이라는 원래 뜻대로 척도가 작동한다는 증거입니다. 첫 설계에서는 이 회사들 중 투자 추천이 한 곳도 없었습니다.</aside>
+</section>
+
+<!-- 13 -->
+<section>
+  <div class="kicker">보고서</div>
+  <h2>임원께서는 <em>반 장</em>만 읽으시면 됩니다.</h2>
+  <ol class="plain">
+    <li><b>첫 반 장</b><span>상황 → 결론 → 근거 → "진행할까요?" — 자세한 내용은 "몇 장에 있습니다"로 연결</span></li>
+    <li><b>투자 추천이면</b><span>사업 · 시장 · 팀 · 판단과 리스크 · 한계, 5쪽 이내</span></li>
+    <li><b>모두 보류면</b><span>후보마다 왜 안 되는지, 그리고 무엇이 확인되면 투자로 바뀌는지</span></li>
+    <li><b>마지막 장</b><span>참고 자료 — 기관 보고서 · 논문 · 웹페이지 형식 그대로</span></li>
+  </ol>
+  <div class="src">설계서 E · 투자 보고서 4쪽, SUMMARY A4의 21%, 형식 자동 검사 통과</div><div class="pg">13</div>
+  <aside class="notes">결과물은 투자 보고서입니다. 임원께서 바쁘시다는 것을 전제로, 첫 반 장에 상황, 결론, 근거, 그리고 '진행할까요'라는 질문까지 넣었습니다. 모두 보류일 때는 후보마다 왜 안 되는지와, 무엇이 확인되면 투자로 바뀌는지를 적습니다.</aside>
+</section>
+
+<!-- 14 -->
+<section>
+  <div class="kicker">요청</div>
+  <h2>이 기준으로 판정해도<br>되겠습니까?</h2>
+  <div class="ask">
+    <div><b>예</b>동종 평균 대비 110 · 창업자 근거 · Deal-killer 없음 — 이 규칙 그대로 보고서를 냅니다</div>
+    <div><b>아니오</b>기준값만 바꾸면 됩니다 — 100에서 120까지 결과를 이미 계산해 두었습니다 (2 · 1 · 1 · 0 · 0곳)</div>
+  </div>
+  <div class="src">설계서 C.4 · C.8 · API 키 없이 같은 결과를 다시 만들 수 있습니다 (github.com/skala-smart-farm/agtech-investment-agent-v2)</div><div class="pg">14</div>
+  <aside class="notes">마지막으로 여쭙겠습니다. 이 기준으로 판정해도 되겠습니까? 기준이 너무 높거나 낮다고 보시면 숫자 하나만 바꾸면 됩니다. 100부터 120까지 바꿨을 때의 결과는 이미 계산해 두었습니다. 감사합니다.</aside>
+</section>
+
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/notes/notes.min.js"></script>
+<script>
+// 슬라이드 안쪽 여백: 인쇄(PDF) 모드에서도 같게 보이도록 내용을 .in 으로 감싼다 (발표자 노트는 그대로 section 안)
+document.querySelectorAll('.reveal .slides > section').forEach(function (s) {
+  var d = document.createElement('div'); d.className = 'in';
+  Array.prototype.slice.call(s.childNodes).forEach(function (c) { if (!(c.tagName === 'ASIDE')) d.appendChild(c); });
+  s.insertBefore(d, s.firstChild);
+});
+Reveal.initialize({ width: 1280, height: 720, margin: 0, minScale: 0.2, maxScale: 2, center: false, hash: true, controls: true,
+  progress: true, transition: "fade", backgroundTransition: "none", pdfMaxPagesPerSlide: 1, pdfSeparateFragments: false,
+  plugins: [ RevealNotes ] });
+</script>
+</body>
+</html>
