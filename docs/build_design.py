@@ -375,7 +375,7 @@ def context() -> dict:
         elig_holdout=_elig("outputs/eval/eligibility_eval_holdout.json"),
         main_mermaid=_main_mermaid(cfg), discovery_mermaid=_discovery_mermaid(cfg), rag_mermaid=_rag_mermaid(cfg),
         main_edges=MAIN_EDGES, node_labels=NODE_LABELS, rubric_map=RUBRIC_MAP, owner_label=OWNER_LABEL,
-        calib=_calibration(), run=_run_result())
+        calib=_calibration(), run=_run_result(), rt=_runtime_numbers(cfg))
 
 
 def _calibration() -> dict:
@@ -417,6 +417,46 @@ def _run_result() -> dict:
             "screened": len(run.get("screened", [])), "eligible": sum(1 for x in run.get("screened", []) if x.get("eligible"))}
 
 
+def _runtime_numbers(cfg) -> tuple[str, str, str]:
+    from docs.build_readme import _runtime
+
+    return _runtime(cfg)
+
+
+EMOJI = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]\\s?")
+
+
+def _paper_body(md: str) -> str:
+    """design.md → 학회지 양식 본문: 제목·메타 줄은 제목 블록으로 옮기고, 표·그림에 번호 캡션을 붙이고, 이모지를 뺀다."""
+    html = markdown.markdown(md, extensions=["tables", "fenced_code", "toc", "sane_lists"])
+    html = re.sub(r"^\s*<h1.*?</h1>\s*<blockquote>.*?</blockquote>", "", html, count=1, flags=re.S)
+    html = re.sub(r"<h2[^>]*>목차</h2>\s*(<ul>.*?</ul>)", r'<nav class="toc">\1</nav>', html, count=1, flags=re.S)
+    n = iter(range(1, 100))
+    html = re.sub(r'<pre><code class="language-mermaid">(.*?)</code></pre>',
+                  lambda m: f'<pre class="mermaid m{next(n)}">{m.group(1)}</pre>', html, flags=re.S)
+    html = EMOJI.sub("", html)
+    out, last, t_no, f_no, pos = [], "", 0, 0, 0
+    for m in re.finditer(r"<h[234][^>]*>(.*?)</h[234]>|<p><strong>([^<]{1,40})</strong></p>\s*(?=<table)|<table>|</pre>", html, flags=re.S):
+        tok = m.group(0)
+        if tok.startswith("<h"):
+            last = re.sub(r"<[^>]+>", "", m.group(1)).strip()
+            continue
+        if tok.startswith("<p><strong>"):  # 표 바로 위의 굵은 한 줄 = 그 표의 제목
+            out.append(html[pos:m.start()])
+            pos = m.end()
+            last = m.group(2).strip()
+            continue
+        if tok == "<table>":
+            t_no += 1
+            out.append(html[pos:m.start()] + f'<div class="cap"><b>표 {t_no}.</b>{last}</div><table>')
+        else:  # 그림(mermaid) 뒤 캡션
+            f_no += 1
+            out.append(html[pos:m.end()] + f'<div class="figcap"><b>그림 {f_no}.</b>{last}</div>')
+        pos = m.end()
+    out.append(html[pos:])
+    return "".join(out)
+
+
 def _html_env() -> Environment:
     from markupsafe import Markup
 
@@ -437,7 +477,9 @@ def build() -> tuple[str, str]:
     md_path = path("docs/design.md")
     md_path.write_text(md, encoding="utf-8")
 
-    html = _html_env().get_template("design_html/base.html.j2").render(**ctx)
+    from markupsafe import Markup
+
+    html = _html_env().get_template("design_html/paper.html.j2").render(**ctx, body=Markup(_paper_body(md)))
     pdf = path(f"docs/RAG-Design_{team.campus}-{team['class']}_{'+'.join(members)}.pdf")
     _to_pdf(html, pdf)
     return str(md_path), str(pdf)
@@ -460,12 +502,13 @@ def _to_pdf(html: str, pdf) -> None:
             b.close()
             raise RuntimeError(f"mermaid 그림 {bad}개가 렌더링되지 않았습니다 (문법 오류)")
         pg.pdf(path=str(pdf), format="A4", print_background=True, display_header_footer=True,
-               header_template="<span></span>",
-               footer_template='<div style="font-family:Pretendard,sans-serif;font-size:7px;width:100%;padding:0 12mm;'
-                               'display:flex;justify-content:space-between;color:#8a94a6">'
-                               '<span>AgTech AI 스타트업 투자 평가 에이전트 · 설계 산출물 v2 · SKALA 울산 2반 1조</span>'
-                               '<span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
-               margin={"top": "12mm", "bottom": "14mm", "left": "12mm", "right": "12mm"})
+               header_template='<div style="font-family:Pretendard,sans-serif;font-size:7px;width:100%;padding:0 20mm;'
+                               'display:flex;justify-content:space-between;color:#777">'
+                               '<span>AgTech AI 스타트업 투자 평가 에이전트 — 설계 산출물 v2</span>'
+                               '<span>SKALA 울산캠퍼스 2반 1조</span></div>',
+               footer_template='<div style="font-family:Pretendard,sans-serif;font-size:7.5px;width:100%;text-align:center;color:#555">'
+                               '— <span class="pageNumber"></span> —</div>',
+               margin={"top": "18mm", "bottom": "17mm", "left": "20mm", "right": "20mm"})
         b.close()
 
 
