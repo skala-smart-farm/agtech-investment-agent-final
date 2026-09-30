@@ -90,7 +90,7 @@ def test_rubric_v1_fields_unchanged():
 def test_config_contract_keys():
     cfg = get_config()
     w, rag, d, roi, rep = cfg.workflow, cfg.rag, cfg.decision, cfg.roi, cfg.report
-    assert (w.stop_on_invest, w.calibrate, w.recursion_limit) == (True, False, 100)
+    assert (w.stop_on_invest, w.calibrate, w.recursion_limit) == (False, False, 100)  # 첫 투자 추천에서 멈추지 않는다
     assert (rag.max_rewrites, rag.max_regenerations, rag.rag_recursion_limit) == (2, 1, 25)
     assert rag.allow_direct_answer is False  # 분석 에이전트 호출은 direct 경로를 쓰지 않는다
     assert (cfg.tools.summarize_max_chars, cfg.tools.summarize_chunk_chars) == (6000, 3000)

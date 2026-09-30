@@ -1,6 +1,6 @@
 {
   "run_date": "2026-09-30",
-  "elapsed_sec": 26.2,
+  "elapsed_sec": 27.5,
   "mode": "scenario",
   "threshold": 1.3,
   "end_reason": "max_evaluations",
@@ -3522,7 +3522,7 @@
     "title": "AgTech AI 스타트업 투자 검토 — 투자 추천 없음 (평가 10곳 모두 보류)",
     "target": "메타파머스",
     "decision": "투자 추천 대상 없음",
-    "generated_at": "2026-09-30T13:18:55"
+    "generated_at": "2026-09-30T13:42:16"
   },
   "rag_traces": [
     {

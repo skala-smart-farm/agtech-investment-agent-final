@@ -12,3 +12,4 @@
 {"run_date": "2026-09-30", "finished_at": "2026-09-30 13:00:04", "elapsed_sec": 67.6, "fresh": false, "mode": "scenario", "api_calls": 3, "cache_hits": 396, "input_tokens": 97707, "output_tokens": 4981, "usd": 0.0385}
 {"run_date": "2026-09-30", "finished_at": "2026-09-30 13:14:52", "elapsed_sec": 25.8, "fresh": false, "mode": "main", "api_calls": 2, "cache_hits": 83, "input_tokens": 41671, "output_tokens": 2086, "usd": 0.0167}
 {"run_date": "2026-09-30", "finished_at": "2026-09-30 13:15:51", "elapsed_sec": 54.6, "fresh": false, "mode": "scenario", "api_calls": 2, "cache_hits": 396, "input_tokens": 65247, "output_tokens": 3523, "usd": 0.0269}
+{"run_date": "2026-09-30", "finished_at": "2026-09-30 13:39:14", "elapsed_sec": 41.1, "fresh": false, "mode": "main", "api_calls": 2, "cache_hits": 396, "input_tokens": 41673, "output_tokens": 2164, "usd": 0.0174}

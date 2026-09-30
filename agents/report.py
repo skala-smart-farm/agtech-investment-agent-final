@@ -192,7 +192,7 @@ def _bare(x: str) -> str:
     return re.sub(r"[.。]\s*$", "", x)
 
 
-def _pool(state: dict, evals: list[dict], screened: list[dict], cfg, mode: str) -> dict:
+def _pool(state: dict, evals: list[dict], screened: list[dict], cfg) -> dict:
     """발굴 → 검증 → 적격 → 평가 단계별 후보 수와, 적격인데 평가하지 않은 후보."""
     def split(rows):
         return sum(r.get("region") == "KR" for r in rows), sum(r.get("region") != "KR" for r in rows)
@@ -207,7 +207,7 @@ def _pool(state: dict, evals: list[dict], screened: list[dict], cfg, mode: str) 
     left = [r for r in eligible if not any(_same(r.get("official_name") or r["name"], n) or _same(r["name"], n)
                                            for n in done)]
     capped = state.get("end_reason") == "max_evaluations" or len(evals) >= cfg.workflow.max_evaluations
-    if mode == "invest":
+    if state.get("end_reason") == "invest_found":  # workflow.stop_on_invest=true 일 때만
         why = "투자 추천 후보가 나와 평가를 멈춤"
     elif capped:
         why = f"평가 상한({cfg.workflow.max_evaluations}곳, 비용 관리) 도달"
@@ -684,7 +684,8 @@ def _limitations(cfg, pool: dict, failed_by: dict[str, int], data_limits: list[s
                    f"해당 후보의 미확인 판정 일부는 근거 부재가 아니라 검색 실패 때문일 수 있다")
     if pool["unevaluated"]:
         out.append(f"적격 후보 {pool['eligible']}곳 중 {len(pool['unevaluated'])}곳은 평가하지 않았다({pool['why']})"
-                   + (f" — '투자 추천 없음'은 평가한 {pool['evaluated']}곳에 대한 결론이다" if mode == "hold" else ""))
+                   + (f" — '투자 추천 없음'은 평가한 {pool['evaluated']}곳에 대한 결론이다" if mode == "hold"
+                      else f" — 투자 추천 대상은 평가한 {pool['evaluated']}곳 중에서 골랐다" if pool["evaluated"] > 1 else ""))
     if mode != "none":
         out.append("동종 기준 집단 평균 대비 상대 평가라 기준 집단 전체의 질이 낮으면 상대적으로 나은 기업이 추천될 수 있다"
                    f"{_reference_mix()}. 관문(실제 투자 유치 확인)·창업자 기준(동종 평균 이상) 요건·Deal-killer·실사 조건으로 보완한다")
@@ -861,7 +862,23 @@ def _team_blocks(target: dict, d: dict, reg: SourceRegistry, detail: bool) -> li
     return blocks
 
 
-def _chapters_invest(target: dict, d: dict, t: dict, reg: SourceRegistry, cfg, pool: dict) -> list[dict]:
+def _evaluated_blocks(evals: list[dict], target: dict) -> list[dict]:
+    """평가한 후보 전체(배수 순)와 대상 선정 방법 — 첫 투자 추천에서 멈추지 않고 비교해 고른 근거를 보인다."""
+    ranked = sorted(evals, key=lambda e: -e["scorecard"]["multiplier"])
+    rows = [[i, e["name"] + (" (대상)" if e is target else ""),
+             f"{e.get('stage') or (e.get('profile') or {}).get('stage') or '-'} · {'국내' if e.get('region') == 'KR' else '해외'}",
+             _s1(e["scorecard"]["multiplier"]), _s1(e["scorecard"].get("founder_c")),
+             "투자" if e["decision"] == "투자" else f"보류({e.get('hold_type') or '-'})"] for i, e in enumerate(ranked, 1)]
+    passed = [e["name"] for e in ranked if e["decision"] == "투자"]
+    return [{"t": "h3", "text": f"평가한 후보 {len(evals)}곳과 대상 선정"},
+            _table(["순위", "후보", "단계 · 지역", "동종 평균 대비", "창업자 기준", "판정"], rows,
+                   ["7%", "27%", "17%", "15%", "13%", "21%"], small=True),
+            _note(f"보고서 대상: 투자 기준 통과 {len(passed)}곳({'·'.join(passed)}) 중 동종 평균 대비 배수 1위 — {target['name']}. "
+                  f"첫 투자 추천에서 멈추지 않고 평가 상한까지 평가해, 평가 순서가 결론을 정하지 않게 했다")]
+
+
+def _chapters_invest(target: dict, d: dict, t: dict, reg: SourceRegistry, cfg, pool: dict,
+                     evals: list[dict] | None = None) -> list[dict]:
     sc = target["scorecard"]
     c2_yes = t["verdict"].get("C2") == "YES"
     ch4_lead = (f"동종 평균 대비 {_s1(sc['multiplier'])}(동종 평균 100 초과), 창업자 기준 {_s1(sc.get('founder_c'))}"
@@ -869,7 +886,8 @@ def _chapters_invest(target: dict, d: dict, t: dict, reg: SourceRegistry, cfg, p
     judge = [_table(["기준 (비중)", "YES / NO / 미확인", "동종 평균 대비", "기여", "핵심 사실"], _criteria_rows(sc),
                     ["18%", "13%", "11%", "8%", "50%"], small=True),
              _note(_rule_line(sc, cfg)), _note(_reference_line(sc, cfg)), _note(_sensitivity_line(sc)),
-             _note(_bessemer_line(sc)), _note(_ranking_line(sc)),
+             _note(_bessemer_line(sc)),
+             *(_evaluated_blocks(evals, target) if evals and len(evals) > 1 else [_note(_ranking_line(sc))]),
              {"t": "box", "title": "ROI 참고치 (점수·결정에 넣지 않음)", "items": _roi_items(sc, reg, cfg)},
              {"t": "h3", "text": "사업 리스크(시장·기술·규제·경쟁)와 실사 조건"},
              _table(["유형", "내용", "실사 질문"], t["risks"], ["8%", "57%", "35%"], small=True),
@@ -1165,9 +1183,9 @@ def report_node(state: dict) -> dict:
     invested = [e for e in evals if e["decision"] == "투자"]
     mode = "invest" if invested else "hold"
     ranked = sorted(evals, key=lambda e: -e["scorecard"]["multiplier"])
-    target = invested[0] if invested else ranked[0]
+    target = next(e for e in ranked if e["decision"] == "투자") if invested else ranked[0]  # 투자 기준 통과 후보 중 배수 1위
     prof, sc = target.get("profile") or {}, target["scorecard"]
-    pool = _pool(state, evals, screened, cfg, mode)
+    pool = _pool(state, evals, screened, cfg)
     companies = [_names(e) for e in evals] + [
         [n for n in (r.get("official_name") or r.get("name"), r.get("name"), r.get("name_en")) if n] for r in screened]
     failed_by = _failed_by_company(list(getattr(search_tool, "FAILED_QUERIES", []) or []), companies)
@@ -1182,7 +1200,9 @@ def report_node(state: dict) -> dict:
         peer = f"동종 {sc.get('peer_n')}곳 중 {rank}위" if rank else f"기준 집단 {(sc.get('reference') or {}).get('n', 0)}곳"
         conclusion = (f"{target['name']} 투자 추천(실사 조건부) — 동종 평균 대비 {_s1(sc['multiplier'])}"
                       f"(동종 평균 100 초과, 창업자 기준 {_s1(sc.get('founder_c'))}), {peer}")
-        situation = f"{_funnel(pool)} → {evals.index(target) + 1}번째 평가 대상 {target['name']}({prof.get('stage') or '-'}, {seg})"
+        pick = (f"{len(evals)}곳 평가 → 투자 기준 통과 {len(invested)}곳 중 배수 1위" if len(evals) > 1
+                else f"{evals.index(target) + 1}번째 평가 대상")
+        situation = f"{_funnel(pool)} → {pick} {target['name']}({prof.get('stage') or '-'}, {seg})"
         request = (f"실사 확인 항목 {k_dd}개를 조건으로 투자심의 상정을 진행할까요?" if k_dd else "투자심의 상정을 진행할까요?")
         title = f"{target['name']} 투자 검토 — 투자 추천(실사 조건부)"
         badge = "투자 추천"
@@ -1244,12 +1264,12 @@ def report_node(state: dict) -> dict:
         view = {"title": title, "badge": badge, "mode": mode, "meta": meta, "run_date": run_date,
                 "summary": summary(draft), "chapters": []}
         # 한계점의 조회일 건수는 REFERENCE 를 만든 뒤에 알 수 있어 두 번 번호를 매긴다 (인용은 한계점에 없다)
-        view["chapters"] = (_chapters_invest(target, d, t, reg, cfg, pool) if mode == "invest"
+        view["chapters"] = (_chapters_invest(target, d, t, reg, cfg, pool, evals) if mode == "invest"
                             else _chapters_hold(ranked, target, d, t, reg, cfg, pool, failed_by))
         _, refs0, _ = _renumber(view, reg)
         t["limitations"] = _limitations(cfg, pool, failed_by, d["data_limits"], mode,
                                         [r["access_date"] for r in refs0 if r["access_date"]])
-        view["chapters"] = (_chapters_invest(target, d, t, reg, cfg, pool) if mode == "invest"
+        view["chapters"] = (_chapters_invest(target, d, t, reg, cfg, pool, evals) if mode == "invest"
                             else _chapters_hold(ranked, target, d, t, reg, cfg, pool, failed_by))
         numbered, refs, cited = _renumber(view, reg)
         numbered["ref_groups"] = _ref_groups(refs)
@@ -1280,7 +1300,7 @@ def report_node(state: dict) -> dict:
 
 def _no_candidate_report(state: dict, cfg, screened: list[dict], reg: SourceRegistry, run_date: str) -> dict:
     """C안 — 적격 후보가 하나도 없을 때: 탐색 경과와 탈락 사유만 담은 보고서 (LLM 없이 코드로 작성)."""
-    pool = _pool(state, [], screened, cfg, "none")
+    pool = _pool(state, [], screened, cfg)
     reasons: dict[str, int] = {}
     for r in screened:
         key = re.sub(r"^G\d(?:/G\d)?\s*", "", (r.get("reason") or "-")).split("(")[0].split(":")[0].split(" — ")[0][:30].strip()

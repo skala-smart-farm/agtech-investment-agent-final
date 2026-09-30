@@ -10,11 +10,12 @@
     F 보고서 생성       →   report
 
     START → discover ─(평가 대상 있음)→ founder → tech → market → competition → decide
-               │                                                                 ├─(투자 추천)→ report → END
-               └─(후보 소진)→ report                                              ├─(보류)→ discover
-                                                                                  └─(보류 · 평가 상한 도달)→ report
+               │                                                                 ├─(투자·보류, 평가 상한 전)→ discover
+               └─(후보 소진)→ report → END                                        └─(평가 상한 도달)→ report → END
 
 - 간선 집합은 설계서의 DESIGN_EDGES(계약 C2)와 같다. 병렬 간선은 없다(경쟁사가 tech.claims 를, 투자 판단이 market 을 받아 쓰는 순서 의존).
+- 첫 투자 추천에서 멈추지 않는다(workflow.stop_on_invest=false). 먼저 평가한 후보가 결론이 되지 않도록 상한까지 평가하고,
+  보고서가 투자 기준 통과 후보 중 배수 1위를 대상으로 삼는다. true 로 두면 Graph(안)의 '투자 추천 → 보고서 생성' 그대로다.
 - 분기 규칙은 graph/routes.py 의 순수 함수다. 보정 실행도 report 노드에서 끝난다(report 가 보정 모드에서는 렌더링하지 않음).
 - 에이전트 모듈은 함수 안에서 import 한다. 그래서 nodes 로 가짜 노드를 넣은 테스트는 에이전트 모듈(검색·LLM 의존성)을 읽지 않는다.
 """

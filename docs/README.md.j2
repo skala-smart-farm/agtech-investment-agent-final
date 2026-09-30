@@ -54,7 +54,8 @@ SKALA {{ cfg.submission.campus }}캠퍼스 {{ cfg.submission['class'] }} {{ cfg.
 ![architecture](docs/architecture.png)
 
 - **Workflow** : 탐색 → 창업자 → 기술 요약 → 시장성 → 경쟁사 → 투자 판단 (후보 1곳씩)
-- **Branch · Loop** : 투자 추천 → 보고서 / 보류 → 탐색으로 돌아가 다른 후보 / 후보 소진 · 적격 후보 없음 → 보고서
+- **Branch · Loop** : 투자 판단 뒤 다음 후보 탐색으로 돌아감(보류는 가이드대로 다른 후보로, 투자 추천이어도 멈추지 않음) / 평가 상한 · 후보 소진 · 적격 후보 없음 → 보고서
+- **대상 선정** : 투자 기준 통과 후보 중 동종 평균 대비 배수 1위를 보고서 대상으로, 통과 후보가 없으면 모두 보류 보고서 — 먼저 평가한 후보가 결론이 되지 않게 한다
 - **종료 조건** : 발굴 최대 {{ wf.max_discovery_rounds }}라운드 · 심층 평가 최대 {{ wf.max_evaluations }}곳(공용 키 비용 관리) · recursion_limit {{ wf.recursion_limit }} · RAG 재작성 {{ ro.max_rewrites }}회 · 재생성 {{ ro.max_regenerations }}회
 - State 표 · 탐색 서브그래프 · 간선 목록은 [설계서 D장](docs/design.md#d-그래프-설계)
 
@@ -162,7 +163,17 @@ uv run python app.py                 # API 키 없이 제출 보고서 재현 �
 {% endfor %}
 | **가중합** | {{ target.yes }} / {{ target.no }} / {{ target.unk }} | **{{ target.m }}** |
 
-- 과정 : 발굴 {{ pipe.found }}곳 → 적격 {{ pipe.eligible }}곳 → {{ pipe.evaluated }}곳 평가 후 {{ pipe.end }}. 비교 대상인 동종 {{ sens.n if sens else '-' }}곳은 보정 실행에서 같은 절차로 평가
+{% if eval_rows | length > 1 %}
+**평가한 후보 {{ eval_rows | length }}곳** — 투자 기준 통과 {{ passed | length }}곳({{ passed | join('·') }}) 중 동종 평균 대비 배수 1위를 대상으로 선정 (첫 투자 추천에서 멈추지 않음)
+
+| 순위 | 후보 | 단계 · 지역 | 동종 평균 대비 | 창업자 기준 | 판정 |
+|---|---|---|---|---|---|
+{% for e in eval_rows %}
+| {{ loop.index }} | {{ e.name }} | {{ e.stage }} · {{ e.region }} | {{ e.m }} | {{ e.fc }} | {{ e.verdict }} |
+{% endfor %}
+
+{% endif %}
+- 과정 : 발굴 {{ pipe.found }}곳 → 적격 {{ pipe.eligible }}곳 → {{ pipe.evaluated }}곳 평가{{ (' (적격 ' ~ pipe.unevaluated ~ '곳 미평가 — 평가 상한 ' ~ pipe.max_eval ~ '곳, 비용 관리)') if pipe.unevaluated else '' }} → 투자 기준 통과 {{ passed | length }}곳 중 배수 1위 {{ target.name }}. 동종 평균은 같은 절차의 보정 실행 결과에서 대상을 빼고 계산
 {% elif mode == 'hold' %}
 **결론: {{ conclusion }}**
 
@@ -232,6 +243,7 @@ uv run python app.py                 # API 키 없이 제출 보고서 재현 �
 - **RAG 문서 {{ (corpus.old ~ ' → ') if corpus.old else '' }}{{ corpus.n }}종 {{ corpus.pages }}쪽** : {{ corpus.added | join(' · ') }} 추가, {{ corpus.trimmed }}개 문서에서 쓰지 않는 표지 · 목차 · 참고문헌 쪽 제외 (`data/manifest.yaml`)
 {% macro delta(name, a, b) %}{{ name }} {{ (a ~ '(같음)') if a == b else (a ~ ' → ' ~ b) }}{% endmacro %}
 - **검색기 재측정** : 기존 {{ rt.n }}문항 {{ (delta('Hit@4', rt.design.hit4, rt.hit4) ~ ', ' ~ delta('MRR@4', rt.design.mrr4, rt.mrr4)) if rt.design else ('Hit@4 ' ~ rt.hit4 ~ ', MRR@4 ' ~ rt.mrr4) }}, 검색 설정은 그대로{{ ' (이유는 Evaluation 표 아래)' if rt.rule_top else '' }}
+- **첫 투자 추천에서 멈추지 않음** : 설계서는 노션 Graph(안)의 '투자 추천 → 보고서 생성' 화살표대로 첫 투자 추천에서 평가를 멈췄다. 그러면 발굴 순서가 결론을 정한다(먼저 평가한 후보가 추천되고 뒤의 후보는 비교되지 않는다). 그래서 투자 추천이어도 평가 상한({{ pipe.max_eval }}곳)까지 평가하고, 투자 기준 통과 후보 중 배수 1위를 보고서 대상으로 삼는다. 노드 · 간선은 그대로이고 분기 조건만 바뀌었다(`config.yaml` `workflow.stop_on_invest: false`)
 - **투자 판단 기준 110 → 100** : 설계서의 기준 110(창업자 문항 YES 1개 이상)은 원전에 없는 설계 가정이었다. 근거를 댈 수 있는 값은 Scorecard 원 방법의 기준점(투자를 받은 동종 평균 기업 = 100)뿐이라 '동종 평균 100 초과 · 창업자 점수 동종 평균 이상'으로 바꿨다. 실행 결과가 나온 뒤의 변경이라 설계서의 '결과를 보고 기준을 바꾸지 않는다'는 원칙에서 벗어난다. 바꾼 이유는 결과가 아니라 근거 부재이며, 110 에서의 결과(추천 0곳)도 기준 민감도로 함께 공개한다
 - **검토 지적 반영** : 근거 id 해시가 겹치면 먼저 등록된 근거를 덮어쓰지 않고 더 긴 id 를 준다 · 평가 기준일 이후 날짜와 예정 라운드는 '최근 투자'로 인정하지 않는다 · 검색 요청에 제한 시간을 두고, 인증 · 한도 오류가 나면 그 공급자를 끄고 실패로 기록한다
 

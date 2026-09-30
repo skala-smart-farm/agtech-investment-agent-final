@@ -15,7 +15,7 @@ from langgraph.graph import END, START
 from core.config import get_config
 from graph.builder import NODE_NAMES, build_graph
 from graph.discovery_graph import build_discovery_graph
-from graph.routes import route_after_decide, route_after_discover, route_discovery_entry
+from graph.routes import stops_on_invest, route_after_decide, route_after_discover, route_discovery_entry
 
 # 설계서 D.2 그림(Graph(안) + 👤 창업자)과 1:1. 보정 실행도 report 노드에서 끝나므로 discover·decide 에서 END 로 가는 간선은 없다
 DESIGN_EDGES = {(START, "discover"), ("discover", "founder"), ("discover", "report"), ("founder", "tech"),
@@ -26,7 +26,8 @@ ANALYSIS = ("founder", "tech", "market", "competition")
 
 # ── 분기 함수
 @pytest.mark.parametrize("state, calibrate, expected", [
-    ({"decision": "투자", "iterations": 1}, False, "report"),        # 투자 추천 → 보고서(A안)
+    ({"decision": "투자", "iterations": 1}, False, "discover"),      # 투자 추천이어도 멈추지 않고 다음 후보
+    ({"decision": "투자", "iterations": 10}, False, "report"),       # 평가 상한 → 보고서(A안: 통과 후보 중 배수 1위)
     ({"decision": "보류", "iterations": 10}, False, "report"),       # 보류 · 평가 상한 → 보고서(B안)
     ({"decision": "보류", "iterations": 3}, False, "discover"),      # 보류 → 다른 스타트업 탐색
     ({"decision": "투자", "iterations": 3}, True, "discover"),       # 보정 실행: 투자여도 계속
@@ -40,8 +41,16 @@ def test_route_after_decide(set_cfg, state, calibrate, expected):
     assert route_after_decide(state) == expected
 
 
-def test_route_after_decide_calibrate_flag_alone_does_not_stop(set_cfg):
-    set_cfg("workflow.calibrate", True)  # stop_on_invest 는 기본값(true) 그대로
+def test_route_after_decide_stop_on_invest_option(set_cfg):
+    """workflow.stop_on_invest=true 면 노션 Graph(안)의 '투자 추천 → 보고서 생성' 그대로 멈춘다."""
+    set_cfg("workflow.stop_on_invest", True)
+    assert route_after_decide({"decision": "투자", "iterations": 1}) == "report"
+    assert route_after_decide({"decision": "보류", "iterations": 1}) == "discover"
+
+
+def test_route_after_decide_calibrate_never_stops(set_cfg):
+    set_cfg("workflow.calibrate", True)
+    set_cfg("workflow.stop_on_invest", True)  # 보정 실행은 이 값과 관계없이 멈추지 않는다
     assert route_after_decide({"decision": "투자", "iterations": 3}) == "discover"
 
 
@@ -102,9 +111,9 @@ class Fakes:
         d = self.decisions.get(name, "보류")
         out = {"scorecard": {"name": name}, "decision": d, "evaluations": [{"name": name, "decision": d}],
                "log": [f"[decide] {name} {d}"]}
-        if d == "투자" and wf.stop_on_invest:
+        if d == "투자" and stops_on_invest(wf):
             out["end_reason"] = "invest_found"
-        elif d != "투자" and s["iterations"] >= wf.max_evaluations:
+        elif s["iterations"] >= wf.max_evaluations:
             out["end_reason"] = "max_evaluations"
         return out
 
@@ -180,7 +189,18 @@ def test_run_all_hold_loops_back_then_exhausted():
     _check_no_duplicates(f, out)
 
 
-def test_run_first_candidate_invest_goes_straight_to_report():
+def test_run_default_continues_after_invest():
+    """기본(stop_on_invest=false): 첫 후보가 투자여도 나머지를 평가한 뒤 보고서로 간다."""
+    f = Fakes([["A", "B", "C"]], decisions={"A": "투자", "C": "투자"})
+    out = f.run()
+    assert [e["name"] for e in out["evaluations"]] == ["A", "B", "C"] and out["iterations"] == 3
+    assert f.calls.count("report") == 1 and out["report"]["mode"] == "invest"
+    assert out["end_reason"] != "invest_found"
+    _check_no_duplicates(f, out)
+
+
+def test_run_stop_on_invest_goes_straight_to_report(set_cfg):
+    set_cfg("workflow.stop_on_invest", True)  # 노션 Graph(안) 그대로
     f = Fakes([["A", "B"]], decisions={"A": "투자"})
     out = f.run()
     assert f.calls == ["collect", "screen", *CANDIDATE, "report"]
@@ -236,7 +256,7 @@ def test_apply_options():
 
     cfg = get_config()
     assert app.apply_options(app.parse_args([]), cfg) == "main"
-    assert cfg.workflow.stop_on_invest is True and cfg.report.output_dir == "outputs"
+    assert cfg.workflow.stop_on_invest is False and cfg.report.output_dir == "outputs"
 
     assert app.apply_options(app.parse_args(["--calibrate"]), cfg) == "calibrate"
     assert cfg.workflow.stop_on_invest is False and cfg.workflow.calibrate is True
@@ -274,9 +294,9 @@ def test_app_scenario_run_writes_run_log(fake_app):
     app, fakes, tmp = fake_app
     app.main(["--threshold", "1.3", "--out", "outputs/scenario_hold"])
     log = json.loads((tmp / "outputs/scenario_hold/run_log.json").read_text(encoding="utf-8"))
-    assert log["mode"] == "scenario" and log["threshold"] == 1.3 and log["end_reason"] == "invest_found"
+    assert log["mode"] == "scenario" and log["threshold"] == 1.3 and log["end_reason"] == "exhausted"
     assert log["report"]["scenario"] is True and log["report"]["threshold"] == 1.3  # 노드가 바뀐 설정을 읽었다
-    assert log["evaluated"] == 2 and [e["name"] for e in log["evaluations"]] == ["A", "B"]
+    assert log["evaluated"] == 3 and [e["name"] for e in log["evaluations"]] == ["A", "B", "C"]  # B 가 투자여도 계속
     assert list(log["evaluations"][0]) == ["name", "region", "stage", "decision", "hold_type", "multiplier",
                                            "score100", "reasons", "flip", "roi", "criteria", "rows"]
     assert not (tmp / "outputs/run_log.json").exists()  # 제출 폴더는 건드리지 않는다

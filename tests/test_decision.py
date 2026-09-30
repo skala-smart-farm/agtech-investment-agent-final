@@ -327,11 +327,11 @@ def judged(monkeypatch):
     return calls
 
 
-def test_node_invest(judged):
+def test_node_invest(judged, set_cfg):
     out = dec.decision_node(_state("메타파머스"))
     assert judged == ["traction", "deal"]                       # 나머지 네 기준은 분석 에이전트의 criterion
-    assert set(out) == {"scorecard", "decision", "evaluations", "end_reason", "log"}
-    assert (out["decision"], out["end_reason"]) == ("투자", "invest_found")
+    assert set(out) == {"scorecard", "decision", "evaluations", "log"}  # 기본: 투자 추천이어도 멈추지 않아 종료 사유 없음
+    assert out["decision"] == "투자"
     sc, ev = out["scorecard"], out["evaluations"][0]
     assert set(ev) == C7_EVAL and C7_SCORECARD <= set(sc) and len(out["evaluations"]) == 1
     assert sc["multiplier"] == pytest.approx(1.130, abs=0.002) and sc["score100"] == pytest.approx(113.0, abs=0.2)
@@ -342,6 +342,8 @@ def test_node_invest(judged):
     assert (sc["target_rank"], sc["peer_n"]) == (1, 10) and sum(r["is_target"] for r in sc["ranking"]) == 1
     assert sc["ranking"][0]["name"] == "메타파머스" and sc["roi"]["computable"]
     assert ev["multiplier"] == sc["multiplier"] and ev["profile"]["official_name"] == "메타파머스"
+    set_cfg("workflow.stop_on_invest", True)                   # 노션 Graph(안) 그대로: 첫 투자 추천에서 멈춘다
+    assert dec.decision_node(_state("메타파머스"))["end_reason"] == "invest_found"
 
 
 def test_node_hold_backfills_missing_criterion(judged, set_cfg):
