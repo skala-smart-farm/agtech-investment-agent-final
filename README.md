@@ -21,10 +21,14 @@ SKALA 울산캠퍼스 2반 1조 · 📄 투자 보고서 [PDF](outputs/RAG-Outpu
 **바로가기** · [Overview](#overview) · [Features](#features) · [Tech Stack](#tech-stack) · [Agents](#agents) · [Architecture](#architecture) · [Usage](#usage) · [차별점](#차별점) · [Evaluation](#evaluation) · [투자 보고서 핵심](#투자-보고서-핵심) · [Lessons Learned](#lessons-learned) · [한계와 변경](#알려진-한계와-문제-해결) · [Contributors](#contributors)
 
 ## Overview
+> **쉽게 말해** · 인터넷에 공개된 자료만 보고 "이 농업 AI 스타트업에 투자할 만한가"를 AI 에이전트들이 나눠 조사하고, 점수와 결론은 코드가 계산해 근거 달린 보고서로 냅니다.
+
 - Objective : 공개 정보만으로 국내외 AgTech AI 스타트업(비상장 · Seed~Series C · Exit 전)을 찾아 창업자 · 시장성 · 제품/기술력 · 경쟁 우위 · 실적 · 투자조건 6개 기준으로 **투자 / 보류**를 판단하고, 모든 판단의 근거를 추적할 수 있는 5쪽 이내 보고서를 만든다
 - Method : LangGraph Multi-Agent 7개(가이드 6개 + 창업자 평가) · Agentic RAG(공공·연구기관 문서 15종 199쪽 + 웹) · Scorecard 동종 비교 — LLM 은 근거를 찾아 판정하고, 인용 검증 · 점수 · 결론은 코드가 맡는다
 
 ## Features
+> **쉽게 말해** · 후보 찾기 → 자격 검사 → 기준별 조사 → 점수 계산 → 보고서까지 한 번에 돌고, 근거를 못 찾은 것은 '모른다'로 남깁니다.
+
 - **후보 발굴** : 투자 단계가 드러나는 공개 채널 8개(TIPS 선정 · 투자 기사 · 공공 선정 · 기업 DB · 수상 · 문서 RAG 등)에서 수집 — 이번 실행 78곳
 - **적격성 관문 G1~G6** : 비상장(한국거래소 KIND 목록과 코드 대조) · Seed~Series C · Exit 전 · 부정 신호 · AgTech AI · 최소 근거량. 확인하지 못하면 탈락 — 통과 14곳
 - **1 에이전트 = 1 Scorecard 기준** : 창업자 · 기술 요약 · 시장성 · 경쟁사 에이전트가 자기 기준의 4문항을 판정하고, 실적 · 투자조건은 투자 판단 에이전트가 판정
@@ -34,6 +38,8 @@ SKALA 울산캠퍼스 2반 1조 · 📄 투자 보고서 [PDF](outputs/RAG-Outpu
 - **키 없는 재현** : 검색 결과 · LLM 응답 · FAISS 색인 · 질의 임베딩을 `replay/` 에 저장
 
 ## Tech Stack
+> **쉽게 말해** · 흐름은 LangGraph, 판단은 gpt-4.1-mini, 문서 검색은 한국어에 강한 오픈소스 임베딩(KURE-v1)과 단어 검색(BM25)을 섞어 씁니다.
+
 - Framework : LangGraph, LangChain (Python 3.11)
 - LLM/Generator : gpt-4.1-mini (OpenAI API, temperature 0)
 - LLM/Judge : gpt-4.1-mini (문서 관련성 판정 · 평가표 문항 판정 · 답변 점검)
@@ -42,6 +48,8 @@ SKALA 울산캠퍼스 2반 1조 · 📄 투자 보고서 [PDF](outputs/RAG-Outpu
 - 그 밖 : 웹 검색 Serper(구글)·Tavily · 기사 원문 trafilatura · 국민연금 가입 사업장(공공데이터) · 한국거래소 KIND · Playwright(PDF)
 
 ## Agents
+> **쉽게 말해** · 투자 심사팀처럼 역할을 나눴습니다. 에이전트 하나가 Scorecard 기준 하나를 맡고, 최종 판단은 계산 담당이 합니다.
+
 | 에이전트 | 하는 일 | 도구 · RAG | Scorecard 기준 |
 |---|---|---|---|
 | 🔍 스타트업 탐색 | 발굴 → 적격성 관문 G1~G6 → 대기열에서 다음 후보 1곳 | 웹 검색 · 문서 검색 · 상장 목록 · 국민연금 | 관문(통과/탈락) |
@@ -55,6 +63,8 @@ SKALA 울산캠퍼스 2반 1조 · 📄 투자 보고서 [PDF](outputs/RAG-Outpu
 가이드의 Agent 정의(안) 6개에 **창업자 평가**를 더했다. Scorecard 에서 비중이 가장 큰 창업자 30% 를 한 에이전트가 전담한다.
 
 ## Architecture
+> **쉽게 말해** · 후보 1곳씩 조사 → 판정을 반복해 최대 10곳을 본 뒤, 투자 기준을 넘은 곳 중 1위를 보고서로 씁니다.
+
 ![architecture](docs/architecture.png)
 
 - **Workflow** : 탐색 → 창업자 → 기술 요약 → 시장성 → 경쟁사 → 투자 판단 (후보 1곳씩)
@@ -113,6 +123,8 @@ graph TD
 </details>
 
 ## Usage
+> **쉽게 말해** · 설치 후 `python app.py` 한 줄이면 API 키 없이 제출한 보고서가 그대로 다시 만들어집니다.
+
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate   # Python 3.11 (Windows: .venv\Scripts\activate)
 pip install -r requirements.txt                          # 버전 고정 목록
@@ -132,6 +144,8 @@ python app.py                                            # API 키 없이 제출
 - README 다시 만들기 : `python -m docs.build_readme` (API 호출 없음)
 
 ## 차별점
+> **쉽게 말해** · 기준을 지어내지 않았고, 모르는 것과 나쁜 것을 구분했고, AI 의 판정을 코드가 다시 검사합니다.
+
 > [!NOTE]
 > **"평가 기준은 임의로 정했나요?"** 아닙니다. 과제가 제시한 두 글로벌 기준을 원 방법대로 썼습니다. 6개 기준과 비중은 과제의 **Scorecard** 표(원전 Bill Payne), 24문항에는 **Bessemer 체크리스트** 10문을 모두 배치했고, 점수는 Scorecard 원 방법대로 '투자를 받은 동종 기업 평균 = 100' 과 비교합니다. 투자 기준도 새로 정한 숫자가 아니라 원 방법의 기준점입니다 — **동종 평균(100)보다 높고, 창업자 점수가 동종 평균 이상이며, Deal-killer(Payne 워크시트 개념)가 없을 때만** 추천합니다. 팀 조건의 근거는 Payne 의 *"A great team will fix early product flaws, but the reverse is not true."* 입니다.
 
@@ -143,6 +157,8 @@ python app.py                                            # API 키 없이 제출
 6. **측정해서 고르고, 키 없이 재현** — 임베딩 6종을 자체 질문으로 비교해 KURE-v1 을 골랐고, 실제 동작(후보 8개 중 앞 4개 사용)으로 다시 재서 검색기를 바꿨다 — Hit@4 0.943 → 0.986. 검색 결과 · LLM 응답 · 색인을 `replay/` 에 넣어 `python app.py` 한 줄로 같은 보고서가 나온다
 
 ## Evaluation
+> **쉽게 말해** · 검색이 맞는 문서를 찾는지, 답이 근거에 충실한지, 자격 검사가 정답과 맞는지를 숫자로 쟀습니다.
+
 | 무엇을 | 결과 | 비고 |
 |---|---|---|
 | 검색기 (기존 70문항, 실제 설정) | Hit@4 0.986 · MRR@4 0.831 | 처음 고른 설정(snowflake-arctic-ko 하이브리드 0.3:0.7) 0.943 · 0.830 / 추가 문항 포함 80문항 0.988 · 0.852 |
@@ -157,6 +173,8 @@ python app.py                                            # API 키 없이 제출
 검색기 선택 규칙(Hit@4 → MRR@4)은 측정 전에 정해 설계 시점에 적용했다. 설계서 제출 후 바꾼 코퍼스(15종 199쪽)에 같은 규칙을 다시 적용하면 1위는 KURE-v1 Dense 단독(Hit@4 0.986 동률, MRR@4 0.885 vs 지금 0.831)다. 파이프라인 지표 Hit@4 가 같고 수업에서 강조한 하이브리드 검색이라 설정을 유지했다. → [검색기 선택 근거](outputs/eval/retrieval_decision.md)
 
 ## 투자 보고서 핵심
+> **쉽게 말해** · 10곳을 조사해 3곳이 투자 기준을 넘었고, 그중 1위인 메타파머스를 '실사 5개 항목 확인'을 조건으로 추천합니다.
+
 [투자 보고서 PDF](outputs/RAG-Output_%EC%9A%B8%EC%82%B0-2%EB%B0%98_%EA%B9%80%EA%B0%80%EC%97%B0%2B%EA%B9%80%EC%A7%84%EB%85%95%2B%EB%AC%B8%EC%A7%80%ED%9B%84%2B%EC%9D%B4%EC%A4%80%ED%9D%AC%2B%EC%A0%95%EC%8A%B9%EC%9A%B0.pdf) · 4쪽 · 목차: SUMMARY → 사업 아이디어(핵심 컨셉)·기술·경쟁 차별성 → 시장 규모와 성장성 → 팀의 구성(핵심 창업자·기술 역량) → 투자 판단과 사업 리스크 → 한계점 → REFERENCE
 
 > [!TIP]
@@ -199,6 +217,8 @@ python app.py                                            # API 키 없이 제출
 - **요청** : 실사 확인 항목 5개를 조건으로 투자심의 상정을 진행할까요?
 
 ## Lessons Learned
+> **쉽게 말해** · 근거 없는 기준, 형식만 맞는 보고서, 조용히 틀리는 날짜처럼 직접 부딪혀 고친 것들입니다.
+
 | # | 교훈 | 겪은 문제 | 바꾼 것 |
 |---|---|---|---|
 | 1 | **임의 기준은 설명할 수 없다** | v1 의 '100점 만점 70점', 그다음의 투자 기준선 110 은 원전에 없는 가정이라 근거를 댈 수 없었다 | Scorecard 원 방법의 기준점(동종 평균 100)으로 바꿨다 — 그래도 실제 투자를 받은 후기 기업 3곳 중 추천은 1곳, 결론은 실사 대상 선별까지 |
@@ -210,6 +230,8 @@ python app.py                                            # API 키 없이 제출
 | 7 | **AI 코딩 도구는 빨랐지만 검증은 사람 몫** | 코드 대부분을 AI 도구로 작성했다 | 가이드와 한 줄씩 맞춰 보는 검증에 가장 오래 걸렸다 |
 
 ## 알려진 한계와 문제 해결
+> **쉽게 말해** · 공개 정보만 봤기 때문에 결론은 '투자 결정'이 아니라 '실사할 후보 고르기'이고, 설계서 뒤에 바꾼 것도 숨기지 않고 적었습니다.
+
 ### 한계
 - **공개 정보의 한계** — 투자 추천 대상도 24문항 중 미확인이 65%이다. 양성 대조에서 투자 추천 1/3곳. 결론은 투자 결정이 아니라 실사 대상 선별로 쓴다
 - **동종 기준 집단은 근사다** — 10곳의 단계 · 지역이 섞여 있다 (Pre-A 4 · Seed 4 · Series A 2 / 국내 7 · 해외 3). Scorecard 원칙은 같은 지역 · 같은 단계 비교다
