@@ -6,7 +6,7 @@
 
 SKALA {{ cfg.submission.campus }}캠퍼스 {{ cfg.submission['class'] }} {{ cfg.submission.team }} · 투자 보고서 [PDF]({{ report_pdf }}) · 설계서 {{ ('[PDF](' ~ design_pdf ~ ') / ') if design_pdf else '' }}[Markdown](docs/design.md)
 
-> - **결론** {{ conclusion }}{{ (' — 동종 평균 대비 **' ~ target.m ~ '** (기준 ' ~ thr100 ~ '), ' ~ target.rank) if target else '' }}
+> - **결론** {{ conclusion }}{{ (' — 동종 평균 대비 **' ~ target.m ~ '** (동종 평균 ' ~ thr100 ~ ' 초과, 창업자 기준 ' ~ target.founder_c ~ '), ' ~ target.rank) if target else '' }}
 > - **기준** Scorecard(Payne)의 동종 기업 비교 + Bessemer 체크리스트 {{ rb.n_bessemer }}문 → {{ rb.n_q }}문항. YES·NO 는 원문 인용이 확인될 때만 인정
 > - **검증** 검색 Hit@4 {{ rt.hit4 }} · MRR@4 {{ rt.mrr4 }} · 적격성 판정 정확도 {{ elig.gold.acc if elig.gold else '-' }} (홀드아웃 {{ elig.holdout.acc if elig.holdout else '-' }})
 > - **재현** API 키 없이 `python app.py` 한 줄로 같은 보고서
@@ -137,7 +137,7 @@ uv run python app.py                 # API 키 없이 제출 보고서 재현 �
 | 양성 대조 (실제 투자를 받은 후기 기업) | {{ pc.n }}곳 중 투자 추천 {{ pc.invest }}곳 | {{ cell(pc.parts) }} |
 {% endif %}
 {% if sens %}
-| 투자 기준 민감도 (동종 {{ sens.n }}곳) | 기준별 투자 추천 수 {{ sens.counts }} | 설계 기준 {{ thr100 }} |
+| 투자 기준 민감도 (동종 {{ sens.n }}곳) | 기준별 투자 추천 수 {{ sens.counts }} | 판단 기준 {{ thr100 }} (원 방법 기준점) |
 {% endif %}
 {% if r.pages %}
 | 보고서 형식 (렌더링 후 코드 검사) | {{ r.pages }}쪽(≤ {{ checks.max_pages or cfg.report.max_pages }}) · SUMMARY 가 A4 의 {{ summary_pct }} | REFERENCE {{ checks.references or '-' }}건 형식 {{ '통과' if checks.reference_format_ok else '확인 필요' }} · 평가표 불일치 {{ (checks.consistency_violations or []) | length }}건 |
@@ -153,7 +153,7 @@ uv run python app.py                 # API 키 없이 제출 보고서 재현 �
 [투자 보고서 PDF]({{ report_pdf }}){{ (' · ' ~ r.pages ~ '쪽') if r.pages else '' }}{{ (' · 목차: ' ~ chapters) if chapters else '' }}
 
 {% if mode == 'invest' and target %}
-**결론: {{ conclusion }}** — 동종 평균 대비 **{{ target.m }}** (기준 {{ thr100 }}) · {{ target.rank }} · 창업자 근거 {{ target.founder_yes }}개 · Deal-killer {{ target.killers | join(', ') if target.killers else '없음' }}
+**결론: {{ conclusion }}** — 동종 평균 대비 **{{ target.m }}** (동종 평균 {{ thr100 }} 초과) · {{ target.rank }} · 창업자 기준 {{ target.founder_c }} (동종 평균 100 이상) · Deal-killer {{ target.killers | join(', ') if target.killers else '없음' }}
 
 | 기준 (비중) | YES / NO / 미확인 | 동종 평균 대비 |
 |---|---|---|
@@ -225,7 +225,6 @@ uv run python app.py                 # API 키 없이 제출 보고서 재현 �
 ### 한계
 - **공개 정보의 한계** — {{ ('투자 추천 대상도 24문항 중 미확인이 ' ~ target.unknown_pct ~ '이다. ') if target else '' }}{{ ('양성 대조에서 투자 추천 ' ~ pc.invest ~ '/' ~ pc.n ~ '곳. ') if pc else '' }}결론은 투자 결정이 아니라 실사 대상 선별로 쓴다
 - **동종 기준 집단은 근사다** — {{ sens.n if sens else '-' }}곳의 단계 · 지역이 섞여 있다{{ (' (' ~ ref_mix ~ ')') if ref_mix else '' }}. Scorecard 원칙은 같은 지역 · 같은 단계 비교다
-- **기준선은 '동종 평균'이다** — 동종 기준 집단은 한 번의 평가에서 모은 적격 후보라, 원 방법의 '같은 지역·같은 단계 투자 기업'을 근사한다
 - **평가 표본이 작다** — 검색 {{ rt.n }}문항(1문항 = {{ rt.unit }}){{ (', Judge ' ~ judge.n ~ '문항(1문항 = ' ~ judge.unit ~ ')') if judge else '' }}. 평가 질문은 LLM 으로 만들고 사람이 전수 검수하지 않았다
 - **해석 오류는 남을 수 있다** — 문항 판정은 {{ cfg.models.judge }} 가 하고, 코드는 인용 · 회사명 · 제3자 · 날짜 · 상용 운영 요건만 검사한다
 
@@ -233,6 +232,7 @@ uv run python app.py                 # API 키 없이 제출 보고서 재현 �
 - **RAG 문서 {{ (corpus.old ~ ' → ') if corpus.old else '' }}{{ corpus.n }}종 {{ corpus.pages }}쪽** : {{ corpus.added | join(' · ') }} 추가, {{ corpus.trimmed }}개 문서에서 쓰지 않는 표지 · 목차 · 참고문헌 쪽 제외 (`data/manifest.yaml`)
 {% macro delta(name, a, b) %}{{ name }} {{ (a ~ '(같음)') if a == b else (a ~ ' → ' ~ b) }}{% endmacro %}
 - **검색기 재측정** : 기존 {{ rt.n }}문항 {{ (delta('Hit@4', rt.design.hit4, rt.hit4) ~ ', ' ~ delta('MRR@4', rt.design.mrr4, rt.mrr4)) if rt.design else ('Hit@4 ' ~ rt.hit4 ~ ', MRR@4 ' ~ rt.mrr4) }}, 검색 설정은 그대로{{ ' (이유는 Evaluation 표 아래)' if rt.rule_top else '' }}
+- **투자 판단 기준 110 → 100** : 설계서의 기준 110(창업자 문항 YES 1개 이상)은 원전에 없는 설계 가정이었다. 근거를 댈 수 있는 값은 Scorecard 원 방법의 기준점(투자를 받은 동종 평균 기업 = 100)뿐이라 '동종 평균 100 초과 · 창업자 점수 동종 평균 이상'으로 바꿨다. 실행 결과가 나온 뒤의 변경이라 설계서의 '결과를 보고 기준을 바꾸지 않는다'는 원칙에서 벗어난다. 바꾼 이유는 결과가 아니라 근거 부재이며, 110 에서의 결과(추천 0곳)도 기준 민감도로 함께 공개한다
 - **검토 지적 반영** : 근거 id 해시가 겹치면 먼저 등록된 근거를 덮어쓰지 않고 더 긴 id 를 준다 · 평가 기준일 이후 날짜와 예정 라운드는 '최근 투자'로 인정하지 않는다 · 검색 요청에 제한 시간을 두고, 인증 · 한도 오류가 나면 그 공급자를 끄고 실패로 기록한다
 
 ### 문제 해결

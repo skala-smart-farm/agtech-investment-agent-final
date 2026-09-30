@@ -161,7 +161,9 @@ def test_invest_report_structure(run, can_render):
     sc = state["evaluations"][0]["scorecard"]
     concl = lines[1]
     assert concl.startswith("- 결론: 메타파머스 투자 추천(실사 조건부)")
-    assert f"동종 평균 대비 {sc['multiplier'] * 100:.0f}(평균 100, 기준 110)" in concl
+    # 픽스처는 설계 기준(M > 1.00 ∧ 창업자 기준 ≥ 1.00)의 투자 결과다
+    assert sc["threshold"] == 1.00 and sc["multiplier"] > 1.00 and sc["founder_c"] >= 1.00 and sc["hold_type"] is None
+    assert f"동종 평균 대비 {sc['multiplier'] * 100:.1f}(동종 평균 100 초과, 창업자 기준 {sc['founder_c'] * 100:.1f})" in concl
     assert f"동종 {sc['peer_n']}곳 중 {sc['target_rank']}위" in concl
     assert lines[4] == f"- 요청: 실사 확인 항목 {len(sc['dd_items'])}개를 조건으로 투자심의 상정을 진행할까요?"
     assert "(→1장)" in lines[2] and "(→2장)" in lines[2] and "(→3장)" in lines[2] and "(→4장)" in lines[3]
@@ -172,10 +174,16 @@ def test_invest_report_structure(run, can_render):
     assert ck["first_section"] == "SUMMARY" and ck["last_section"] == "REFERENCE"
     # 4장: 기준표·Bessemer 한 줄·순위 상위 3·민감도 한 줄·ROI(가정 표기)·실사 항목
     ch4 = md.split("## 4. 투자 판단과 사업 리스크", 1)[1].split("\n## ", 1)[0]
-    assert ch4.count("Bessemer 10문:") == 1 and ch4.count("민감도(기준 배수별 결정):") == 1
-    assert "1.1205(Eqvista)·1.155(ACA 2019)보다 낮은 1.10, 설계 가정" in ch4
+    assert ch4.count("Bessemer 10문:") == 1 and ch4.count("기준 민감도(what-if, 결정에 쓰지 않음):") == 1
+    assert ch4.lstrip().startswith(f"**동종 평균 대비 {sc['multiplier'] * 100:.1f}(동종 평균 100 초과), "
+                                   f"창업자 기준 {sc['founder_c'] * 100:.1f}(동종 평균 이상), Deal-killer 없음")
+    assert "투자 추천 ⇔ 동종 평균 대비 배수 > 1.00(표기 100) ∧ 창업자 기준 ≥ 동종 평균 ∧ Deal-killer 없음" in ch4
+    assert "기준 1.00: Payne Scorecard 원 방법의 기준점 '투자를 받은 동종 평균 기업 = 100%'" in ch4
+    # 옛 규칙(가정한 기준 1.10·창업자 YES 개수)의 문구가 남아 있지 않다
+    assert not [t for t in ("1.1205", "Eqvista", "설계 기준", "기준 110", "창업자 근거", "창업자 문항 YES") if t in md]
     rank = next(ln for ln in ch4.splitlines() if "동종 순위(상위 3)" in ln)
-    assert rank.count("위 ") == 3 + 1  # 상위 3곳 + '대상 n위'
+    assert rank.count("위 ") == 3 + 1 and "대상 1위" in rank  # '상위 3' + 상위 3곳, 끝에 '대상 n위'
+    assert re.search(r"1위 \S+ \d+\.\d\((투자|보류: [^)]+)\)", rank) and "투자 기준 통과" in rank   # 순위마다 판정, 소수 한 자리
     roi = [ln for ln in ch4.splitlines() if "post-money" in ln or "필요 Exit" in ln]
     assert roi and all("가정" in ln for ln in roi)
     assert "Pre-A 단계 중앙값 $1M의 2.1배" in ch4 and "AgFunder(2026)" in md.split("## REFERENCE", 1)[1]
@@ -264,7 +272,14 @@ def test_hold_report_structure(run, can_render):
     lines = _summary(md)
     assert len(lines) == 5
     assert lines[1].startswith(f"- 결론: 투자 추천 없음 — 평가한 {len(evals)}곳 모두 보류(적격 {eligible}곳 중 비용 상한 {len(evals)}곳 평가)")
-    assert "최고점 메타파머스 동종 평균 대비 113(기준 130)" in lines[1]
+    assert "최고점 메타파머스 동종 평균 대비 113.0(기준 130)" in lines[1]
+    # 보류 유형은 새 우선순위(Deal-killer > 창업자 점수 평균 미만 > 동종 평균 이하)를 따른다 (픽스처에 Deal-killer 없음)
+    assert all(e["hold_type"] == ("창업자 점수 평균 미만" if e["scorecard"]["founder_c"] < 1.00 else "동종 평균 이하")
+               for e in evals)
+    assert lines[2].startswith("- 원인: 보류 유형 동종 평균 이하 6 · 창업자 점수 평균 미만 4 — ")
+    assert "동종 평균 130" not in md  # 시나리오 기준 1.30 은 '기준 130'이지 동종 평균이 아니다
+    # 3장 첫 줄: 배수 = 기준이어도 보류(투자 ⇔ 배수 > 기준). 배수 표기는 정수·소수 한 자리 모두 허용(표기 변경 중)
+    assert re.search(r"평가한 10곳 중 최고점\(동종 평균 대비 113(\.0)?\)이지만 기준 130을 넘지 못했다\.", md)
     assert lines[4].startswith("- 요청: 메타파머스 실사 착수 또는 미평가 적격") and lines[4].endswith("할까요?")
     ch2 = md.split("## 2. 후보별 보류 사유", 1)[1].split("\n## ", 1)[0]
     blocks = ch2.split("\n### ")[1:]
@@ -273,7 +288,7 @@ def test_hold_report_structure(run, can_render):
         assert e["name"] in b.splitlines()[0] and e["hold_type"] in b.splitlines()[0]
         assert "- 뒤집힘 조건: " in b and "- 왜 안 되는가: " in b and "- 팀: " in b and "- 사업: " in b
         if e["flip"] and e["flip"].get("new_multiplier"):
-            assert f"{e['flip']['new_multiplier'] * 100:.0f}" in b
+            assert f"{e['flip']['new_multiplier'] * 100:.1f}" in b
     for key in ("chapter_refs_ok", "required_items_ok", "refs_match_citations", "reference_format_ok",
                 "conclusion_matches_scorecard", "assumptions_labeled"):
         assert ck[key] is True, (key, ck)
@@ -348,15 +363,15 @@ def test_flip_text_deal_killer_and_note():
     assert R._flip_text({"flip": None, "scorecard": {"deal_killers": ["K1"]}}).startswith("Deal-killer K1 해소 필요")
     sc = {"threshold": 1.1}
     assert R._flip_text({"flip": {"items": ["C1 특허"], "new_multiplier": 1.123, "reached": True}, "scorecard": sc}) \
-        == "C1 특허 이(가) YES 로 확인되면 동종 평균 대비 112(기준 110) → 투자 조건 충족"
+        == "C1 특허 이(가) YES 로 확인되면 동종 평균 대비 112.3(기준 110) → 투자 조건 충족"
     assert R._flip_text({"flip": {"items": ["C1 특허"], "new_multiplier": 1.05, "reached": False}, "scorecard": sc}) \
-        == "C1 특허 이(가) 모두 YES 로 확인돼도 동종 평균 대비 105(기준 110) — 기준 미달"
+        == "C1 특허 이(가) 모두 YES 로 확인돼도 동종 평균 대비 105.0(기준 110) — 기준 미달"
 
 
 def test_pct_not_double_scaled_and_assumption_scope():
     sc = {"rows": [], "multiplier": 1.13, "threshold": 1.1,
           "criteria": [{"name": "창업자·경영진", "dim": "founder", "weight": 30, "yes": 3, "no": 0, "unknown": 1,
                         "pct": 129.2, "contribution": 0.3876}]}
-    assert R._criteria_rows(sc)[0][2] == "129"
+    assert R._criteria_rows(sc)[0][2] == "129.2"   # 이미 ×100 된 값을 다시 곱하지 않고, 소수 한 자리로
     md = "## 2. 시장\n원화 환율 상승이 수입 자재 가격을 올렸다\n**ROI 참고치 (점수·결정에 넣지 않음)**\n\n- 환율: 1,400원\n\n## 5. 한계점\n- 지분율 20%\n"
     assert R._assumption_scope(md) == ["**ROI 참고치 (점수·결정에 넣지 않음)**", "", "- 환율: 1,400원", "", "## 5. 한계점", "- 지분율 20%"]

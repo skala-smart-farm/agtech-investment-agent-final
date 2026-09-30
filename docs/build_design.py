@@ -426,9 +426,17 @@ def _run_result() -> dict:
 
 
 def _runtime_numbers(cfg) -> tuple[str, str, str]:
-    from docs.build_readme import _runtime
-
-    return _runtime(cfg)
+    """(검색 방식 이름, Hit@4, MRR@4): 지금 설정(임베딩·가중치)과 같은 행을 실제 파이프라인 설정 측정표
+    (outputs/eval/runtime_retriever.json)에서 찾는다. 없으면 '-'. README 빌더에 기대지 않고 여기서 계산한다."""
+    w = [float(x) for x in cfg.rag.ensemble_weights]
+    label = "Dense 단독" if w[0] == 0 else f"하이브리드 BM25 {w[0]:g} : Dense {w[1]:g}"
+    d = _json("outputs/eval/runtime_retriever.json")
+    rows = d.get("rows", []) if isinstance(d, dict) else []
+    row = next((r for r in rows if r.get("embedding") == cfg.embedding.model
+                and [float(x) for x in r.get("weights[bm25,dense]", [])] == w), None)
+    if not row:
+        return label, "-", "-"
+    return label, f"{row['all']['Hit@4']:.3f}", f"{row['all']['MRR@4']:.3f}"
 
 
 EMOJI = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]\\s?")

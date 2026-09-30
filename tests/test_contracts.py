@@ -94,8 +94,10 @@ def test_config_contract_keys():
     assert (rag.max_rewrites, rag.max_regenerations, rag.rag_recursion_limit) == (2, 1, 25)
     assert rag.allow_direct_answer is False  # 분석 에이전트 호출은 direct 경로를 쓰지 않는다
     assert (cfg.tools.summarize_max_chars, cfg.tools.summarize_chunk_chars) == (6000, 3000)
-    assert (d.method, d.threshold, d.step, d.clip, d.min_founder_yes) == ("payne_relative", 1.10, 0.5, [0.5, 1.5], 1)
-    assert (d.info_gap_ratio, d.reference_file, d.reference_min_n) == (0.6, "data/reference_class.json", 5)
+    # 투자 ⇔ M > threshold ∧ c_founder ≥ founder_min_c. 두 값 모두 Payne 기준점 '투자를 받은 동종 평균 기업 = 100%'
+    assert (d.method, d.threshold, d.step, d.clip, d.founder_min_c) == ("payne_relative", 1.00, 0.5, [0.5, 1.5], 1.00)
+    assert (d.reference_file, d.reference_min_n) == ("data/reference_class.json", 5)
+    assert "min_founder_yes" not in d and "info_gap_ratio" not in d  # 근거 없는 옛 규칙 키(창업자 YES 개수·미확인 60%)는 지웠다
     assert (d.sensitivity, d.flip_max_items, d.dd_max_items) == ([1.00, 1.05, 1.10, 1.15, 1.20], 3, 5)
     assert (roi.fx_krw_per_usd, roi.stake_assumption, roi.target_multiple) == (1400, [0.10, 0.20], 10)
     assert roi.stage_median_usd_m == {"Seed": 1, "Pre-A": 1, "Series A": 7, "Pre-B": 7, "Series B": 14,
@@ -168,7 +170,7 @@ def test_judge_dimension_signature():
     ("write_reference_class", ["evaluations", "path", "run_date"]),
     ("write_threshold_sensitivity", ["ref_path", "out_path"]),
     ("payne_multiplier", ["rows", "mean", "rubric", "step", "clip"]),
-    ("decide_rule", ["M", "founder_yes", "killers", "unknown_ratio", "cfg"]),
+    ("decide_rule", ["M", "founder_c", "killers", "unknown_ratio", "cfg"]),
     ("flip_conditions", ["rows", "mean", "rubric", "cfg", "founder_ok", "killers"]),
     ("bessemer_panel", ["rows", "rubric"]),
     ("roi", ["current", "market", "cfg"]),

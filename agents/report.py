@@ -174,7 +174,7 @@ def _s1(m: float | None) -> str:
 
 def _p100(pct: float | None) -> str:
     """기준별 점수(투자 판단 에이전트가 c_d × 100 으로 준 값) → 보고서 표기. _s100 과 달리 다시 곱하지 않는다."""
-    return "-" if pct is None else f"{pct:.0f}"
+    return "-" if pct is None else f"{pct:.1f}"
 
 
 def _num(x) -> str:
@@ -251,7 +251,7 @@ def _funnel(pool: dict) -> str:
 
 
 def _hold_counts(evals: list[dict]) -> str:
-    order = ("동종 평균 이하", "창업자 점수 평균 미만", "Deal-killer")
+    order = ("동종 평균 이하", "기준 이하", "창업자 점수 평균 미만", "Deal-killer")
     types = [e.get("hold_type") or (e.get("scorecard") or {}).get("hold_type") for e in evals]
     return " · ".join(f"{t} {types.count(t)}" for t in order if types.count(t))
 
@@ -563,7 +563,8 @@ def _reference_line(sc: dict, cfg) -> str:
 
 
 def _sensitivity_line(sc: dict) -> str:
-    return "민감도(기준 배수별 결정): " + " · ".join(f"{k} {v}" for k, v in (sc.get("sensitivity") or {}).items())
+    return ("기준 민감도(what-if, 결정에 쓰지 않음): "
+            + " · ".join(f"{float(k) * 100:.0f} {v}" for k, v in (sc.get("sensitivity") or {}).items()))
 
 
 def _bessemer_line(sc: dict) -> str:
@@ -575,9 +576,29 @@ def _bessemer_line(sc: dict) -> str:
 
 def _ranking_line(sc: dict) -> str:
     rk = sc.get("ranking") or []
-    top = " · ".join(f"{i}위 {r['name']} {_s100(r['multiplier'])}" for i, r in enumerate(rk[:3], 1))
-    tail = f" — 대상 {sc['target_rank']}위/{sc.get('peer_n') or len(rk)}곳" if sc.get("target_rank") else ""
+    cfg = get_config().decision
+
+    def verdict(r: dict) -> str:
+        """순위표 한 줄의 판정 — 결정 규칙(투자 판단 에이전트)과 같은 순서로 보류 이유를 붙인다."""
+        if r.get("decision") == "투자":
+            return "투자"
+        if r.get("killers"):
+            return "보류: Deal-killer"
+        if r.get("founder_c") is not None and r["founder_c"] < cfg.founder_min_c:
+            return "보류: 창업자 점수 평균 미만"
+        return f"보류: {_hold_bar(sc.get('threshold'))} 이하"
+
+    top = " · ".join(f"{i}위 {r['name']} {_s1(r['multiplier'])}({verdict(r)})" for i, r in enumerate(rk[:3], 1))
+    passed = [r["name"] for r in rk if r.get("decision") == "투자"]
+    tail = (f" — 동종 {len(rk)}곳 중 투자 기준 통과 {len(passed)}곳({'·'.join(passed)})" if passed
+            else f" — 동종 {len(rk)}곳 중 투자 기준 통과 0곳")
+    tail += f", 대상 {sc['target_rank']}위" if sc.get("target_rank") else ""
     return f"동종 순위(상위 3): {top}{tail}" if rk else ""
+
+
+def _hold_bar(t: float | None) -> str:
+    """보류 이름표의 기준 이름: 설계 기준(1.00)이면 '동종 평균', 시나리오 실행처럼 다르면 '기준 130'."""
+    return "동종 평균" if t is None or abs(t - 1) < 1e-9 else f"기준 {t * 100:.0f}"
 
 
 def _agfunder_id(reg: SourceRegistry, cfg) -> str | None:
@@ -627,7 +648,7 @@ def _flip_text(e: dict) -> str:
     items = "·".join(f.get("items") or [])
     if f.get("new_multiplier") is None or not items:   # Deal-killer 해소가 먼저이거나, 뒤집을 미확인 문항이 없음
         return f.get("note") or "-"
-    after = f"동종 평균 대비 {_s100(f['new_multiplier'])}(기준 {_s100(sc.get('threshold'))})"
+    after = f"동종 평균 대비 {_s1(f['new_multiplier'])}(기준 {_s100(sc.get('threshold'))})"
     return (f"{items} 이(가) YES 로 확인되면 {after} → 투자 조건 충족" if f.get("reached")
             else f"{items} 이(가) 모두 YES 로 확인돼도 {after} — 기준 미달")
 
@@ -888,7 +909,7 @@ def _candidate_blocks(evals: list[dict], notes: list[CandidateNote], reg: Source
         team = " · ".join(x for x in (_team_line(e, reg), _nps_line(p), _stage_line(p, reg),
                                       f"대상 웹 검색 {fail}건 실패" if fail else "") if x)
         seg = get_segment(e.get("segment_id") or p.get("segment_id") or "")["name"]
-        out.append({"t": "cand", "title": f"2.{idx} {e['name']} — 동종 평균 대비 {_s100(e.get('multiplier', sc.get('multiplier')))} · "
+        out.append({"t": "cand", "title": f"2.{idx} {e['name']} — 동종 평균 대비 {_s1(e.get('multiplier', sc.get('multiplier')))} · "
                                           f"{e.get('hold_type') or sc.get('hold_type') or '보류'}", "sub": seg,
                     "items": [["사업", one_line], ["팀", team],
                               ["왜 안 되는가", f"{why} ({'; '.join(e.get('reasons') or sc.get('reasons') or []).replace('UNKNOWN', '미확인')})"],
@@ -916,10 +937,10 @@ def _chapters_hold(evals: list[dict], target: dict, d: dict, t: dict, reg: Sourc
     detail += [{"t": "h3", "text": B_DETAIL[4]}, _table(["유형", "내용", "실사 질문"], t["risks"], ["8%", "57%", "35%"], small=True)]
     dims = [_dim_short(c["name"]) for c in sc["criteria"]]
     score_rows = [[e["name"]] + [_p100(c["pct"]) for c in e["scorecard"]["criteria"]]
-                  + [_s100(e["scorecard"]["multiplier"]), e.get("hold_type") or e["scorecard"].get("hold_type") or "-"]
+                  + [_s1(e["scorecard"]["multiplier"]), e.get("hold_type") or e["scorecard"].get("hold_type") or "-"]
                   for e in evals]
     sens_keys = list((sc.get("sensitivity") or {}).keys())
-    sens = " · ".join(f"{k} → {sum((e['scorecard'].get('sensitivity') or {}).get(k) == '투자' for e in evals)}곳" for k in sens_keys)
+    sens = " · ".join(f"{float(k) * 100:.0f} → {sum((e['scorecard'].get('sensitivity') or {}).get(k) == '투자' for e in evals)}곳" for k in sens_keys)
     summary = [_table(["후보"] + dims + ["배수", "보류 유형"], score_rows, small=True),
                _note(_rule_line(sc, cfg)), _note(_reference_line(sc, cfg)),
                _note(f"민감도(평가 {len(evals)}곳 중 투자 추천 수): {sens}") if sens else None,
@@ -929,9 +950,9 @@ def _chapters_hold(evals: list[dict], target: dict, d: dict, t: dict, reg: Sourc
         {"title": B_CHAPTERS[2], "lead": f"평가한 {len(evals)}곳 모두 보류 — {_hold_counts(evals)}.",
          "blocks": _candidate_blocks(evals, t["cands"], reg, failed_by)},
         {"title": f"{B_CHAPTERS[3]} — {target['name']}",
-         "lead": f"평가한 {len(evals)}곳 중 최고점(동종 평균 대비 {_s100(sc['multiplier'])})이지만 {top_why}.",
+         "lead": f"평가한 {len(evals)}곳 중 최고점(동종 평균 대비 {_s1(sc['multiplier'])})이지만 {top_why}.",
          "blocks": detail},
-        {"title": B_CHAPTERS[4], "lead": f"최고점 {_s100(sc['multiplier'])}(기준 {_s100(thr)}) — 투자 추천 대상 없음.",
+        {"title": B_CHAPTERS[4], "lead": f"최고점 {_s1(sc['multiplier'])}(기준 {_s100(thr)}) — 투자 추천 대상 없음.",
          "blocks": [b for b in summary if b]},
         {"title": B_CHAPTERS[5], "lead": "보류는 '공개 정보로 확인되지 않음'을 포함하므로, 아래 한계를 함께 읽어야 한다.",
          "blocks": [_ul(t["limitations"])]},
@@ -1049,7 +1070,7 @@ def _candidates_context(evals: list[dict], reg: SourceRegistry, failed_by: dict[
 
         fail = next((v for k, v in failed_by.items() if any(_same(k, x) for x in _names(e))), 0)
         blocks.append("\n".join([
-            f"### {e['name']} — 보류 유형: {e.get('hold_type') or sc.get('hold_type')} (동종 평균 대비 {_s100(sc['multiplier'])})",
+            f"### {e['name']} — 보류 유형: {e.get('hold_type') or sc.get('hold_type')} (동종 평균 대비 {_s1(sc['multiplier'])})",
             f"- 사업: {p.get('one_line')} / 단계: {p.get('stage')} ({p.get('round_date') or '시점 미상'}, "
             f"{p.get('round_amount') or '금액 미공개'}) / 대표: {p.get('ceo') or '확인 불가'} / 창업 시점: {_t0(e) or '확인 불가'}",
             "- 반대 근거(NO): " + ("; ".join(f"{fmt(r)} — {_human_reason(r['rationale'])}" for r in rows if r["answer"] == "NO") or "없음"),
@@ -1079,7 +1100,7 @@ def _context(mode: str, target: dict, evals: list[dict], reg: SourceRegistry, po
         "founder": _brief_json(target.get("founder"), reg), "tech": _brief_json(target.get("tech"), reg),
         "market": _brief_json(target.get("market"), reg), "competition": _brief_json(target.get("competition"), reg),
         "competitor_names": comp_names,
-        "scorecard": json.dumps({"동종 평균 대비": _s100(sc["multiplier"]), "기준": _s100(sc["threshold"]),
+        "scorecard": json.dumps({"동종 평균 대비": _s1(sc["multiplier"]), "기준": _s100(sc["threshold"]),
                                  "결정": sc["decision"], "보류 유형": sc.get("hold_type"), "사유": sc.get("reasons"),
                                  "기준별": {_dim_short(c["name"]): _p100(c["pct"]) for c in sc["criteria"]},
                                  "실사 항목": [x["item"] for x in sc.get("dd_items") or []]}, ensure_ascii=False),

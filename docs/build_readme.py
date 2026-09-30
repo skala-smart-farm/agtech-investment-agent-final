@@ -296,6 +296,8 @@ def _target(run: dict, r: dict, sens: dict | None, thr: float) -> dict | None:
     return {"name": e["name"], "m": _s100(e["multiplier"]), "crit": crit,
             "yes": sum(c["y"] for c in crit), "no": sum(c["n"] for c in crit), "unk": sum(c["u"] for c in crit),
             "founder_yes": next((c["y"] for c in crit if c["name"].startswith("창업자")), "-"),
+            # 결정 조건인 창업자 기준 비율(동종 평균 = 100). run_log 평가에는 criteria 의 pct 로 남는다
+            "founder_c": next((f"{c['pct']:.1f}" for c in e.get("criteria") or [] if c.get("dim") == "founder"), "-"),
             "killers": me.get("killers") or [], "unknown_pct": f"{unknown / len(scored) * 100:.0f}%" if scored else "-",
             "rank": f"동종 {len(names)}곳 중 {names.index(e['name']) + 1}위" if e["name"] in names else "",
             "at": " · ".join(f"{float(t) * 100:.0f} {d}" for t, d in at.items()),

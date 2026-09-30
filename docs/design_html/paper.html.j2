@@ -85,11 +85,13 @@ table.trace{table-layout:fixed}
 
 <section class="abstract">
   <div class="abstract-h">요 약</div>
-  <p>투자 추천은 ‘투자를 받은 동종 기업 평균 = 100’ 대비 {{ '%.0f' % (dec.threshold * 100) }} 이상이면서 창업자 문항 YES 가 {{ dec.min_founder_yes }}개 이상이고
+  <p>투자 추천은 ‘투자를 받은 동종 기업 평균 = 100’ 대비 배수가 {{ '%.0f' % (dec.threshold * 100) }} 을 넘고(M &gt; {{ '%.2f' % dec.threshold }}), 창업자 기준 점수가 동종 평균 이상이며(c<sub>founder</sub> ≥ {{ '%.2f' % dec.founder_min_c }}),
   Deal-killer 가 없을 때만 한다. 평가의 틀은 두 표준에서 가져온다. 6개 기준과 가중치(창업자 30·시장성 25·제품/기술 15·경쟁 우위 10·실적 10·투자조건 10)는 과제 가이드 표를 따르고,
-  비교 방식은 Bill Payne Scorecard 의 ‘투자를 받은 평균 기업 = 100%’ 원리를 가져온다. 질문은 과제 가이드의 Bessemer 체크리스트 10문을 AgTech 실패 요인과 함께 24개 이진 문항으로 푼 것이다.
-  표준에 없는 설계 가정은 기준 {{ '%.0f' % (dec.threshold * 100) }}·창업자 YES ≥ {{ dec.min_founder_yes }}·비교율 계수({{ dec.step }}, {{ dec.clip[0] }}~{{ dec.clip[1] }}) 등이며,
-  결론을 가장 크게 좌우하는 기준 {{ '%.0f' % (dec.threshold * 100) }} 은 1.00~1.20 민감도를 보고서에 함께 싣는다(C.1~C.4, C.8).</p>
+  비교 방식은 Bill Payne Scorecard 의 ‘투자를 받은 평균 기업 = 100%’ 원리를 가져온다. 두 기준값도 새로 정한 숫자가 아니라 이 원리의 기준점(평균 = 100%) 그대로이며,
+  창업자 조건은 Payne 의 “A great team will fix early product flaws, but the reverse is not true”를, Deal-killer 는 Payne 워크시트의 deal killer 개념을 따른다.
+  질문은 과제 가이드의 Bessemer 체크리스트 10문을 AgTech 실패 요인과 함께 24개 이진 문항으로 푼 것이다.
+  표준에 없는 설계 가정은 비교율 계수({{ dec.step }}, {{ dec.clip[0] }}~{{ dec.clip[1] }}) 등이며, 기준 배수를 {{ '%.2f' % dec.sensitivity[0] }}~{{ '%.2f' % dec.sensitivity[-1] }} 으로 바꿨을 때의 결과는
+  결정 기준이 아닌 what-if(민감도)로 보고서에 함께 싣는다(C.1~C.4, C.8).</p>
   <p>에이전트는 과제 가이드 Graph(안)의 여섯(스타트업 탐색·기술 요약·시장성 평가·경쟁사 비교·투자 판단·보고서 생성)에 창업자 평가를 더한 일곱이며,
   분석 에이전트가 평가표 기준을 나눠 맡는다(투자 판단은 실적·투자조건). 투자 판단이 보류면 탐색으로 돌아가 다음 후보를 평가하고, 반 공용 API 키의 비용을 고려해 평가는 최대 {{ cfg.workflow.max_evaluations }}곳으로 제한한다(B.1, D.2).</p>
   <p>RAG 는 과제 가이드 표에서 O 로 표시된 탐색·기술 요약·시장성 평가 세 에이전트에 모두 적용한다. 공공·연구 문서 중심 {{ corpus | length }}종(민간 AgFunder 1종 포함) {{ total_pages }}쪽을 검색하며,

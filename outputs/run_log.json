@@ -1,6 +1,6 @@
 {
   "run_date": "2026-09-30",
-  "elapsed_sec": 8.1,
+  "elapsed_sec": 7.9,
   "mode": "main",
   "threshold": 1.0,
   "end_reason": "invest_found",
@@ -617,21 +617,20 @@
     "pdf": "outputs/investment_report.pdf",
     "submit_pdf": "outputs/RAG-Output_울산-2반_김가연+김진녕+문지후+이준희+정승우.pdf",
     "pages": 4,
-    "summary_ratio": 0.233,
+    "summary_ratio": 0.251,
     "cited_ids": [
       "Df26b5",
       "D204c5",
-      "Db6b8c",
       "D8c04e",
       "Deaac5",
       "D5b883",
       "D8f441",
-      "Wbf33c",
-      "Wa4ac8",
       "Wc091e",
       "Wc3a78",
       "Wef018",
       "W2a166",
+      "Wbf33c",
+      "Wa4ac8",
       "Weeb95",
       "W299f0",
       "Wd558b"
@@ -640,7 +639,7 @@
       "pages": 4,
       "max_pages": 5,
       "pages_ok": true,
-      "summary_ratio": 0.233,
+      "summary_ratio": 0.251,
       "summary_ok": true,
       "first_section": "SUMMARY",
       "last_section": "REFERENCE",
@@ -655,20 +654,20 @@
       "assumptions_labeled": true,
       "consistency_violations": [],
       "density_level": 0,
-      "rewrites": 0,
+      "rewrites": 1,
       "references": 12,
       "reference_groups": {
         "기관 보고서": 2,
         "학술 논문": 2,
         "웹페이지": 8
       },
-      "summary_ratio_of_a4": 0.233,
+      "summary_ratio_of_a4": 0.251,
       "scorecard_consistency_violations": []
     },
     "title": "메타파머스 투자 검토 — 투자 추천(실사 조건부)",
     "target": "메타파머스",
     "decision": "투자 추천",
-    "generated_at": "2026-09-30T12:58:04"
+    "generated_at": "2026-09-30T13:18:26"
   },
   "rag_traces": [
     {
@@ -1092,13 +1091,13 @@
     "[시장성] 농업 로봇·자율주행 농기계: 하위 질문 6개 (문서 5·웹 0·직접 0, grounded 4개), 대표 규모 22650.0(USD_M), 근거 14건 (문서 11건) → 시장성 YES 2/4",
     "[경쟁사] 메타파머스: 제품 유형 '다목적 농작업 로봇 및 원격 제어 소프트웨어', 검색 5건, 근거 속 경쟁사 더그투스 → 경쟁사 1곳 비교, 주장 4건(제3자 확인 0·반대 근거 0) → 경쟁 우위 YES 0/4",
     "[투자 판단] 메타파머스: 동종 평균 대비 109.6(동종 평균 100, 창업자 기준 118.1, 기준 집단 9곳 자기 제외) · YES 8 · NO 0 · 미확인 65% · 창업자 YES 2 · Deal-killer 없음 → 투자 [여기서 판정한 기준: traction, deal]",
-    "[보고서] invest investment_report.pdf 4쪽 (≤5), SUMMARY A4 대비 23%, REFERENCE 12건, 형식 검사 통과 → RAG-Output_울산-2반_김가연+김진녕+문지후+이준희+정승우.pdf"
+    "[보고서] invest investment_report.pdf 4쪽 (≤5), SUMMARY A4 대비 25%, REFERENCE 12건, 형식 검사 통과 → RAG-Output_울산-2반_김가연+김진녕+문지후+이준희+정승우.pdf"
   ],
   "sources_collected": 589,
   "failed_searches": [],
   "llm_cost": {
     "api_calls": 0,
-    "cache_hits": 84,
+    "cache_hits": 85,
     "input_tokens": 0,
     "output_tokens": 0,
     "usd": 0.0

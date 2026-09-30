@@ -31,7 +31,7 @@ from tools.grounding import norm
 from tools.sources import SourceRegistry
 
 AGENT = "decision"
-HOLD_TYPES = ("Deal-killer", "창업자 점수 평균 미만", "동종 평균 이하")   # 앞선 것 우선
+HOLD_TYPES = ("Deal-killer", "창업자 점수 평균 미만", "동종 평균 이하")   # 앞선 것 우선 (시나리오 실행에서는 마지막이 '기준 이하')
 UNDISCLOSED = ("비공개", "미공개", "undisclosed", "비밀", "n/a")
 
 __all__ = ["decision_node", "load_rubric", "load_reference", "write_reference_class", "write_threshold_sensitivity",
@@ -256,7 +256,9 @@ def decide_rule(M: float, founder_c: float, killers: list[str], unknown_ratio: f
         reasons.append(f"{team} — 팀이 {_bar(need)} 미만")
     if M <= t:
         reasons.append(f"{score} — {_bar(t)} 이하 (미확인 문항 {unknown_ratio:.0%})")
-    hold = "Deal-killer" if killers else "창업자 점수 평균 미만" if founder_c < need else "동종 평균 이하"
+    hold = ("Deal-killer" if killers else "창업자 점수 평균 미만" if founder_c < need
+            else "동종 평균 이하" if abs(t - 1) < 1e-9 else "기준 이하")   # 시나리오 실행(--threshold)에서는 '기준 이하'
+
     return "보류", hold, reasons
 
 

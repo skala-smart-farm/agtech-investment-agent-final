@@ -7,6 +7,7 @@ LLM·네트워크 없이 돈다 (judge_dimension 은 가짜로 바꾼다).
 from __future__ import annotations
 
 import json
+import re
 
 import pytest
 
@@ -20,9 +21,9 @@ QIDS = [q["id"] for d in load_rubric()["dimensions"] for q in d["questions"]]
 DIM_OF = {q["id"]: d["id"] for d in load_rubric()["dimensions"] for q in d["questions"]}
 C7_EVAL = {"name", "region", "segment_id", "stage", "round_date", "round_amount", "decision", "hold_type", "multiplier",
            "score100", "reasons", "flip", "criteria", "scorecard", "founder", "tech", "market", "competition", "profile"}
-C7_SCORECARD = {"criteria", "rows", "multiplier", "score100", "threshold", "reference", "founder_yes", "unknown_ratio",
-                "deal_killers", "decision", "hold_type", "reasons", "flip", "dd_items", "bessemer", "roi", "sensitivity",
-                "ranking", "target_rank", "peer_n"}
+C7_SCORECARD = {"criteria", "rows", "multiplier", "score100", "threshold", "reference", "founder_yes", "founder_c",
+                "unknown_ratio", "deal_killers", "decision", "hold_type", "reasons", "flip", "dd_items", "bessemer", "roi",
+                "sensitivity", "ranking", "target_rank", "peer_n"}
 
 
 @pytest.fixture(autouse=True)
@@ -37,79 +38,128 @@ def _rows(answers: dict[str, str] | str) -> list[dict]:
     return [{"dim": DIM_OF[q], "qid": q, "answer": get(q), "x": x[get(q)]} for q in QIDS]
 
 
-def _score(rows: list[dict], exclude: str | None = None) -> tuple[float, dict]:
+def _score(rows: list[dict], exclude: str | None = None) -> tuple[float, float, dict]:
+    """(배수 M, 창업자 기준 비율 c_founder, 기준 집단). c_founder 는 창업자 기준의 pct / 100 과 같아야 한다."""
     ref = dec.load_reference(exclude=exclude)
     d = get_config().decision
-    return dec.payne_multiplier(rows, ref["mean"], load_rubric(), d.step, d.clip)[0], ref
+    M, crit = dec.payne_multiplier(rows, ref["mean"], load_rubric(), d.step, d.clip)
+    fc = dec._founder_c(crit)
+    assert fc == pytest.approx(next(c["pct"] for c in crit if c["dim"] == "founder") / 100)
+    return M, fc, ref
 
 
-def _decide(rows: list[dict], M: float):
-    fy = sum(r["answer"] == "YES" for r in rows if r["dim"] == "founder")
+def _unknown_ratio(rows: list[dict]) -> float:
     judged = [r for r in rows if r["answer"] != "N/A"]
-    unk = sum(r["answer"] == "UNKNOWN" for r in judged) / len(judged)
-    return dec.decide_rule(M, fy, dec._killers(rows, load_rubric()), unk, get_config())
+    return sum(r["answer"] == "UNKNOWN" for r in judged) / len(judged)
 
 
-# ── 배수 재계산 (v1 판정 + 자기 제외 기준 집단)
-@pytest.mark.parametrize("name, M, decision, hold", [
-    ("메타파머스", 1.130, "투자", None),
-    ("퓨처커넥트", 1.095, "보류", "정보 부족"),        # 미확인 15/24 = 62.5% ≥ info_gap_ratio 0.6
-    ("에임비랩", 1.015, "보류", "정보 부족"),          # P4 N/A 는 분모에서 빠짐
-    ("Nature Robots", 0.935, "보류", "창업자 근거 없음"),
+def _decide(rows: list[dict], M: float, fc: float):
+    return dec.decide_rule(M, fc, dec._killers(rows, load_rubric()), _unknown_ratio(rows), get_config())
+
+
+# 보류 유형마다 맨 앞 사유 문장에 들어가는 말 (투자면 첫 사유)
+FIRST_REASON = {None: "— 동종 평균보다 높음", "창업자 점수 평균 미만": "— 팀이 동종 평균 미만",
+                "동종 평균 이하": "— 동종 평균 이하", "Deal-killer": "Deal-killer K"}
+
+
+# ── 배수 재계산 (v1 판정 + 자기 제외 기준 집단). 투자 ⇔ M > 1.00 ∧ c_founder ≥ 1.00 ∧ Deal-killer 없음
+@pytest.mark.parametrize("name, M, founder_c, decision, hold", [
+    ("메타파머스", 1.130, 1.292, "투자", None),
+    ("퓨처커넥트", 1.095, 1.153, "투자", None),                     # 옛 기준(M ≥ 1.10)에서는 보류였다
+    ("에임비랩", 1.015, 1.014, "투자", None),                       # P4 N/A 는 분모에서 빠짐
+    ("Nature Robots", 0.935, 0.875, "보류", "창업자 점수 평균 미만"),  # 창업자 4문항 모두 미확인 → 팀이 동종 평균 미만
+    ("바르카", 0.956, 1.014, "보류", "동종 평균 이하"),               # 팀은 평균 이상(F1 YES)이지만 M ≤ 1.00
 ])
-def test_v1_recompute(name, M, decision, hold):
+def test_v1_recompute(name, M, founder_c, decision, hold):
     rows = ROWS[name]["rows"]
-    got, ref = _score(rows, exclude=name)
+    got, fc, ref = _score(rows, exclude=name)
     assert (ref["n"], ref["loo"], ref["source"]) == (9, True, "calibration") and name not in ref["members"]
-    assert got == pytest.approx(M, abs=0.002)
-    d, h, reasons = _decide(rows, got)
-    assert (d, h) == (decision, hold) and reasons
+    assert got == pytest.approx(M, abs=0.002) and fc == pytest.approx(founder_c, abs=0.002)
+    d, h, reasons = _decide(rows, got, fc)
+    assert (d, h) == (decision, hold) and FIRST_REASON[h] in reasons[0], reasons
+    if d == "보류":
+        assert f"미확인 문항 {_unknown_ratio(rows):.0%}" in reasons[-1] and "(동종 평균 100)" in reasons[-1]
 
 
 def test_peer_inferior_label_on_real_data(set_cfg):
-    """미확인 60% 미만인데 기준 미달이면 '동종 대비 열위' (메타파머스 1.130, 미확인 54%, 기준 1.30)."""
-    set_cfg("decision.threshold", 1.30)
+    """팀은 동종 평균 이상인데 M 이 기준 이하면 '동종 평균 이하'. 기준은 초과(>)라 M = 기준이면 보류다.
+    시나리오 기준(--threshold 1.30)에서도 사유 문장의 동종 평균은 100 이고 기준 130 은 따로 적는다."""
     rows = ROWS["메타파머스"]["rows"]
-    d, h, reasons = _decide(rows, _score(rows, "메타파머스")[0])
-    assert (d, h) == ("보류", "동종 대비 열위") and "기준 130) — 기준 미달" in reasons[0]
+    M, fc, _ = _score(rows, "메타파머스")
+    assert (M, fc) == (pytest.approx(1.130, abs=0.002), pytest.approx(1.292, abs=0.002))
+    set_cfg("decision.threshold", M)                       # 경계: 배수 = 기준 → 보류 (기준 ≠ 1.00 이라 이름표는 '기준 이하')
+    assert _decide(rows, M, fc)[:2] == ("보류", "기준 이하")
+    set_cfg("decision.threshold", M - 0.0001)              # 기준보다 조금이라도 크면 투자
+    assert _decide(rows, M, fc)[:2] == ("투자", None)
+
+    set_cfg("decision.threshold", 1.30)
+    d, h, reasons = _decide(rows, M, fc)
+    assert (d, h) == ("보류", "기준 이하") and len(reasons) == 1        # 시나리오 기준(≠ 1.00)은 이름표도 기준으로
+    assert reasons[0] == "동종 평균 대비 113.0(동종 평균 100, 기준 130) — 기준 130 이하 (미확인 문항 54%)"
+    assert not any("동종 평균 130" in r for r in reasons)   # 기준을 '동종 평균'으로 부르지 않는다
 
 
 def test_all_unknown_and_all_yes():
     """가상 기업(기준 집단 밖, 10곳 평균): 전부 미확인 0.867 보류, 전부 YES 1.367 투자.
-    전부 미확인은 창업자 YES 가 0개라 보류 유형 우선순위(Deal-killer > 창업자 근거 없음 > 정보 부족)에서 '창업자 근거 없음'."""
+    전부 미확인은 창업자 기준 0.888(동종 창업자 문항 평균 신호가 양수라 미확인이면 평균 미만)이라
+    보류 유형 우선순위(Deal-killer > 창업자 점수 평균 미만 > 동종 평균 이하)에서 '창업자 점수 평균 미만'."""
     rows = _rows("UNKNOWN")
-    M, ref = _score(rows, exclude="가상 기업")
+    M, fc, ref = _score(rows, exclude="가상 기업")
     assert (ref["n"], ref["loo"]) == (10, False)
-    assert M == pytest.approx(0.867, abs=0.005)
-    d, h, reasons = _decide(rows, M)
-    assert (d, h) == ("보류", "창업자 근거 없음") and any("미확인 문항 100%" in r for r in reasons)
+    assert M == pytest.approx(0.867, abs=0.005) and fc == pytest.approx(0.888, abs=0.002)
+    d, h, reasons = _decide(rows, M, fc)
+    assert (d, h) == ("보류", "창업자 점수 평균 미만")
+    assert reasons == ["창업자 기준 88.8(동종 평균 100) — 팀이 동종 평균 미만",
+                       "동종 평균 대비 86.7(동종 평균 100) — 동종 평균 이하 (미확인 문항 100%)"]
 
-    M, _ = _score(_rows("YES"))
-    assert M == pytest.approx(1.367, abs=0.005)
-    assert _decide(_rows("YES"), M)[:2] == ("투자", None)
+    M, fc, _ = _score(_rows("YES"))
+    assert M == pytest.approx(1.367, abs=0.005) and fc == pytest.approx(1.388, abs=0.002)
+    assert _decide(_rows("YES"), M, fc) == ("투자", None, ["동종 평균 대비 136.7(동종 평균 100) — 동종 평균보다 높음",
+                                                        "창업자 기준 138.8(동종 평균 100) — 동종 평균 이상", "Deal-killer 없음"])
 
 
-def test_info_gap_label():
-    """창업자 YES 1개, 나머지 미확인 → 기준 미달 + 미확인 ≥ 60% → '정보 부족'."""
+def test_unknown_ratio_in_reason_not_label():
+    """옛 '정보 부족'(미확인 ≥ 60%) 이름표는 없다. 미확인 비율은 사유 문장에만 적고, 보류 유형은
+    Deal-killer > 창업자 점수 평균 미만 > 동종 평균 이하 우선순위를 따른다 (사유도 그 순서로 모두 적는다)."""
+    assert dec.HOLD_TYPES == ("Deal-killer", "창업자 점수 평균 미만", "동종 평균 이하")
+    # 창업자 F1 YES, 나머지 미확인(96%): 팀은 평균 이상(1.012)이지만 M ≤ 1.00 → '동종 평균 이하'
     rows = _rows({"F1": "YES"})
-    M, _ = _score(rows)
-    assert M < 1.10
-    assert _decide(rows, M)[:2] == ("보류", "정보 부족")
+    M, fc, _ = _score(rows)
+    assert M == pytest.approx(0.904, abs=0.002) and fc == pytest.approx(1.012, abs=0.002)
+    d, h, reasons = _decide(rows, M, fc)
+    assert (d, h) == ("보류", "동종 평균 이하")
+    assert reasons == ["동종 평균 대비 90.4(동종 평균 100) — 동종 평균 이하 (미확인 문항 96%)"]
+    # 전부 미확인 + P4 NO(K1): 세 조건을 모두 어겨도 이름표는 하나(Deal-killer), 사유는 우선순위 순서
+    rows = _rows({"P4": "NO"})
+    M, fc, _ = _score(rows)
+    assert M <= 1.00 and fc < 1.00 and dec._killers(rows, load_rubric()) == ["K1"]
+    d, h, reasons = _decide(rows, M, fc)
+    assert (d, h) == ("보류", "Deal-killer") and len(reasons) == 3
+    assert [r.split(" ")[0] for r in reasons] == ["Deal-killer", "창업자", "동종"] and "미확인 문항 96%" in reasons[2]
+    assert not any(t in " ".join(reasons) for t in ("정보 부족", "창업자 근거 없음", "동종 대비 열위"))
 
 
-def test_founder_gate_and_deal_killer():
-    """M ≥ 1.10 이어도 창업자 YES 0개면 '창업자 근거 없음'. P4 = NO 면 K1 → 'Deal-killer'."""
-    rows = _rows({q: "YES" for q in QIDS if not q.startswith("F")})
-    M, _ = _score(rows)
-    assert M >= 1.10
-    d, h, reasons = _decide(rows, M)
-    assert (d, h) == ("보류", "창업자 근거 없음") and reasons[0].startswith("창업자 문항")
+def test_founder_gate_and_deal_killer(set_cfg, tmp_path):
+    """M > 1.00 이어도 창업자 기준 c_founder < 1.00 이면 '창업자 점수 평균 미만'. c_founder = 1.00(평균과 같음)은 통과(≥).
+    P4 = NO 면 K1 → 'Deal-killer'."""
+    rows = _rows({q: "YES" for q in QIDS if not q.startswith("F")})   # 창업자 4문항만 미확인
+    M, fc, _ = _score(rows)
+    assert M == pytest.approx(1.217, abs=0.002) and fc == pytest.approx(0.888, abs=0.002)
+    d, h, reasons = _decide(rows, M, fc)
+    assert (d, h) == ("보류", "창업자 점수 평균 미만")
+    assert reasons == ["창업자 기준 88.8(동종 평균 100) — 팀이 동종 평균 미만"]    # M 은 기준을 넘었으니 배수 사유 없음
+    # 기준 집단이 없으면(평균 신호 0) 창업자 미확인은 c_founder = 1.00 정확히 동종 평균 → 창업자 조건 통과
+    set_cfg("decision.reference_file", str(tmp_path / "없음.json"))
+    M0, fc0, ref = _score(rows)
+    assert ref["source"] == "fallback" and fc0 == 1.0 and M0 > 1.0
+    assert _decide(rows, M0, fc0)[:2] == ("투자", None)
+    set_cfg("decision.reference_file", REF)
 
     rows = _rows({**{q: "YES" for q in QIDS}, "P4": "NO"})
-    M, _ = _score(rows)
-    assert M >= 1.10 and dec._killers(rows, load_rubric()) == ["K1"]
-    d, h, reasons = _decide(rows, M)
-    assert (d, h) == ("보류", "Deal-killer") and reasons[0].startswith("Deal-killer K1")
+    M, fc, _ = _score(rows)
+    assert M > 1.00 and fc >= 1.00 and dec._killers(rows, load_rubric()) == ["K1"]
+    d, h, reasons = _decide(rows, M, fc)
+    assert (d, h) == ("보류", "Deal-killer") and reasons == ["Deal-killer K1: 판매 중인데 필수 인허가·검정 미취득"]
     flip = dec.flip_conditions(rows, dec.load_reference()["mean"], load_rubric(), get_config(), True, ["K1"])
     assert flip["new_multiplier"] is None and "K1 해소 필요" in flip["note"] and flip["qids"] == ["P4"]
 
@@ -144,19 +194,42 @@ def test_criteria_fields():
     assert crit[0]["pct"] == pytest.approx(129.2, abs=0.1) and crit[0]["yes"] == 3
 
 
-def test_flip_conditions():
-    """보류 후보의 뒤집힘: M' ≥ 1.10 이고 문항 ≤ 3. 창업자 요건이 모자라면 창업자 문항부터."""
-    rubric, cfg = load_rubric(), get_config()
-    rows = ROWS["퓨처커넥트"]["rows"]
-    mean = dec.load_reference("퓨처커넥트")["mean"]
-    flip = dec.flip_conditions(rows, mean, rubric, cfg, True, [])
-    assert flip["reached"] and flip["new_multiplier"] >= 1.10 and 1 <= len(flip["qids"]) <= 3
-    assert all(r["answer"] == "UNKNOWN" for r in rows if r["qid"] in flip["qids"]) and "투자" in flip["note"]
+def _flipped(rows: list[dict], qids: list[str]) -> list[dict]:
+    return [{**r, "answer": "YES", "x": 1} if r["qid"] in qids else r for r in rows]
 
+
+def test_flip_conditions(set_cfg):
+    """보류 후보의 뒤집힘: 미확인 문항을 YES 로 바꿔 M' > 기준 ∧ c_founder ≥ 1.00 이 되는 문항 ≤ 3개.
+    창업자 기준이 동종 평균 미만이면 창업자 문항부터. 뒤집힌 판정으로 다시 결정하면 실제로 '투자'여야 한다."""
+    rubric, cfg = load_rubric(), get_config()
+    # 바르카(0.956, 팀 1.014 · '동종 평균 이하'): F2·F3 가 YES 면 103.1 → 투자
+    rows = ROWS["바르카"]["rows"]
+    mean = dec.load_reference("바르카")["mean"]
+    flip = dec.flip_conditions(rows, mean, rubric, cfg, True, [])
+    assert flip["reached"] and flip["qids"] == ["F2", "F3"] and flip["new_multiplier"] == pytest.approx(1.031, abs=0.002)
+    assert all(r["answer"] == "UNKNOWN" for r in rows if r["qid"] in flip["qids"])
+    assert flip["note"] == "F2·F3 이(가) YES 로 확인되면 동종 평균 대비 103.1(동종 평균 100) → 투자"
+    M, fc, _ = _score(_flipped(rows, flip["qids"]), "바르카")
+    assert M == pytest.approx(flip["new_multiplier"]) and _decide(_flipped(rows, flip["qids"]), M, fc)[0] == "투자"
+
+    # Nature Robots(0.935, 팀 0.875 · '창업자 점수 평균 미만'): 창업자 문항부터 채운다
     rows = ROWS["Nature Robots"]["rows"]
-    flip = dec.flip_conditions(rows, dec.load_reference("Nature Robots")["mean"], rubric, cfg, False, [])
-    assert flip["qids"][0].startswith("F") and len(flip["qids"]) <= 3
-    assert flip["new_multiplier"] > 0.935
+    mean = dec.load_reference("Nature Robots")["mean"]
+    flip = dec.flip_conditions(rows, mean, rubric, cfg, False, [])
+    assert flip["reached"] and flip["qids"] == ["F1", "F2"] and flip["new_multiplier"] == pytest.approx(1.010, abs=0.002)
+    M, fc, _ = _score(_flipped(rows, flip["qids"]), "Nature Robots")
+    assert fc >= 1.00 and M > 1.00 and _decide(_flipped(rows, flip["qids"]), M, fc)[0] == "투자"
+
+    # 시나리오 기준 1.10: 3문항으로 모자라면 reached False, 문장에 동종 평균 100 과 기준 110 을 따로 적는다
+    set_cfg("decision.threshold", 1.10)
+    flip = dec.flip_conditions(rows, mean, rubric, get_config(), False, [])
+    assert not flip["reached"] and flip["qids"] == ["F1", "F2", "F3"] and flip["new_multiplier"] < 1.10
+    assert "(동종 평균 100, 기준 110) — 기준 미달(최대 3문항)" in flip["note"]
+
+    # 창업자 문항에 미확인이 없고(모두 NO) 창업자 기준이 평균 미만이면 미확인 확인만으로는 뒤집을 수 없다
+    rows = _rows({"F1": "NO", "F2": "NO", "F3": "NO", "F4": "NO"})
+    flip = dec.flip_conditions(rows, dec.load_reference()["mean"], rubric, get_config(), False, [])
+    assert (flip["qids"], flip["reached"]) == ([], False) and flip["note"].startswith("창업자 문항에 미확인이 없어")
 
 
 def test_dd_items_and_bessemer():
@@ -262,6 +335,7 @@ def test_node_invest(judged):
     sc, ev = out["scorecard"], out["evaluations"][0]
     assert set(ev) == C7_EVAL and C7_SCORECARD <= set(sc) and len(out["evaluations"]) == 1
     assert sc["multiplier"] == pytest.approx(1.130, abs=0.002) and sc["score100"] == pytest.approx(113.0, abs=0.2)
+    assert sc["founder_c"] == pytest.approx(1.292, abs=0.002) and sc["hold_type"] is None
     assert sc["reference"]["n"] == 9 and sc["reference"]["loo"] and sc["flip"] is None
     assert list(sc["sensitivity"]) == ["1.00", "1.05", "1.10", "1.15", "1.20"] and sc["sensitivity"]["1.10"] == "투자"
     assert len(sc["bessemer"]) == 10 and len(sc["rows"]) == 24 and len(sc["criteria"]) == 6
@@ -277,7 +351,10 @@ def test_node_hold_backfills_missing_criterion(judged, set_cfg):
     assert judged == ["market", "traction", "deal"] and out["scorecard"]["judged_in_decide"] == judged
     assert (out["decision"], out["end_reason"]) == ("보류", "max_evaluations")
     sc = out["scorecard"]
-    assert sc["hold_type"] == "정보 부족" and sc["flip"] and sc["sensitivity"]["1.00"] == "투자"
+    # 퓨처커넥트 1.095 · 팀 1.153: 시나리오 기준 1.30 이하 → '기준 이하' (설계 기준 1.00 에서는 투자)
+    assert sc["founder_c"] == pytest.approx(1.153, abs=0.002) and sc["hold_type"] == "기준 이하"
+    assert sc["reasons"] == ["동종 평균 대비 109.5(동종 평균 100, 기준 130) — 기준 130 이하 (미확인 문항 62%)"]
+    assert sc["flip"] and not sc["flip"]["reached"] and sc["sensitivity"]["1.00"] == "투자"
     assert sc["ranking"][sc["target_rank"] - 1]["name"] == "퓨처커넥트"
 
     judged.clear()
@@ -310,7 +387,11 @@ def test_rubric_decision_rule_matches_config():
     from core.config import get_config
 
     d, rule = get_config().decision, load_rubric()["decision_rule"]
-    for s in (f"M ≥ {d.threshold:.2f}", f"1 + {d.step} ×", f"{d.clip[0]}, {d.clip[1]})", f"YES ≥ {d.min_founder_yes}",
-              f"미확인 ≥ {d.info_gap_ratio:.0%}", f"{d.reference_min_n}곳 미만", f"{min(d.sensitivity):.2f}~{max(d.sensitivity):.2f}"):
+    for s in (f"M > {d.threshold:.2f}", f"c_founder ≥ {d.founder_min_c:.2f}", f"1 + {d.step} ×", f"{d.clip[0]}, {d.clip[1]})",
+              f"{d.reference_min_n}곳 미만", f"{min(d.sensitivity):.2f}~{max(d.sensitivity):.2f}",
+              " > ".join(dec.HOLD_TYPES), "동종 평균 = 1.00", "투자를 받은 동종 평균 기업 = 100%"):
         assert s in rule, s
-    assert "70" not in rule  # v1 의 100점 만점 규칙이 남아 있지 않다
+    # 옛 규칙의 근거 없는 수치·이름표가 남아 있지 않다: v1 70점, 기준 1.10, 창업자 YES 개수, 미확인 60%(정보 부족)
+    assert not re.search(r"(?<![\d.])(70|1\.10)(?![\d])", rule), "옛 기준 수치(70 · 1.10)"
+    assert not re.search(r"[≥>]=?\s*(1\.1|110|70)", rule) and "YES ≥" not in rule and "미확인 ≥" not in rule
+    assert not any(t in rule for t in ("정보 부족", "창업자 근거 없음", "동종 대비 열위", "설계 가정"))
