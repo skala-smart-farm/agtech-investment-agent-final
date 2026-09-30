@@ -2,7 +2,7 @@
     trim_blocks 를 켜 두었으므로 줄 끝에 {% %} 블록 태그를 두지 말고, 줄 안의 조건은 {{ a if b else '' }} 로 쓴다. -#}
 {% set ro = cfg.rag %}{% set wf = cfg.workflow %}{% set w = rb.w %}
 # AI Startup Investment Evaluation Agent
-본 프로젝트는 AgTech 스타트업에 대한 투자 가능성을 자동으로 평가하는 에이전트를 설계하고 구현한 실습 프로젝트입니다.
+공개 정보만으로 AgTech AI 스타트업을 찾아 평가하고, 투자 · 보류 판단과 그 근거를 5쪽 이내 보고서로 만드는 LangGraph 멀티 에이전트입니다.
 
 SKALA {{ cfg.submission.campus }}캠퍼스 {{ cfg.submission['class'] }} {{ cfg.submission.team }} · 투자 보고서 [PDF]({{ report_pdf }}) · 설계서 {{ ('[PDF](' ~ design_pdf ~ ') / ') if design_pdf else '' }}[Markdown](docs/design.md)
 

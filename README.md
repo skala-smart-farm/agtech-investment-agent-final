@@ -1,5 +1,5 @@
 # AI Startup Investment Evaluation Agent
-본 프로젝트는 AgTech 스타트업에 대한 투자 가능성을 자동으로 평가하는 에이전트를 설계하고 구현한 실습 프로젝트입니다.
+공개 정보만으로 AgTech AI 스타트업을 찾아 평가하고, 투자 · 보류 판단과 그 근거를 5쪽 이내 보고서로 만드는 LangGraph 멀티 에이전트입니다.
 
 SKALA 울산캠퍼스 2반 1조 · 투자 보고서 [PDF](outputs/RAG-Output_%EC%9A%B8%EC%82%B0-2%EB%B0%98_%EA%B9%80%EA%B0%80%EC%97%B0%2B%EA%B9%80%EC%A7%84%EB%85%95%2B%EB%AC%B8%EC%A7%80%ED%9B%84%2B%EC%9D%B4%EC%A4%80%ED%9D%AC%2B%EC%A0%95%EC%8A%B9%EC%9A%B0.pdf) · 설계서 [PDF](docs/RAG-Design_%EC%9A%B8%EC%82%B0-2%EB%B0%98_%EA%B9%80%EA%B0%80%EC%97%B0%2B%EA%B9%80%EC%A7%84%EB%85%95%2B%EB%AC%B8%EC%A7%80%ED%9B%84%2B%EC%9D%B4%EC%A4%80%ED%9D%AC%2B%EC%A0%95%EC%8A%B9%EC%9A%B0.pdf) / [Markdown](docs/design.md)
 
