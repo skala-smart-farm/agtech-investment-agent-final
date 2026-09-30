@@ -504,7 +504,7 @@ def _to_pdf(html: str, pdf) -> None:
         pg.pdf(path=str(pdf), format="A4", print_background=True, display_header_footer=True,
                header_template='<div style="font-family:Pretendard,sans-serif;font-size:7px;width:100%;padding:0 20mm;'
                                'display:flex;justify-content:space-between;color:#777">'
-                               '<span>AgTech AI 스타트업 투자 평가 에이전트 — 설계 산출물 v2</span>'
+                               '<span>AgTech AI 스타트업 투자 평가 에이전트 — 설계 산출물</span>'
                                '<span>SKALA 울산캠퍼스 2반 1조</span></div>',
                footer_template='<div style="font-family:Pretendard,sans-serif;font-size:7.5px;width:100%;text-align:center;color:#555">'
                                '— <span class="pageNumber"></span> —</div>',

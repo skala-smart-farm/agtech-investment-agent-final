@@ -49,8 +49,9 @@
   ul.l li:first-child { border-top:1px solid var(--line); }
   ul.l li b { font-weight:800; }
   ul.l li span { color:var(--sub); }
-  .formula { font-family:"SF Mono",Menlo,monospace; font-size:21px; line-height:1.8; background:var(--soft); border-left:4px solid var(--green); padding:16px 22px; }
+  .formula { font-family:"SF Mono",Menlo,monospace; font-size:18px; line-height:1.8; background:var(--soft); border-left:4px solid var(--green); padding:16px 22px; }
   .formula b { color:var(--green); }
+  .formula sub { vertical-align:sub; font-size:.68em; line-height:0; }
   .note { font-size:18px; color:var(--sub); line-height:1.5; margin-top:16px; }
   .note b { color:var(--ink); }
   .fig { text-align:center; }
@@ -82,7 +83,7 @@
 
 <!-- 표지 -->
 <section class="cover">
-  <div class="kick">RAG-Design · 설계 산출물 v2</div>
+  <div class="kick">RAG-Design · 설계 산출물</div>
   <h1>AgTech AI 스타트업<br>투자 평가 에이전트 <em>설계</em></h1>
   <div class="items">
     <div><b>A</b>Domain 선정</div>
@@ -249,8 +250,8 @@
 <section>
   <div class="kick"><b>C</b>투자판단 기준 · 평가표</div>
   <h2>평가표 — 6개 기준 × 4문항, 모두 <em>YES / NO / 미확인</em>으로 판정합니다.</h2>
-  <table class="t xs body" style="margin-top:18px">
-    <tr><th style="width:17%">기준 (가중치)</th><th>문항 1</th><th>문항 2</th><th>문항 3</th><th>문항 4</th><th style="width:15%">판정</th></tr>
+  <table class="t s body" style="margin-top:22px">
+    <tr><th style="width:19%">기준 (가중치)</th><th>문항 1</th><th>문항 2</th><th>문항 3</th><th>문항 4</th><th style="width:15%">판정</th></tr>
     {% for d in rubric.dimensions %}<tr><td class="k">{{ d.name }} ({{ d.weight }})</td>{% for q in d.questions %}<td><b>{{ q.id }}</b> {{ q.short }}</td>{% endfor %}<td>{{ {'founder':'창업자 평가','market':'시장성 평가','tech':'기술 요약','competition':'경쟁사 비교','decision':'투자 판단','decide':'투자 판단'}.get(d.owner, d.owner) }}</td></tr>{% endfor %}
   </table>
   <p class="note"><b>YES·NO 는 원문 인용이 있어야 인정</b>하고, 인용이 실제 원문에 있는지는 코드가 확인합니다. 근거가 없으면 NO 가 아니라 <b>미확인</b>. 애매한 1~5점 척도 대신 이진 판정입니다.
@@ -263,7 +264,7 @@
 <section>
   <div class="kick"><b>C</b>투자판단 기준 · 점수와 결정 규칙</div>
   <h2>점수는 '투자받은 동종 평균 = 100' 대비 배수,<br>추천은 <em>{{ thr }} 이상 + 창업자 근거 + Deal-killer 없음</em>.</h2>
-  <div class="g2 body">
+  <div class="g2 body" style="grid-template-columns:1.3fr 1fr;gap:36px">
     <div class="formula">x = YES <b>+1</b> · NO <b>−1</b> · 미확인 <b>0</b><br>c<sub>d</sub> = clip(1 + {{ dec.step }} × 평균(x − x̄), {{ dec.clip[0] }}, {{ dec.clip[1] }})<br>M = Σ w<sub>d</sub> × c<sub>d</sub>  <span style="color:#5f6670">(평균 기업 = 1.00 → 보고서 100)</span><br><br><b>투자</b> ⇔ M ≥ {{ '%.2f' % dec.threshold }} ∧ 창업자 YES ≥ {{ dec.min_founder_yes }} ∧ Deal-killer 없음</div>
     <ul class="l">
       <li><b>x̄ 동종 평균</b> <span>적격 후보를 같은 파이프라인으로 평가한 기준 집단(자기 제외)의 문항별 평균</span></li>
@@ -362,18 +363,21 @@
   <aside class="notes">보고서 목차입니다. 맨 앞 SUMMARY 반 장에 상황, 결론, 근거, 요청을 넣고, 근거마다 본문 몇 장에 있는지 연결합니다. 결과에 따라 투자 추천, 모두 보류, 후보 없음 세 가지 목차를 두었고, 모두 보류일 때는 교수님 말씀대로 후보마다 왜 안 되는지로 보고서를 구성합니다.</aside>
 </section>
 
-<!-- 확인 요청 -->
+<!-- 정리 -->
 <section>
-  <div class="kick">확인 요청</div>
-  <h2>이런 형태의 보고서가 나오면 될까요?</h2>
-  <ul class="l body">
-    <li><b>기준</b> <span>동종 평균 대비 {{ thr }} · 창업자 근거 {{ dec.min_founder_yes }}개 이상 · Deal-killer 없음 — 기준값은 설정 한 줄로 바꿀 수 있습니다</span></li>
-    <li><b>보고서</b> <span>SUMMARY 반 장 + 본문 5장 이내 + REFERENCE, 모두 보류면 후보별 보류 사유</span></li>
-    <li><b>재현</b> <span>검색 결과·LLM 응답을 캐시해 API 키 없이 같은 보고서를 다시 만듭니다</span></li>
-    <li><b>비용</b> <span>{{ cfg.models.generator }} 하나 · 임베딩 0원 · 평가 최대 {{ cfg.workflow.max_evaluations }}곳 상한</span></li>
-  </ul>
-  <div class="src">설계서 A~E · github.com/skala-smart-farm/agtech-investment-agent-v2</div><div class="pg">17</div>
-  <aside class="notes">마지막으로 여쭙겠습니다. 이런 기준과 이런 형태의 보고서가 나오면 되겠습니까? 기준값은 설정 한 줄로 바꿀 수 있고, 같은 결과를 API 키 없이 다시 만들 수 있게 해 두었습니다. 감사합니다.</aside>
+  <div class="kick">정리</div>
+  <h2>기준은 표준에서, 판단은 원문 근거에서 가져오고,<br>반복에는 <em>상한</em>을 두었습니다.</h2>
+  <table class="t body">
+    <tr><th style="width:15%">항목</th><th>설계 결정</th><th style="width:16%">설계서</th></tr>
+    <tr><td class="k">A. Domain</td><td>AgTech AI · 비상장 · Seed~Series C · Exit 전, 세부 분야 5개, 조정 국면의 옥석 가리기</td><td>A.1 · A.2</td></tr>
+    <tr><td class="k">B. 설계</td><td>에이전트 7개(가이드 6 + 창업자 평가) · RAG 는 시장성·기술·탐색 · {{ cfg.embedding.model.split('/')[-1] }} 하이브리드(Hit@4 {{ rt[1] }})</td><td>B.1 ~ B.5</td></tr>
+    <tr><td class="k">C. 평가표</td><td>Payne Scorecard 6기준 × 4문항 · Bessemer 10문 · 동종 평균 대비 {{ thr }} ∧ 창업자 근거 ∧ Deal-killer 없음 · 민감도 1.00~1.20</td><td>C.1 ~ C.8</td></tr>
+    <tr><td class="k">D. 그래프</td><td>State {{ n_state }}개 키 · 가이드 Graph(안) + 창업자 평가 · 보류 → 다음 후보(최대 {{ cfg.workflow.max_evaluations }}곳) · Agentic RAG 서브그래프</td><td>D.1 ~ D.4</td></tr>
+    <tr><td class="k">E. 보고서</td><td>SUMMARY 반 장 → 본문 5장 이내 → REFERENCE · 투자 추천 / 모두 보류 / 후보 없음 목차</td><td>E</td></tr>
+    <tr><td class="k">운영</td><td>{{ cfg.models.generator }} · 임베딩 비용 0원 · 검색·LLM 응답 캐시로 API 키 없이 같은 결과 재현</td><td>README</td></tr>
+  </table>
+  <div class="src">RAG-Design_{{ team.campus }}-{{ team['class'] }}_{{ members | join('+') }}.pdf · github.com/skala-smart-farm/agtech-investment-agent-v2</div><div class="pg">17</div>
+  <aside class="notes">정리하겠습니다. 평가 기준은 Scorecard와 Bessemer라는 표준에서 가져왔고, 모든 판단은 원문 인용이 확인될 때만 인정하며, 반 공용 키를 쓰는 만큼 반복에는 상한을 두었습니다. 과제의 다섯 항목이 설계서의 어느 장에 있는지 표로 정리했습니다. 감사합니다.</aside>
 </section>
 
 </div></div>
