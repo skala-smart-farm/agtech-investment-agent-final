@@ -21,6 +21,11 @@ SKALA {{ cfg.submission.campus }}캠퍼스 {{ cfg.submission['class'] }} {{ cfg.
 > **검증** · 검색 Hit@4 {{ rt.hit4 }} · MRR@4 {{ rt.mrr4 }} · 적격성 판정 정확도 {{ elig.gold.acc if elig.gold else '-' }} (홀드아웃 {{ elig.holdout.acc if elig.holdout else '-' }})<br>
 > **재현** · API 키 없이 `python app.py` 한 줄로 같은 보고서
 
+### 한눈에 보기
+1. **결론** — 공개 정보만으로 국내외 AgTech AI 스타트업 {{ pipe.found }}곳을 찾아 과제 조건을 통과한 {{ pipe.eligible }}곳 중 {{ pipe.evaluated }}곳을 평가했고, 투자 기준을 넘은 {{ passed | length }}곳 중 1위인 **{{ target.name if target else '-' }}를 실사 조건부로 투자 추천**한다. 투자를 받은 동종 기업 평균을 100 으로 놓으면 **{{ target.m if target else '-' }}**, 창업자 기준은 **{{ target.founder_c if target else '-' }}** 이다
+2. **방법** — 기준은 새로 만들지 않고 과제가 준 **Scorecard(비중) · Bessemer(질문)** 를 원 방법대로 썼다. LLM 은 원문 인용을 찾아 {{ rb.n_q }}문항에 YES / NO / 미확인으로 **답만** 하고, 인용 검증 · 점수 · 투자/보류 **결정은 코드**가 계산한다
+3. **한계와 정직성** — 추천 대상도 {{ rb.n_q }}문항 중 **{{ target.unknown_pct if target else '-' }}가 미확인**이고{{ (', 실제 투자를 받은 기업 ' ~ pc.n ~ '곳 중 **' ~ pc.invest ~ '곳만** 추천됐다') if pc else '' }}. 그래서 결론은 '투자 결정'이 아니라 **'실사 대상 선별'** 이다. 설계서 제출 뒤 판단 기준(110 → 100)과 평가 흐름(첫 추천에서 멈춤 → {{ pipe.evaluated }}곳 모두 평가)을 바꾼 사실과 이유도 [아래](#설계서-제출-이후-바뀐-것)에 적었다
+
 **바로가기** · [Overview](#overview) · [Features](#features) · [Tech Stack](#tech-stack) · [Agents](#agents) · [Architecture](#architecture) · [Usage](#usage) · [차별점](#차별점) · [Evaluation](#evaluation) · [투자 보고서 핵심](#투자-보고서-핵심) · [Lessons Learned](#lessons-learned) · [한계와 변경](#알려진-한계와-문제-해결) · [Contributors](#contributors)
 
 
