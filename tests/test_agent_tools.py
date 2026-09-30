@@ -4,17 +4,20 @@
 - search_documents: content_and_artifact, 아티팩트 = [{'text','meta'}]
 - web_search: content_and_artifact, 아티팩트 = [근거 id], 같은 근거 저장소 객체에 등록
 - summarize_document: URL → 원문 근거 등록 + 요약 끝에 [W…], 근거 id → 등록 본문 요약, 실패하면 ''
+- 코퍼스 목록(data/manifest.yaml): 검색 도구 설명의 규모와 일치, 쪽수 일관성(page_range·pages_total·pages_pdf), 200쪽 한도
 """
 from __future__ import annotations
 
 import re
 
+import pymupdf
 import yaml
 from langchain_core.documents import Document
 from langchain_core.messages import AIMessage
 
 import tools.agent_tools as at
-from core.config import ROOT
+from core.config import ROOT, get_config
+from rag.loader import load_manifest, total_pages
 from tools.sources import SourceRegistry
 
 
@@ -29,7 +32,7 @@ def test_make_tools_names_and_descriptions():
     for name, t in tools.items():
         assert t.name == name and t.description
     sd, ws, sm = tools["search_documents"], tools["web_search"], tools["summarize_document"]
-    assert "13종 196쪽" in sd.description and "2023~2026" in sd.description and "web_search" in sd.description
+    assert re.search(r"PDF \d+종 \d+쪽, \d{4}~\d{4}년 발행", sd.description) and "web_search" in sd.description
     assert "개별 스타트업" in sd.description                       # 한계
     assert "최근" in ws.description                                  # 최신성
     assert sd.response_format == ws.response_format == "content_and_artifact"
@@ -39,12 +42,31 @@ def test_make_tools_names_and_descriptions():
 
 
 def test_search_documents_description_matches_manifest():
-    """설명의 '13종 196쪽, 2023~2026' 이 실제 코퍼스 목록과 같은지 (코퍼스가 바뀌면 설명도 고쳐야 함)."""
+    """설명의 'N종 M쪽, 연도~연도' 가 코퍼스 목록(manifest 의 pages_total 합계)과 같은지."""
     docs = yaml.safe_load((ROOT / "data/manifest.yaml").read_text(encoding="utf-8"))["documents"]
     years = [d["year"] for d in docs]
     desc = at.make_tools(SourceRegistry(), "x")["search_documents"].description
     want = f"{len(docs)}종 {sum(d['pages_total'] for d in docs)}쪽, {min(years)}~{max(years)}"
     assert want in desc
+
+
+def test_manifest_pages_consistent_and_within_limit():
+    """코퍼스 쪽수 일관성과 과제 한도: pages_total = 실제로 쓰는 쪽수(page_range 가 있으면 구간 길이, 없으면 PDF 쪽수),
+    pages_pdf = 원본 PDF 쪽수, 구간은 PDF 안, 합계(loader.total_pages)는 rag.max_total_pages 이하."""
+    cfg = get_config()
+    docs = load_manifest()
+    assert len({d["doc_id"] for d in docs}) == len(docs) and len({d["file"] for d in docs}) == len(docs)
+    for d in docs:
+        with pymupdf.open(ROOT / cfg.rag.corpus_dir / d["file"]) as pdf:
+            n = pdf.page_count
+        if d.get("page_range"):
+            s, e = d["page_range"]
+            assert 1 <= s <= e <= n, d["doc_id"]
+            assert d["pages_total"] == e - s + 1, d["doc_id"]
+            assert d["pages_pdf"] == n and d.get("trim"), d["doc_id"]  # 원본 쪽수와 뺀 사유를 적는다
+        else:
+            assert d["pages_total"] == n and "pages_pdf" not in d, d["doc_id"]
+    assert total_pages() == sum(d["pages_total"] for d in docs) <= cfg.rag.max_total_pages
 
 
 def test_search_documents_artifact_is_chunk_dicts(monkeypatch):

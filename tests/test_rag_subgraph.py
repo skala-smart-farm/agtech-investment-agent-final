@@ -21,6 +21,7 @@ from langchain_core.messages import AIMessage
 
 import rag.agentic_rag as ar
 from core.config import ROOT, get_config
+from rag.loader import load_manifest
 from tools.sources import SourceRegistry
 
 QUESTION = "국내 스마트팜 시장 규모는?"
@@ -466,7 +467,8 @@ def test_corpus_catalog_same_as_v1_market():
     ns: dict = {"get_chunks": ar.get_chunks}
     exec(compile(ast.Module(body=[fn], type_ignores=[]), "market_v1", "exec"), ns)
     ar.corpus_catalog.cache_clear()
-    assert ar.corpus_catalog() == ns["corpus_catalog"]() and ar.corpus_catalog().count("\n") == 12
+    n_docs = len(load_manifest())  # 문서마다 한 줄
+    assert ar.corpus_catalog() == ns["corpus_catalog"]() and ar.corpus_catalog().count("\n") == n_docs - 1
 
 
 # ── bind_tools 응답 재생 (키 필요: uv run pytest -m api tests/test_rag_subgraph.py)

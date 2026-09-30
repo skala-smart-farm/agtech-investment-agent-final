@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 
 import pymupdf
@@ -126,6 +127,15 @@ def total_pages() -> int:
             with pymupdf.open(ROOT / cfg.rag.corpus_dir / meta["file"]) as d:
                 total += d.page_count
     return total
+
+
+@lru_cache(maxsize=1)
+def corpus_summary() -> str:
+    """코퍼스 요약 '{문서 수}종 {사용 쪽수}쪽, {최초}~{최근}년 발행' (data/manifest.yaml 과 total_pages 로 계산).
+    검색 도구 설명(tools/agent_tools.py)에 들어가므로 코퍼스를 바꾸면 설명도 저절로 바뀐다."""
+    docs = load_manifest()
+    years = [int(d["year"]) for d in docs]
+    return f"{len(docs)}종 {total_pages()}쪽, {min(years)}~{max(years)}년 발행"
 
 
 def corpus_files() -> list[Path]:
