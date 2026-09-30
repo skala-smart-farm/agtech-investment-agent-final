@@ -4,85 +4,106 @@
 <meta charset="utf-8">
 <title>{{ title }}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
 {# 보고서 view(agents/report.py): summary [(라벨, 문장)], chapters [{title, lead, blocks}], ref_groups.
    블록 종류: p(문단) · note(작은 규칙·설명 줄) · kv(굵은 라벨 목록) · ul(목록) · table(표) · h3(소제목) ·
-   cand(후보별 보류 사유 4줄) · box(ROI 참고치). density 0~3 은 5쪽을 넘을 때 조판 밀도를 올리는 단계다 #}
-{% set fs = [10.0, 9.5, 9.0, 8.6][density] %}
-{% set lh = [1.52, 1.47, 1.42, 1.37][density] %}
+   cand(후보별 보류 사유 4줄) · box(ROI 참고치). density 0~3 은 5쪽을 넘을 때 조판 밀도를 올리는 단계다.
+   양식: 학회지형 — 본문 명조, 제목·표 고딕, 3선 표, 표 번호 캡션(위), 색은 판정 표시에만 #}
+{% set fs = [9.8, 9.4, 9.0, 8.6][density] %}
+{% set lh = [1.62, 1.56, 1.5, 1.44][density] %}
 <style>
   @page { size: A4; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR", sans-serif;
-         font-size: {{ fs }}pt; line-height: {{ lh }}; color: #1b2330; }
-  h1 { font-size: 14.5pt; margin: 0 0 2pt; color: #12213f; letter-spacing: -0.02em; }
-  .meta { font-size: 8.3pt; color: #667085; margin-bottom: 8pt; }
-  .badge { display: inline-block; padding: 1pt 8pt; border-radius: 10pt; font-weight: 800; font-size: 9pt; color: #fff;
-           background: {{ '#12806b' if mode == 'invest' else '#b8650a' }}; margin-left: 6pt; vertical-align: 2pt; }
-  h2 { font-size: {{ fs + 2 }}pt; color: #12213f; margin: {{ [11, 9, 8, 7][density] }}pt 0 3pt; padding-bottom: 2pt;
-       border-bottom: 1.5pt solid #d8dee9; break-after: avoid; }
-  h3 { font-size: {{ fs + 0.4 }}pt; color: #12213f; margin: 6pt 0 2pt; break-after: avoid; }
-  h4 { font-size: {{ fs - 0.8 }}pt; color: #475467; margin: 4pt 0 1pt; break-after: avoid; }
-  p { margin: 2pt 0 4pt; text-align: justify; }
-  p.lead { font-weight: 800; color: #12213f; margin: 1pt 0 4pt; }
-  p.note { font-size: {{ fs - 1.3 }}pt; color: #344054; margin: 1pt 0 2pt; }
-  #summary { border: 1.6pt solid #12213f; border-radius: 6pt; padding: 7pt 11pt 6pt; background: #f5f7fb; }
-  #summary h2 { margin-top: 0; border: none; font-size: 11pt; letter-spacing: 0.08em; }
-  #summary ul { margin: 0; padding-left: 13pt; }
-  #summary li { margin: 1.5pt 0; }
-  #summary li.conclusion { font-weight: 800; }
-  ul.kv, ul.plain { margin: 2pt 0 4pt; padding-left: 14pt; } ul.kv li, ul.plain li { margin: 1.5pt 0; }
-  .ul-title { font-size: {{ fs - 0.8 }}pt; font-weight: 700; color: #475467; margin: 4pt 0 0; }
-  table { width: 100%; border-collapse: collapse; font-size: {{ fs - 1.2 }}pt; margin: 4pt 0 6pt; break-inside: auto; }
-  table.small { font-size: {{ fs - 1.6 }}pt; }
-  th, td { border: 0.6pt solid #cfd6e2; padding: 2.2pt 4.5pt; vertical-align: top; text-align: left; }
-  th { background: #eef2f8; font-weight: 700; }
-  tr { break-inside: avoid; }
-  thead { display: table-header-group; }
-  .cand { border-left: 2.5pt solid #b8650a; padding: 1pt 0 1pt 7pt; margin: 4pt 0 5pt; break-inside: avoid; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font-family: "Noto Serif KR", "Nanum Myeongjo", "AppleMyungjo", serif; font-size: {{ fs }}pt; line-height: {{ lh }};
+         color: #141414; word-break: keep-all; overflow-wrap: anywhere; }
+  h1, h2, h3, h4, table, .meta, .kind, .cap, #summary .sum-h, .badge, .box, ol.refs, p.note { font-family: "Pretendard", "Apple SD Gothic Neo", sans-serif; }
+  /* 제목 블록 */
+  .titleblock { text-align: center; margin: 0 0 {{ [9, 7, 6, 5][density] }}pt; }
+  .kind { font-size: 7.6pt; letter-spacing: .14em; color: #555; }
+  h1 { font-size: 15pt; line-height: 1.35; margin: 3pt 0 4pt; font-weight: 800; letter-spacing: -.02em; }
+  .badge { display: inline-block; font-size: 8pt; font-weight: 800; padding: 0 7pt; border-radius: 3pt; vertical-align: 2pt; margin-left: 4pt;
+           border: 1pt solid {{ '#0f766e' if mode == 'invest' else '#b45309' }}; color: {{ '#0f766e' if mode == 'invest' else '#b45309' }}; }
+  .meta { font-size: 8pt; color: #444; }
+  /* SUMMARY: 요약(Abstract)처럼 위아래 선 — render.py 가 #summary 높이를 잰다 */
+  #summary { border-top: 1.2pt solid #111; border-bottom: 1.2pt solid #111; padding: 5pt 4pt 5pt; margin: 0 0 {{ [8, 6, 5, 4][density] }}pt; }
+  #summary .sum-h { text-align: center; font-weight: 800; font-size: 9pt; letter-spacing: .38em; margin-bottom: 3pt; }
+  #summary dl { display: grid; grid-template-columns: 30pt 1fr; gap: 2pt 6pt; margin: 0; }
+  #summary dt { font-family: "Pretendard", sans-serif; font-weight: 800; font-size: {{ fs - 0.6 }}pt; color: #111; padding-top: 1pt; }
+  #summary dd { margin: 0; text-align: justify; }
+  #summary dd.conclusion { font-weight: 700; }
+  /* 본문 */
+  h2 { font-size: {{ fs + 2.4 }}pt; font-weight: 800; margin: {{ [13, 11, 9, 8][density] }}pt 0 3pt; break-after: avoid; break-inside: avoid; letter-spacing: -.01em; }
+  h2:before { content: ""; display: block; width: 16mm; border-top: .8pt solid #111; margin-bottom: 4pt; }
+  h3 { font-size: {{ fs + 0.5 }}pt; font-weight: 700; margin: 7pt 0 2pt; break-after: avoid; }
+  h4 { font-size: {{ fs - 0.6 }}pt; font-weight: 700; color: #333; margin: 5pt 0 1pt; break-after: avoid; }
+  p { margin: 2pt 0 5pt; text-align: justify; }
+  p.lead { font-weight: 700; margin: 1pt 0 5pt; }
+  p.note { font-size: {{ fs - 1.6 }}pt; color: #333; margin: 1pt 0 3pt; }
+  ul.kv, ul.plain { margin: 2pt 0 5pt; padding-left: 14pt; } ul.kv li, ul.plain li { margin: 1.5pt 0; }
+  .ul-title { font-family: "Pretendard", sans-serif; font-size: {{ fs - 0.8 }}pt; font-weight: 700; color: #333; margin: 4pt 0 0; }
+  /* 표: 3선 표 + 번호 캡션 */
+  .cap { font-size: {{ fs - 1.4 }}pt; margin: 6pt 0 2pt; break-after: avoid; }
+  .cap b { font-weight: 800; margin-right: 4pt; }
+  table { width: 100%; border-collapse: collapse; font-size: {{ fs - 1.9 }}pt; line-height: 1.45; margin: 0 0 7pt;
+          border-top: 1.1pt solid #111; border-bottom: 1.1pt solid #111; break-inside: auto; }
+  table.small { font-size: {{ fs - 2.3 }}pt; }
+  thead th { border-bottom: .6pt solid #111; font-weight: 700; text-align: left; padding: 2.4pt 4.5pt; vertical-align: bottom; }
+  td { padding: 2.1pt 4.5pt; vertical-align: top; }
+  tbody tr + tr td { border-top: .3pt solid #d2d2d2; }
+  tr { break-inside: avoid; } thead { display: table-header-group; }
+  /* 후보별 보류 사유 · ROI 상자 */
+  .cand { border-left: 1.6pt solid #8a8a8a; padding: 0 0 0 7pt; margin: 4pt 0 6pt; break-inside: avoid; }
   .cand h3 { margin-top: 0; }
-  .cand ul { margin: 1pt 0; padding-left: 12pt; } .cand li { margin: 0.8pt 0; }
-  .box { border: 1pt solid #9aa7bd; border-radius: 4pt; padding: 3pt 8pt; margin: 4pt 0 6pt; background: #fafbfd; break-inside: avoid; }
-  .box .box-title { font-weight: 800; font-size: {{ fs - 0.6 }}pt; color: #12213f; }
-  .box ul { margin: 1pt 0; padding-left: 12pt; font-size: {{ fs - 1.2 }}pt; }
-  .small { font-size: {{ fs - 1.4 }}pt; color: #475467; }
-  ol.refs { font-size: {{ fs - 1.8 }}pt; padding-left: 16pt; margin: 1pt 0 3pt; word-break: break-all; }
+  .cand ul { margin: 1pt 0; padding-left: 12pt; } .cand li { margin: .8pt 0; }
+  .box { border: .6pt solid #9a9a9a; padding: 3pt 8pt; margin: 4pt 0 7pt; break-inside: avoid; font-size: {{ fs - 1.4 }}pt; }
+  .box .box-title { font-weight: 800; }
+  .box ul { margin: 1pt 0; padding-left: 12pt; }
+  .small { font-size: {{ fs - 1.6 }}pt; color: #444; }
+  /* REFERENCE */
+  ol.refs { font-size: {{ fs - 2.2 }}pt; padding-left: 16pt; margin: 1pt 0 3pt; word-break: break-all; line-height: 1.45; }
   ol.refs li { margin: 1pt 0; }
 </style>
 </head>
 <body>
-{% macro block(b) %}
-  {% if b.t == 'p' %}<p>{{ b.text }}</p>
-  {% elif b.t == 'note' %}<p class="note">{{ b.text }}</p>
-  {% elif b.t == 'kv' %}<ul class="kv">{% for k, v in b['items'] %}<li><b>{{ k }}</b> {{ v }}</li>{% endfor %}</ul>
-  {% elif b.t == 'ul' %}{% if b.title %}<div class="ul-title">{{ b.title }}</div>{% endif %}<ul class="plain">{% for x in b['items'] %}<li>{{ x }}</li>{% endfor %}</ul>
-  {% elif b.t == 'h3' %}<h3>{{ b.text }}</h3>
-  {% elif b.t == 'table' %}
-  <table class="{{ 'small' if b.small else '' }}">
-    <thead><tr>{% for h in b.head %}<th{% if b.widths and b.widths[loop.index0] %} style="width:{{ b.widths[loop.index0] }}"{% endif %}>{{ h }}</th>{% endfor %}</tr></thead>
-    {% for r in b.rows %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}
-  </table>
-  {% elif b.t == 'cand' %}
-  <div class="cand">
-    <h3>{{ b.title }} <span class="small">({{ b.sub }})</span></h3>
-    <ul>{% for k, v in b['items'] %}<li><b>{{ k }}</b> {{ v }}</li>{% endfor %}</ul>
+{% set ns = namespace(t=0, ctx='') %}
+  <div class="titleblock">
+    <div class="kind">투자 보고서 · RAG-Output</div>
+    <h1>{{ title }}<span class="badge">{{ badge }}</span></h1>
+    <div class="meta">{{ meta }}</div>
   </div>
-  {% elif b.t == 'box' %}
-  <div class="box"><div class="box-title">{{ b.title }}</div>
-    <ul>{% for k, v in b['items'] %}<li><b>{{ k }}</b> {{ v }}</li>{% endfor %}</ul></div>
-  {% endif %}
-{% endmacro %}
-  <h1>{{ title }}<span class="badge">{{ badge }}</span></h1>
-  <div class="meta">{{ meta }}</div>
 
   <section id="summary">
-    <h2>SUMMARY</h2>
-    <ul>{% for k, s in summary %}<li{% if k == '결론' %} class="conclusion"{% endif %}><b>{{ k }}</b> {{ s }}</li>{% endfor %}</ul>
+    <div class="sum-h">SUMMARY</div>
+    <dl>{% for k, s in summary %}<dt>{{ k }}</dt><dd{% if k == '결론' %} class="conclusion"{% endif %}>{{ s }}</dd>{% endfor %}</dl>
   </section>
 
   {% for ch in chapters %}
+  {% set ns.ctx = ch.title %}
   <h2>{{ ch.title }}</h2>
   <p class="lead">{{ ch.lead }}</p>
-  {% for b in ch.blocks %}{{ block(b) }}{% endfor %}
+  {% for b in ch.blocks %}
+    {% if b.t == 'p' %}<p>{{ b.text }}</p>
+    {% elif b.t == 'note' %}<p class="note">{{ b.text }}</p>
+    {% elif b.t == 'kv' %}<ul class="kv">{% for k, v in b['items'] %}<li><b>{{ k }}</b> {{ v }}</li>{% endfor %}</ul>
+    {% elif b.t == 'ul' %}{% if b.title %}<div class="ul-title">{{ b.title }}</div>{% endif %}<ul class="plain">{% for x in b['items'] %}<li>{{ x }}</li>{% endfor %}</ul>
+    {% elif b.t == 'h3' %}{% set ns.ctx = b.text %}<h3>{{ b.text }}</h3>
+    {% elif b.t == 'table' %}{% set ns.t = ns.t + 1 %}
+    <div class="cap"><b>표 {{ ns.t }}.</b>{{ b.caption or ns.ctx }}</div>
+    <table class="{{ 'small' if b.small else '' }}">
+      <thead><tr>{% for h in b.head %}<th{% if b.widths and b.widths[loop.index0] %} style="width:{{ b.widths[loop.index0] }}"{% endif %}>{{ h }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for r in b.rows %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table>
+    {% elif b.t == 'cand' %}
+    <div class="cand">
+      <h3>{{ b.title }} <span class="small">({{ b.sub }})</span></h3>
+      <ul>{% for k, v in b['items'] %}<li><b>{{ k }}</b> {{ v }}</li>{% endfor %}</ul>
+    </div>
+    {% elif b.t == 'box' %}
+    <div class="box"><div class="box-title">{{ b.title }}</div>
+      <ul>{% for k, v in b['items'] %}<li><b>{{ k }}</b> {{ v }}</li>{% endfor %}</ul></div>
+    {% endif %}
+  {% endfor %}
   {% endfor %}
 
   <h2>REFERENCE</h2>
