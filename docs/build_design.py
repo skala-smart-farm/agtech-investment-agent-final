@@ -297,8 +297,13 @@ def _runtime_table() -> str:
     if not rows:
         return "(eval/eval_final_retriever.py 실행 결과 없음)"
     pick = d.get("recommendation", {}).get("name")
-    show = ["final (hybrid)", "dense only", "hybrid 0.5:0.5", "KURE-v1 dense", "KURE-v1 hybrid", pick, "KURE-v1 hybrid 0.5:0.5",
-            "Kiwi BM25 only"]
+    # '(선택)' 은 지금 config 의 임베딩·가중치와 같은 행 (다시 잰 결과에서 규칙 1위가 달라져도 적용 설정을 빠뜨리지 않게)
+    cfg = get_config()
+    w = [float(x) for x in cfg.rag.ensemble_weights]
+    sel = next((r["name"] for r in rows.values() if r.get("embedding") == cfg.embedding.model
+                and [float(x) for x in r.get("weights[bm25,dense]", [])] == w), pick)
+    show = ["final (hybrid)", "dense only", "hybrid 0.5:0.5", "KURE-v1 dense", "KURE-v1 hybrid", sel, pick,
+            "KURE-v1 hybrid 0.5:0.5", "Kiwi BM25 only"]
     label = {"final (hybrid)": "snowflake + 하이브리드 0.3:0.7 (처음 선택)", "dense only": "snowflake Dense",
              "hybrid 0.5:0.5": "snowflake + 하이브리드 0.5:0.5", "KURE-v1 dense": "KURE-v1 Dense",
              "KURE-v1 hybrid": "KURE-v1 + 하이브리드 0.3:0.7", "Kiwi BM25 only": "Kiwi BM25 단독"}
@@ -307,10 +312,11 @@ def _runtime_table() -> str:
     for name in dict.fromkeys(n for n in show if n in rows):
         a, ko, en = rows[name]["all"], rows[name]["ko"], rows[name]["en"]
         lab = label.get(name, name.replace("KURE-v1 hybrid", "KURE-v1 + 하이브리드"))
-        lab = f"**{lab} (선택)**" if name == pick else lab
+        lab = f"**{lab} (선택)**" if name == sel else f"{lab} (규칙 1위)" if name == pick else lab
         out.append(f"| {lab} | {a['Hit@1']:.3f} | {a['Hit@3']:.3f} | {a['Hit@4']:.3f} | {a['MRR@4']:.3f} | {a['Hit@8']:.3f} | "
                    f"{ko['Hit@4']:.3f} | {en['Hit@4']:.3f} |")
-    return "\n".join(out) + "\n\n질문 70개 기준이며 1문항 = 0.014. 한국어/영어는 정답 문서의 언어다(질문은 모두 한국어)."
+    n = ((d.get("config") or {}).get("questions") or {}).get("all", 70)  # 표제 지표 = 기존 문항 (추가 문항은 따로)
+    return "\n".join(out) + f"\n\n질문 {n}개 기준이며 1문항 = {1 / n:.3f}. 한국어/영어는 정답 문서의 언어다(질문은 모두 한국어)."
 
 
 def _json(rel: str):

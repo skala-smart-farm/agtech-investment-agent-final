@@ -1,24 +1,33 @@
-# RAG 문서 코퍼스 (전체 196쪽, 과제 한도 200쪽)
+# RAG 문서 코퍼스 (15종 199쪽, 과제 한도 200쪽 — page_range 가 있는 문서는 그 구간만 센다)
 # 선정 원칙
 #  1) 공공기관·국제기구·연구기관·학술지의 공개 문서만 (유료 시장조사 홍보 페이지 제외)
 #  2) 2023년 이후 발행 (투자 판단의 최신성)
-#  3) 최종본만, 발췌 없이 문서 전체 사용 (200쪽 계산이 분명하도록)
+#  3) 최종본만 쓴다. 문서 전체가 원칙이되, 한도 안에서 필요한 문서를 더 넣으려고 원본 쪽 번호의 연속 한 구간(page_range)만
+#     쓸 수 있다. 빼는 쪽은 표지·목차·빈 쪽·참고문헌·방법론·부록처럼 인용·평가 정답에 쓰인 적이 없는 쪽이고(검색 잡음이던
+#     참고문헌·목차 포함), 긴 보고서는 에이전트 질문에 맞는 장·절만 쓴다. 문서마다 사유를 trim 에 적는다.
+#     200쪽은 사용 구간 기준으로 센다(rag/loader.py total_pages). pages_total = 사용 쪽수, pages_pdf = 원본 PDF 쪽수(구간이 있는 문서만)
+#     조각의 page 는 원본 PDF 쪽 번호 그대로라 인용 쪽 번호가 바뀌지 않는다
 #  4) 에이전트 질문에 대응: 시장 규모·성장(market), 투자 동향(market·discovery), 정책·규제(market),
 #     기술 동향 기준선(tech), 국내 스타트업 발굴 시드(discovery), 도입 장벽·리스크(market)
-#  5) 평가 후보가 몰린 세부 분야(로봇, 시설원예·수직농장, 축산)에 기술·사업성 문서를 둔다
+#  5) 평가 후보가 몰린 세부 분야에 기술·사업성 기준선 문서를 둔다: 로봇, 시설원예·수직농장, 축산, 그리고
+#     작물 병해 진단(diagnosis)·농업 데이터 분석·예측(agdata). 뒤의 두 분야는 심층 평가 10곳 중 4곳이 속하는데 기준선 문서가
+#     없어서 추가했다(frontiers_pd2024, worldbank_ai2025)
 #  6) 이해상충 문서는 뺀다 (예: 평가 후보 기업 소속 연구소장이 쓴 보고서)
 # type: report(기관 보고서 형식) | paper(학술 논문 형식) — REFERENCE 표기 형식을 결정한다
 documents:
-  - {doc_id: mafra_plan2025, file: kr_mafra_2025_smartagri_basic_plan.pdf, type: report, lang: ko, pages_total: 43,
+  - {doc_id: mafra_plan2025, file: kr_mafra_2025_smartagri_basic_plan.pdf, type: report, lang: ko, pages_total: 38, page_range: [6, 43], pages_pdf: 43,
      publisher: 농림축산식품부, year: 2025, title: "제1차 스마트농업 육성 기본계획(2025~2029년)",
-     url: "https://www.mafra.go.kr/bbs/home/792/573035/artclView.do", role: "정책 목표·지원 제도·시장 수치·진입 장벽"}
-  - {doc_id: krei_market2024, file: kr_krei_2024_smartagri_market_employment.pdf, type: paper, lang: ko, pages_total: 16,
+     url: "https://www.mafra.go.kr/bbs/home/792/573035/artclView.do", role: "정책 목표·지원 제도·시장 수치·진입 장벽",
+     trim: "표지·면책·목차·공란(pp.1~4), 추진 배경(p.5) 제외"}
+  - {doc_id: krei_market2024, file: kr_krei_2024_smartagri_market_employment.pdf, type: paper, lang: ko, pages_total: 15, page_range: [1, 15], pages_pdf: 16,
      publisher: 한국농촌경제연구원, authors: 박미선, journal: 세계농업, volume: 2024, issue: 겨울호, pages: 33-48,
      year: 2024, title: "스마트 농업과 농업 부문 고용 현황 및 전망",
-     url: "https://www.krei.re.kr/wldagr/page/236?cmd=view&biblioId=542406&pageIndex=1", role: "기관별 스마트농업 시장 추정치 비교"}
-  - {doc_id: kdi_agtech2023, file: kr_kdi_2023_agtech_policy_review.pdf, type: report, lang: ko, pages_total: 18,
+     url: "https://www.krei.re.kr/wldagr/page/236?cmd=view&biblioId=542406&pageIndex=1", role: "기관별 스마트농업 시장 추정치 비교",
+     trim: "참고문헌 끝(p.16) 제외"}
+  - {doc_id: kdi_agtech2023, file: kr_kdi_2023_agtech_policy_review.pdf, type: report, lang: ko, pages_total: 16, page_range: [1, 16], pages_pdf: 18,
      publisher: KDI 경제교육·정보센터, year: 2023, title: "애그테크, 선택 아닌 필수 - 주요국의 애그테크 산업 정책 동향을 중심으로",
-     url: "https://eiec.kdi.re.kr/publish/reviewView.do?ridx=15&idx=151&fcode=000020003600003", role: "세계·국내 애그테크 시장, 주요국 정책"}
+     url: "https://eiec.kdi.re.kr/publish/reviewView.do?ridx=15&idx=151&fcode=000020003600003", role: "세계·국내 애그테크 시장, 주요국 정책",
+     trim: "2022 정책 요약표(p.17, 제1차 기본계획 mafra_plan2025 가 대체)·참고문헌(p.18) 제외"}
   - {doc_id: mafra_top15_2026, file: kr_mafra_2026_smartagri_top15_firms_press.pdf, type: report, lang: ko, pages_total: 2,
      publisher: 농림축산식품부, year: 2026, title: "기술력과 현장 확산 성과를 갖춘 스마트농업 우수기업 15개사 최초 선정",
      url: "https://www.mafra.go.kr/bbs/home/792/577570/artclView.do", role: "스타트업 발굴 시드(정부 선정 기업)"}
@@ -31,26 +40,44 @@ documents:
   - {doc_id: nars_act2023, file: kr_nars_2023_smartagri_act.pdf, type: report, lang: ko, pages_total: 4,
      publisher: 국회입법조사처, year: 2023, title: "「스마트농업 육성 및 지원에 관한 법률」 제정의 의의와 향후 과제",
      url: "https://www.nars.go.kr/report/view.do?cmsCode=CM0043&brdSeq=42952", role: "규제 프레임(스마트농업법)"}
-  - {doc_id: mafra_dataax2026, file: kr_mafra_2026_smartagri_data_ax_press.pdf, type: report, lang: ko, pages_total: 3,
+  - {doc_id: mafra_dataax2026, file: kr_mafra_2026_smartagri_data_ax_press.pdf, type: report, lang: ko, pages_total: 2, page_range: [1, 2], pages_pdf: 3,
      publisher: 농림축산식품부, year: 2026, title: "'스마트농업 데이터 AX활용' 본격 추진",
-     url: "https://www.mafra.go.kr/bbs/home/792/577708/artclView.do", role: "2026 농업 AI 정책·데이터 인프라"}
-  - {doc_id: agfunder2026, file: en_agfunder_2026_global-investment-report.pdf, type: report, lang: en, pages_total: 65,
+     url: "https://www.mafra.go.kr/bbs/home/792/577708/artclView.do", role: "2026 농업 AI 정책·데이터 인프라",
+     trim: "붙임 사진(p.3) 제외"}
+  - {doc_id: agfunder2026, file: en_agfunder_2026_global-investment-report.pdf, type: report, lang: en, pages_total: 60, page_range: [3, 62], pages_pdf: 65,
      publisher: AgFunder, year: 2026, title: "Global AgriFoodTech Investment Report 2026",
      url: "https://agfunder.com/research/agfunder-global-agrifoodtech-investment-report-2026/", role: "분야별 글로벌 투자 동향(국가별·단계별)",
-     note: "저장소 용량 때문에 이미지 해상도만 낮춘 사본 (텍스트는 원본과 동일)"}
+     note: "저장소 용량 때문에 이미지 해상도만 낮춘 사본 (텍스트는 원본과 동일)",
+     trim: "표지·목차(pp.1~2), 방법론·감사의 글·뒤표지(pp.63~65) 제외"}
   - {doc_id: usda_precision2023, file: en_usda-ers_2023_precision-ag-digital-era_summary.pdf, type: report, lang: en, pages_total: 2,
      publisher: USDA Economic Research Service, year: 2023, title: "Precision Agriculture in the Digital Era: Recent Adoption on U.S. Farms (Report Summary)",
      url: "https://www.ers.usda.gov/publications/pub-details?pubid=105893", role: "정밀농업 도입률·도입 장벽"}
   - {doc_id: usda_dairy2026, file: en_usda-ers_2026_precision-dairy-robotic-milking_summary.pdf, type: report, lang: en, pages_total: 2,
      publisher: USDA Economic Research Service, year: 2026, title: "Precision Dairy Farming, Robotic Milking, and Profitability in the United States (Report Summary)",
      url: "https://www.ers.usda.gov/publications/113704", role: "축산 로봇·정밀 낙농 수익성"}
-  - {doc_id: mdpi_robotics2025, file: en_mdpi_2025_agri-robotics-review.pdf, type: paper, lang: en, pages_total: 26,
+  - {doc_id: mdpi_robotics2025, file: en_mdpi_2025_agri-robotics-review.pdf, type: paper, lang: en, pages_total: 22, page_range: [1, 22], pages_pdf: 26,
      authors: "Spagnuolo, M., Todde, G., Caria, M., Furnitto, N., Schillaci, G., & Failla, S.", year: 2025,
      title: "Agricultural Robotics: A Technical Review Addressing Challenges in Sustainable Crop Production",
      journal: Robotics, volume: 14, issue: 2, pages: "9", publisher: MDPI,
-     url: "https://doi.org/10.3390/robotics14020009", role: "농업 로봇 기술 성숙도·확산 장벽 (로봇 후보 기준선)"}
-  - {doc_id: frontiers_vf2026, file: en_frontiers_2026_vertical-farming-economics.pdf, type: paper, lang: en, pages_total: 11,
+     url: "https://doi.org/10.3390/robotics14020009", role: "농업 로봇 기술 성숙도·확산 장벽 (로봇 후보 기준선)",
+     trim: "참고문헌(pp.23~26) 제외"}
+  - {doc_id: frontiers_vf2026, file: en_frontiers_2026_vertical-farming-economics.pdf, type: paper, lang: en, pages_total: 9, page_range: [1, 9], pages_pdf: 11,
      authors: "Meeuws, G. J. J. M., Heeling, D. J., van Stuijvenberg, A., Mogollón, J. M., Erisman, J. W., & Behrens, P. A.", year: 2026,
      title: "Vertical farming economics: crop performance targets for cost-competitive vertical farming",
      journal: Frontiers in Sustainable Food Systems, volume: 10, pages: "1833809", publisher: Frontiers,
-     url: "https://doi.org/10.3389/fsufs.2026.1833809", role: "수직농장·시설원예 사업성 리스크 (CEA 후보 기준선)"}
+     url: "https://doi.org/10.3389/fsufs.2026.1833809", role: "수직농장·시설원예 사업성 리스크 (CEA 후보 기준선)",
+     trim: "결론 끝·저자 기여·참고문헌(pp.10~11) 제외 (p.10 은 로더가 참고문헌으로 걸러 원래 색인되지 않던 쪽)"}
+  - {doc_id: frontiers_pd2024, file: en_frontiers_2024_ai-plant-disease-detection.pdf, type: paper, lang: en, pages_total: 17, page_range: [1, 17], pages_pdf: 20,
+     authors: "Jafar, A., Bibi, N., Naqvi, R. A., Sadeghi-Niaraki, A., & Jeong, D.", year: 2024,
+     title: "Revolutionizing agriculture with artificial intelligence: plant disease detection methods, applications, and their limitations",
+     journal: Frontiers in Plant Science, volume: 15, pages: "1356260", publisher: Frontiers,
+     url: "https://doi.org/10.3389/fpls.2024.1356260", role: "작물 병해 진단 AI 기술 성숙도·현장 적용 한계 (진단 후보 기준선)",
+     license: "CC BY (PDF p.1 COPYRIGHT 문구)",
+     trim: "참고문헌(pp.18~20) 제외"}
+  - {doc_id: worldbank_ai2025, file: en_worldbank_2025_harnessing-ai-agri.pdf, type: report, lang: en, pages_total: 6, page_range: [50, 55], pages_pdf: 102,
+     publisher: World Bank, year: 2025, title: "Harnessing Artificial Intelligence for Agricultural Transformation",
+     url: "https://documents.worldbank.org/en/publication/documents-reports/documentdetail/099110225213024234",
+     role: "농업 데이터 분석·예측 AI 기준선: 위성 작황·수확량 예측, 농업생태구역·토양, 기상 예측, 합성 데이터, 필지 경계 (데이터 후보 기준선)",
+     license: "CC BY-NC 3.0 IGO (World Bank Open Knowledge Repository https://hdl.handle.net/10986/43990 메타데이터로 확인, 2026-09-30. PDF 본문에는 라이선스 문구 없음)",
+     note: "Report No. 206348. 저장소 용량 때문에 이미지 해상도만 낮춘 사본 (원본 21.6MB, 102쪽 모두 텍스트 블록이 원본과 동일)",
+     trim: "3장 Applications of AI in Agriculture 의 마지막 절 Cross-Cutting Applications(원본 pp.50~55)만 사용 — 작황·수확량 예측, 농업생태구역, 기상 예측, 합성 데이터, 지식 검색, 필지 경계"}

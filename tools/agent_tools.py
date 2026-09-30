@@ -23,6 +23,7 @@ from core.config import get_config
 from core.llm import get_llm
 from core.prompts import render
 from rag.index import get_hybrid_retriever
+from rag.loader import corpus_summary
 from tools.fetch import fetch
 from tools.sources import SourceRegistry, today
 from tools.web_search import web_search as search_web
@@ -33,9 +34,8 @@ TOOL_NAMES = ("search_documents", "web_search", "summarize_document")
 def make_tools(reg: SourceRegistry, agent: str) -> dict[str, BaseTool]:
     """에이전트(agent 이름은 근거 등록 기록용)가 쓸 도구 3개를 {이름: 도구} 로 돌려준다. 키는 TOOL_NAMES 와 같다."""
 
-    @tool(response_format="content_and_artifact", parse_docstring=True)
     def search_documents(query: str) -> tuple[str, list[dict]]:
-        """공공·연구기관 AgTech 문서 코퍼스 검색 (PDF 13종 196쪽, 2023~2026년 발행, 한국어·영어).
+        """공공·연구기관 AgTech 문서 코퍼스 검색 (PDF {corpus}, 한국어·영어).
         시장 규모·성장률, 정책·법령·지원 제도, 기술 성숙도·기술 기준선, 애그테크 투자 동향에 강하다.
         개별 스타트업의 매출·팀·최근 소식은 거의 없다 → web_search.
 
@@ -48,6 +48,10 @@ def make_tools(reg: SourceRegistry, agent: str) -> dict[str, BaseTool]:
             f"[{i}] ({c['meta'].get('publisher')} {c['meta'].get('year')}, p.{c['meta'].get('page')})\n{c['text'][:500]}"
             for i, c in enumerate(chunks))
         return listing or "검색 결과 없음", chunks
+
+    # 설명의 코퍼스 규모(문서 수·쪽수·발행 연도)는 data/manifest.yaml 에서 계산해 넣는다 (코퍼스를 바꾸면 저절로 맞음)
+    search_documents.__doc__ = search_documents.__doc__.replace("{corpus}", corpus_summary())
+    search_documents = tool(response_format="content_and_artifact", parse_docstring=True)(search_documents)
 
     @tool(response_format="content_and_artifact", parse_docstring=True)
     def web_search(query: str, recent: bool = True) -> tuple[str, list[str]]:

@@ -62,7 +62,8 @@ def _load(f: str) -> list[dict]:
 
 def main() -> None:
     k = get_config().rag.candidate_k
-    sets = {s: _load(v) for s, v in SETS.items() if path(v).exists()}
+    # 선정 실험은 기존 문항만 쓴다. 코퍼스를 바꾸며 추가한 문항("added")은 eval_final_retriever 가 따로 잰다
+    sets = {s: [q for q in _load(v) if not q.get("added")] for s, v in SETS.items() if path(v).exists()}
     chunks = get_chunks()
     bm25 = get_bm25(k)
     rows = []
