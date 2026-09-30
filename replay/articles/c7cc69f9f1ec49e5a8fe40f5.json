@@ -1,0 +1,1 @@
+{"error": "HTTPSConnectionPool(host='metafarmers.ai', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: cert"}

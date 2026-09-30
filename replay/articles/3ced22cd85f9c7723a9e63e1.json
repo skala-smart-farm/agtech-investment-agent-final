@@ -1,0 +1,1 @@
+{"error": "HTTPSConnectionPool(host='www.barca.co.kr', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(\"HTTPSConnection(host='www.barca.co.kr', port=443): Failed to resolve 'www.barca."}

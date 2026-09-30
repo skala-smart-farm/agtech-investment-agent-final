@@ -4,22 +4,26 @@
     "eligible": true,
     "stage": "Series B",
     "decision": "보류",
-    "total": 15.0,
-    "threshold": 70,
-    "unknown_ratio": 0.875,
+    "multiplier": 0.9975,
+    "threshold": 1.1,
+    "hold_type": "창업자 근거 없음",
+    "founder_yes": 0,
+    "unknown_ratio": 0.826,
     "reasons": [
-      "점수 미달(15.0점)",
-      "핵심 항목 미달(창업자 0%)",
-      "정보 부족(UNKNOWN 88%)"
+      "창업자 문항(F1~F4) YES 0개 — 최소 1개 필요",
+      "미확인 문항 83% (≥ 60%) — 공개 정보로는 판단하기 어려움",
+      "동종 평균 대비 100(평균 100, 기준 110) — 기준 미달"
     ],
+    "flip": "F1·F2·F3 이(가) YES 로 확인되면 동종 평균 대비 111(기준 110) → 투자",
+    "reference_n": 10,
     "rejected_yes": [
       {
-        "qid": "M3",
+        "qid": "P2",
         "reason": "인용 주변(±300자)에 회사명이 없음 (업계 일반론이 아니라 이 회사 이야기여야 함)"
       },
       {
-        "qid": "M4",
-        "reason": "인용 주변(±300자)에 회사명이 없음 (업계 일반론이 아니라 이 회사 이야기여야 함)"
+        "qid": "R2",
+        "reason": "인용문이 근거 본문에서 확인되지 않음"
       }
     ],
     "unknown_qids": [
@@ -27,12 +31,10 @@
       "F2",
       "F3",
       "F4",
-      "M3",
       "M4",
       "P1",
       "P2",
       "P3",
-      "P4",
       "C1",
       "C2",
       "C3",
@@ -45,18 +47,20 @@
       "D3",
       "D4"
     ],
-    "dims": {
-      "founder": "0/4",
-      "market": "2/4",
-      "product": "0/4",
-      "competition": "0/4",
-      "traction": "0/4",
-      "deal": "1/4"
+    "criteria": {
+      "founder": 91.2,
+      "market": 117.5,
+      "product": 93.3,
+      "competition": 95.0,
+      "traction": 100.0,
+      "deal": 95.0
     },
     "sensitivity": {
-      "60": "보류",
-      "70": "보류",
-      "80": "보류"
+      "1.00": "보류",
+      "1.05": "보류",
+      "1.10": "보류",
+      "1.15": "보류",
+      "1.20": "보류"
     },
     "failed_searches": 0
   },
@@ -65,7 +69,7 @@
     "eligible": false,
     "stage": "Series B",
     "decision": "적격성 탈락",
-    "total": null,
+    "multiplier": null,
     "unknown_ratio": null,
     "reasons": [
       "G5 상장사·대기업 계열 (독립 스타트업 아님)"
@@ -77,21 +81,20 @@
     "eligible": true,
     "stage": "Pre-A",
     "decision": "보류",
-    "total": 33.7,
-    "threshold": 70,
-    "unknown_ratio": 0.625,
+    "multiplier": 1.0,
+    "threshold": 1.1,
+    "hold_type": "정보 부족",
+    "founder_yes": 2,
+    "unknown_ratio": 0.75,
     "reasons": [
-      "점수 미달(33.7점)",
-      "핵심 항목 미달(시장성 0%)",
-      "정보 부족(UNKNOWN 62%)"
+      "미확인 문항 75% (≥ 60%) — 공개 정보로는 판단하기 어려움",
+      "동종 평균 대비 100(평균 100, 기준 110) — 기준 미달"
     ],
+    "flip": "F3·F4·M1 이(가) YES 로 확인되면 동종 평균 대비 111(기준 110) → 투자",
+    "reference_n": 10,
     "rejected_yes": [
       {
         "qid": "M1",
-        "reason": "인용문이 근거 본문에서 확인되지 않음"
-      },
-      {
-        "qid": "M2",
         "reason": "인용문이 근거 본문에서 확인되지 않음"
       },
       {
@@ -99,20 +102,24 @@
         "reason": "인용 주변(±300자)에 회사명이 없음 (업계 일반론이 아니라 이 회사 이야기여야 함)"
       },
       {
-        "qid": "M4",
-        "reason": "인용문이 근거 본문에서 확인되지 않음"
-      },
-      {
         "qid": "P2",
-        "reason": "회사 측 발언·계획(제3자 근거 아님)"
+        "reason": "회사 자체 발표만 있음 (제3자 근거 필요)"
       },
       {
-        "qid": "C2",
-        "reason": "인용문이 근거 본문에서 확인되지 않음"
+        "qid": "R1",
+        "reason": "인용 주변(±300자)에 회사명이 없음 (업계 일반론이 아니라 이 회사 이야기여야 함)"
       },
       {
         "qid": "R2",
         "reason": "최근 24개월 이내 근거 아님"
+      },
+      {
+        "qid": "R3",
+        "reason": "인용 주변(±300자)에 회사명이 없음 (업계 일반론이 아니라 이 회사 이야기여야 함)"
+      },
+      {
+        "qid": "D2",
+        "reason": "인용 주변(±300자)에 회사명이 없음 (업계 일반론이 아니라 이 회사 이야기여야 함)"
       }
     ],
     "unknown_qids": [
@@ -122,28 +129,33 @@
       "M2",
       "M3",
       "M4",
+      "P1",
       "P2",
+      "P3",
       "C1",
       "C2",
       "C4",
       "R1",
       "R2",
+      "R3",
       "D2",
       "D3",
       "D4"
     ],
-    "dims": {
-      "founder": "2/4",
-      "market": "0/4",
-      "product": "3/4",
-      "competition": "1/4",
-      "traction": "2/4",
-      "deal": "0/4"
+    "criteria": {
+      "founder": 116.3,
+      "market": 80.0,
+      "product": 107.5,
+      "competition": 107.5,
+      "traction": 112.5,
+      "deal": 70.0
     },
     "sensitivity": {
-      "60": "보류",
-      "70": "보류",
-      "80": "보류"
+      "1.00": "투자",
+      "1.05": "보류",
+      "1.10": "보류",
+      "1.15": "보류",
+      "1.20": "보류"
     },
     "failed_searches": 0
   }

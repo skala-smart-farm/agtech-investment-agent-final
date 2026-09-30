@@ -2,283 +2,219 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<title>AgTech AI 스타트업 투자 검토 — 투자 권고 없음 (심층 평가 10곳 모두 보류)</title>
+<title>메타파머스 투자 검토 — 투자 추천(실사 조건부)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css">
-
-
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
 
 
 
 <style>
   @page { size: A4; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR", sans-serif;
-         font-size: 9.7pt; line-height: 1.5; color: #1b2330; }
-  h1 { font-size: 14.5pt; margin: 0 0 2pt; color: #12213f; letter-spacing: -0.02em; }
-  .meta { font-size: 8.3pt; color: #667085; margin-bottom: 8pt; }
-  .badge { display: inline-block; padding: 1pt 8pt; border-radius: 10pt; font-weight: 800; font-size: 9pt; color: #fff;
-           background: #b8650a; margin-left: 6pt; vertical-align: 2pt; }
-  ul.idea { margin: 2pt 0 4pt; padding-left: 14pt; } ul.idea li { margin: 1.5pt 0; }
-  h2 { font-size: 11.7pt; color: #12213f; margin: 9pt 0 3pt; padding-bottom: 2pt;
-       border-bottom: 1.5pt solid #d8dee9; break-after: avoid; }
-  h3 { font-size: 10.2pt; color: #12213f; margin: 6pt 0 2pt; break-after: avoid; }
-  h4 { font-size: 8.899999999999999pt; color: #475467; margin: 4pt 0 1pt; break-after: avoid; }
-  p { margin: 2pt 0 4pt; text-align: justify; }
-  #summary { border: 1.6pt solid #12213f; border-radius: 6pt; padding: 7pt 11pt 6pt; background: #f5f7fb; }
-  #summary h2 { margin-top: 0; border: none; font-size: 11pt; letter-spacing: 0.08em; }
-  #summary ul { margin: 0; padding-left: 13pt; }
-  #summary li { margin: 1.5pt 0; }
-  table { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin: 4pt 0 6pt; break-inside: auto; }
-  th, td { border: 0.6pt solid #cfd6e2; padding: 2.5pt 5pt; vertical-align: top; text-align: left; }
-  th { background: #eef2f8; font-weight: 700; }
-  tr { break-inside: avoid; }
-  td.yes { color: #12806b; font-weight: 800; text-align: center; } td.no { color: #b54708; font-weight: 800; text-align: center; }
-  td.num, td.nw { text-align: right; white-space: nowrap; } td.nw { text-align: left; }
-  thead { display: table-header-group; }
-  .total { font-weight: 800; background: #f5f7fb; }
-  .small { font-size: 8.299999999999999pt; color: #475467; }
-  .cand { border-left: 2.5pt solid #b8650a; padding: 1pt 0 1pt 7pt; margin: 4pt 0 6pt; break-inside: avoid; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font-family: "Noto Serif KR", "Nanum Myeongjo", "AppleMyungjo", serif; font-size: 9.8pt; line-height: 1.62;
+         color: #141414; word-break: keep-all; overflow-wrap: anywhere; }
+  h1, h2, h3, h4, table, .meta, .kind, .cap, #summary .sum-h, .badge, .box, ol.refs, p.note { font-family: "Pretendard", "Apple SD Gothic Neo", sans-serif; }
+  /* 제목 블록 */
+  .titleblock { text-align: center; margin: 0 0 9pt; }
+  .kind { font-size: 7.6pt; letter-spacing: .14em; color: #555; }
+  h1 { font-size: 15pt; line-height: 1.35; margin: 3pt 0 4pt; font-weight: 800; letter-spacing: -.02em; }
+  .badge { display: inline-block; font-size: 8pt; font-weight: 800; padding: 0 7pt; border-radius: 3pt; vertical-align: 2pt; margin-left: 4pt;
+           border: 1pt solid #0f766e; color: #0f766e; }
+  .meta { font-size: 8pt; color: #444; }
+  /* SUMMARY: 요약(Abstract)처럼 위아래 선 — render.py 가 #summary 높이를 잰다 */
+  #summary { border-top: 1.2pt solid #111; border-bottom: 1.2pt solid #111; padding: 5pt 4pt 5pt; margin: 0 0 8pt; }
+  #summary .sum-h { text-align: center; font-weight: 800; font-size: 9pt; letter-spacing: .38em; margin-bottom: 3pt; }
+  #summary dl { display: grid; grid-template-columns: 30pt 1fr; gap: 2pt 6pt; margin: 0; }
+  #summary dt { font-family: "Pretendard", sans-serif; font-weight: 800; font-size: 9.200000000000001pt; color: #111; padding-top: 1pt; }
+  #summary dd { margin: 0; text-align: justify; }
+  #summary dd.conclusion { font-weight: 700; }
+  /* 본문 */
+  h2 { font-size: 12.200000000000001pt; font-weight: 800; margin: 13pt 0 3pt; break-after: avoid; break-inside: avoid; letter-spacing: -.01em; }
+  h2:before { content: ""; display: block; width: 16mm; border-top: .8pt solid #111; margin-bottom: 4pt; }
+  h3 { font-size: 10.3pt; font-weight: 700; margin: 7pt 0 2pt; break-after: avoid; }
+  h4 { font-size: 9.200000000000001pt; font-weight: 700; color: #333; margin: 5pt 0 1pt; break-after: avoid; }
+  p { margin: 2pt 0 5pt; text-align: justify; }
+  p.lead { font-weight: 700; margin: 1pt 0 5pt; }
+  p.note { font-size: 8.200000000000001pt; color: #333; margin: 1pt 0 3pt; }
+  ul.kv, ul.plain { margin: 2pt 0 5pt; padding-left: 14pt; } ul.kv li, ul.plain li { margin: 1.5pt 0; }
+  .ul-title { font-family: "Pretendard", sans-serif; font-size: 9.0pt; font-weight: 700; color: #333; margin: 4pt 0 0; }
+  /* 표: 3선 표 + 번호 캡션 */
+  .cap { font-size: 8.4pt; margin: 6pt 0 2pt; break-after: avoid; }
+  .cap b { font-weight: 800; margin-right: 4pt; }
+  table { width: 100%; border-collapse: collapse; font-size: 7.9pt; line-height: 1.45; margin: 0 0 7pt;
+          border-top: 1.1pt solid #111; border-bottom: 1.1pt solid #111; break-inside: auto; }
+  table.small { font-size: 7.500000000000001pt; }
+  thead th { border-bottom: .6pt solid #111; font-weight: 700; text-align: left; padding: 2.4pt 4.5pt; vertical-align: bottom; }
+  td { padding: 2.1pt 4.5pt; vertical-align: top; }
+  tbody tr + tr td { border-top: .3pt solid #d2d2d2; }
+  tr { break-inside: avoid; } thead { display: table-header-group; }
+  /* 후보별 보류 사유 · ROI 상자 */
+  .cand { border-left: 1.6pt solid #8a8a8a; padding: 0 0 0 7pt; margin: 4pt 0 6pt; break-inside: avoid; }
   .cand h3 { margin-top: 0; }
-  .cand ul { margin: 1pt 0; padding-left: 12pt; } .cand li { margin: 1pt 0; }
-  ol.refs { font-size: 7.8999999999999995pt; padding-left: 16pt; margin: 1pt 0 3pt; word-break: break-all; }
+  .cand ul { margin: 1pt 0; padding-left: 12pt; } .cand li { margin: .8pt 0; }
+  .box { border: .6pt solid #9a9a9a; padding: 3pt 8pt; margin: 4pt 0 7pt; break-inside: avoid; font-size: 8.4pt; }
+  .box .box-title { font-weight: 800; }
+  .box ul { margin: 1pt 0; padding-left: 12pt; }
+  .small { font-size: 8.200000000000001pt; color: #444; }
+  /* REFERENCE */
+  ol.refs { font-size: 7.6000000000000005pt; padding-left: 16pt; margin: 1pt 0 3pt; word-break: break-all; line-height: 1.45; }
   ol.refs li { margin: 1pt 0; }
-  ul.lim { margin: 2pt 0; padding-left: 14pt; }
 </style>
 </head>
 <body>
-  <h1>AgTech AI 스타트업 투자 검토 — 투자 권고 없음 (심층 평가 10곳 모두 보류)<span class="badge">투자 권고 없음</span></h1>
-  
-  <div class="meta">AgTech · 적격 14곳 중 10곳 심층 평가 · 최고점 메타파머스 52.6점 (기준 70점) · 작성일 2026-09-30</div>
-  
+
+  <div class="titleblock">
+    <div class="kind">투자 보고서 · RAG-Output</div>
+    <h1>메타파머스 투자 검토 — 투자 추천(실사 조건부)<span class="badge">투자 추천</span></h1>
+    <div class="meta">AgTech · 메타파머스 (Pre-A, 2025-08) · 농업 로봇·자율주행 농기계 · 작성일 2026-09-30</div>
+  </div>
 
   <section id="summary">
-    <h2>SUMMARY</h2>
-    <ul><li>상황: 국내외 AgTech AI 스타트업 78곳을 발굴해 18곳을 검증했고, 적격 14곳 중 10곳(국내 7·해외 3)을 심층 평가했다.</li><li>결론: 투자 권고 없음 — 심층 평가 10곳 모두 보류 (적격 14곳 중 10곳 평가; 미평가 4곳은 평가 상한(10곳, 비용 관리) 도달)</li><li>근거: 후보들은 투자 조건, 매출, 고객 수, 특허 등 핵심 정보가 미확인 상태이며, 최고점 후보 메타파머스는 계약·공동사업 구체성 부족과 상용 운영 미확인 점이 아쉬움[5, 6, 7].</li><li>조건: 유료 고객 수 및 매출 공개, 특허 보유 및 경쟁사 대비 차별점 확인 시 재평가; 상용 운영 및 제3자 실증 완료 시 재검토.</li><li>요청: 재검토 조건 충족 시 재평가 승인 여부, 미평가 적격 4곳 추가 심층 평가 승인 여부</li></ul>
+    <div class="sum-h">SUMMARY</div>
+    <dl><dt>상황</dt><dd>국내외 AgTech AI 스타트업 78곳 발굴 → 적격성 관문 통과 14곳(모두 Seed~Series C 투자 유치 확인) → 1번째 평가 대상 메타파머스(Pre-A, 농업 로봇·자율주행 농기계)</dd><dt>결론</dt><dd class="conclusion">메타파머스 투자 추천(실사 조건부) — 동종 평균 대비 110(평균 100, 기준 110), 동종 10곳 중 1위</dd><dt>근거</dt><dd>AI 기반 다목적 농작업 로봇과 원격제어 소프트웨어 개발, VLA 알고리즘과 물리 시뮬레이터 기반 강화학습 적용 [5](→1장) · 글로벌 스마트 농업 시장은 2023년 174억 달러에서 2034년 1,172억 달러로 연평균 19.1% 성장 전망 [4](→2장) · 대표 이규화는 서울대 기계공학부 박사 과정 출신, CTO 윤원재는 AI 로봇과 엔드이펙터 전공 [5](→3장)</dd><dt>리스크</dt><dd>시장 초기 단계로 수요 불확실성 및 기술 확장성 확보가 주요 리스크 [5, 6] — 실사 확인 항목 5개(→4장)</dd><dt>요청</dt><dd>실사 확인 항목 5개를 조건으로 투자심의 상정을 진행할까요?</dd></dl>
   </section>
 
   
-  <h2>1. 후보 풀과 선정 과정</h2>
-  <table>
-    <tr><th style="width:22%">단계</th><th style="width:9%">후보 수</th><th style="width:8%">국내</th><th style="width:8%">해외</th><th>비고</th></tr>
-    <tr><td>발굴</td><td class="num">78</td><td class="num">73</td><td class="num">5</td><td>발굴 1라운드, 라운드당 최대 18곳을 적격성 검증으로 넘김</td></tr><tr><td>적격성 검증</td><td class="num">18</td><td class="num">13</td><td class="num">5</td><td>탈락 4곳: 대동애그테크 — 상장사·대기업 계열 (독립 스타트업 아님); 핼터 — 투자 단계 'Unknown' (Seed~Series C 아님 또는 확인 불가); AI 농업 생산성 기술 확인 불가; 터빈크루 — AgTech 분야가 아님; 대봉유통 — AgTech 분야가 아님</td></tr><tr><td>적격 (비상장·Seed~C·Exit 전)</td><td class="num">14</td><td class="num">10</td><td class="num">4</td><td>미평가 4곳</td></tr><tr><td>심층 평가</td><td class="num">10</td><td class="num">7</td><td class="num">3</td><td>기술·시장·경쟁 분석 후 평가표 24문항 판정</td></tr>
-  </table>
   
-  <p class="small"><b>미평가 적격 후보 4곳</b> (평가 상한(10곳, 비용 관리) 도달):
-    엠트리센(Series A), 오차드 로보틱스(Series A), 아이티테크(Seed), 팜스태프(Seed)</p>
+  <h2>1. 사업 아이디어(핵심 컨셉)·기술·경쟁 차별성</h2>
+  <p class="lead">AI 기반 농업 로봇으로 농작업 자동화와 인력 부족 문제 해결에 집중한다</p>
   
-
-  <h2>2. 후보별 보류 사유</h2>
+    <ul class="kv"><li><b>해결하는 문제</b> 농업 인력 부족과 농작업 자동화 필요성 증가</li><li><b>제품·핵심 컨셉</b> AI 기반 다목적 농작업 로봇 '옴니파머'와 원격제어 소프트웨어 '탭파머스'</li><li><b>수익 방식</b> 로봇 구입 부담 완화를 위해 구독형 요금제 도입 예정, 작물 수확량에 비례한 요금 부과 방식 [7]</li><li><b>투자 단계</b> Pre-A (2025-08, 30억원) [8, 9]</li></ul>
+    
   
-  <div class="cand">
-    <h3>2.1 메타파머스 — 52.6점 보류 <span class="small">(농업 로봇·자율주행 농기계)</span></h3>
-    <ul>
-      <li><b>사업</b> AI 기반 농업 로봇으로 농작업 자동화하는 스타트업, 2025년 8월 Pre-A 30억원 투자 유치[5]</li>
-      <li><b>팀·단계</b> 대표 이규화 (설립 2022-09-02) [9] · 국민연금 가입자 19명(2026-08 기준) [10] · Pre-A (2025-08, 30억원) [5, 11]</li>
-      <li><b>보류 사유</b> MOU 및 PoC는 있으나 계약이나 공동사업 구체적 사실 미확인[5]; 특허, 매출, 고객 수, 재계약 등 핵심 정보 공개되지 않음; 상용 운영은 예정 단계[7] <span class="small">(점수 미달(52.6점), 정보 부족(근거 미확인 54%))</span></li>
-      <li><b>재검토 조건</b> 유료 고객 수, 매출, 특허 보유 및 상용 운영 확인 시 재평가</li>
-    </ul>
-  </div>
+    
+    <div class="cap"><b>표 1.</b>1. 사업 아이디어(핵심 컨셉)·기술·경쟁 차별성</div>
+    <table class="small">
+      <thead><tr><th style="width:50%">핵심 기술의 장점</th><th style="width:50%">단점·한계</th></tr></thead>
+      <tbody><tr><td>국내 AI 농업로봇 시장에서 선도적 위치 확보 및 스마트농업 우수기업 선정 [10]</td><td>현재는 국내 시장에 집중 중이며 해외 진출은 내년부터 계획 중으로 아직 초기 단계 [5]</td></tr><tr><td>다목적 농작업 로봇으로 수확·수분·선별·예찰 등 다양한 작업 단일 플랫폼에서 처리 가능 [5, 9]</td><td>로봇 구입 비용 부담을 완화하기 위해 구독형 요금제 도입 예정이나 도입 비용 부담 가능성 존재 [5, 7]</td></tr><tr><td>작물 손상 최소화하는 전용 엔드이펙터와 적응형 AI 기술로 정밀 작업 지원 [5]</td><td>국내 농업용 로봇 기술 수준은 주요국 대비 상대적으로 낮은 편 [1]</td></tr></tbody>
+    </table>
+    
   
-  <div class="cand">
-    <h3>2.2 퓨처커넥트 — 43.8점 보류 <span class="small">(스마트팜·시설원예 AI 환경제어)</span></h3>
-    <ul>
-      <li><b>사업</b> AI 기반 도심농장 솔루션 기업, 2025년 11월 86억 원 규모 시리즈A 투자 유치, 북미 시장 진출 본격화[12]</li>
-      <li><b>팀·단계</b> 대표 강길모 (설립 2020-08-06) [12, 13] · 국민연금 가입자 17명(2026-08 기준) [10] · Series A (2025-11, 86억 원) [12]</li>
-      <li><b>보류 사유</b> 최근 마일스톤, 제3자 교차 확인, 특허, 매출, 고객 수 등 핵심 정보 미공개; 상용 운영 미확인 <span class="small">(점수 미달(43.8점), 정보 부족(근거 미확인 62%))</span></li>
-      <li><b>재검토 조건</b> 핵심 사업 실적 및 상용 운영 데이터 확보 시 재평가</li>
-    </ul>
-  </div>
+    <p>업계 기술 수준 대비: 국내 농업용 로봇 기술은 주요국 대비 상대적으로 낮은 수준이며, 스마트 그리퍼 및 양팔 로봇 제어, 원격 제어 기술 개발이 진행 중이다 [1]</p>
+    
   
-  <div class="cand">
-    <h3>2.3 에임비랩 — 32.5점 보류 <span class="small">(축산 AI(가축 건강·사양 관리))</span></h3>
-    <ul>
-      <li><b>사업</b> AI 및 IoT 기반 축산사료 모니터링 솔루션 개발, 2023년 프리시리즈A 투자 유치[14]</li>
-      <li><b>팀·단계</b> 대표 고병수 (설립 2020-04-17) [15] · 국민연금 가입자 10명(2026-08 기준) [10] · Pre-A (2023-09, 금액 미공개) [14, 16]</li>
-      <li><b>보류 사유</b> 최근 투자 라운드 24개월 경과로 최신성 부족; 창업자 이력 미확인; 매출, 고객 수, 특허 등 핵심 정보 미공개. 반대 근거 [14, 16, 17] <span class="small">(점수 미달(32.5점), 핵심 항목 미달(창업자 25%), 정보 부족(근거 미확인 65%))</span></li>
-      <li><b>재검토 조건</b> 최신 투자 및 매출, 고객 수 데이터 확보 시 재평가</li>
-    </ul>
-  </div>
+    <p>경쟁 구도: 국내 AI 농업로봇 시장에서 다목적 농작업 로봇과 원격제어 소프트웨어를 개발 중이며, 영국 더그투스와 유사 기술을 보유하나 원가절감으로 경쟁력을 확보하려 한다 [5, 7]</p>
+    
   
-  <div class="cand">
-    <h3>2.4 새팜 — 30.0점 보류 <span class="small">(작물 생육·병해충 진단 AI)</span></h3>
-    <ul>
-      <li><b>사업</b> 인공위성 데이터와 AI 결합 농작물 재배 솔루션, 2026년 7월 프리-A 투자 유치[18]</li>
-      <li><b>팀·단계</b> 대표 정승환 (설립 2022-06-15) [19, 20] · 국민연금 가입자 16명(2026-08 기준) [10] · Pre-A (2026-07, 금액 미공개) [18]</li>
-      <li><b>보류 사유</b> 창업자·기술 책임자 이력 미확인; 시장 성장률, 경제적 효과, 상용 운영 등 핵심 정보 미공개 <span class="small">(점수 미달(30.0점), 핵심 항목 미달(창업자 25%), 정보 부족(근거 미확인 75%))</span></li>
-      <li><b>재검토 조건</b> 창업팀 이력 및 상용 운영 데이터 확보 시 재평가</li>
-    </ul>
-  </div>
+    
+    <div class="cap"><b>표 2.</b>1. 사업 아이디어(핵심 컨셉)·기술·경쟁 차별성</div>
+    <table class="small">
+      <thead><tr><th style="width:14%">경쟁사</th><th style="width:7%">국가</th><th style="width:27%">제품·접근</th><th style="width:45%">대상 대비 (회사 측 주장 포함)</th><th style="width:7%">근거</th></tr></thead>
+      <tbody><tr><td>더그투스</td><td>영국</td><td>농업용 로봇 (수확 자동화 등) (대상 회사 기사에서 이름만 언급)</td><td>비슷한 기술을 가진 외국 경쟁사로, 메타파머스는 원가절감을 통해 더 저렴한 생산가를 목표로 한다 [7]</td><td>[7]</td></tr></tbody>
+    </table>
+    
   
-  <div class="cand">
-    <h3>2.5 Bonsai Robotics — 27.5점 보류 <span class="small">(농업 로봇·자율주행 농기계)</span></h3>
-    <ul>
-      <li><b>사업</b> AI 기반 농업 로봇 개발, 2025년 1월 1500만 달러 시리즈A 투자 유치[21]</li>
-      <li><b>팀·단계</b> 대표 Tyler Niday (설립 2022년) [22] · Series A (2025-01, $15 million) [22, 23]</li>
-      <li><b>보류 사유</b> 창업팀 이력, 특허, 매출, 고객 수 등 핵심 정보 미공개; 상용 운영 미확인 <span class="small">(점수 미달(27.5점), 핵심 항목 미달(창업자 25%), 정보 부족(근거 미확인 75%))</span></li>
-      <li><b>재검토 조건</b> 핵심 사업 실적 및 상용 운영 데이터 확보 시 재평가</li>
-    </ul>
-  </div>
+    <div class="ul-title">차별점 주장 검증 (경쟁사 에이전트)</div><ul class="plain"><li>AI 기반 농업 로봇 '메타파머'와 원격제어 소프트웨어 '탭파머스'로 농작업 자동화 및 인력 부족 문제 해결 — 회사 주장 [5, 9]</li><li>전용 엔드이펙터 기술로 작물 손상 최소화 및 정밀 작업 지원 — 회사 주장 [5, 10]</li><li>VLA 알고리즘과 물리 시뮬레이터 기반 강화학습으로 복잡한 농작업 자동화 실현 — 회사 주장 [5, 10]</li></ul>
+    
   
-  <div class="cand">
-    <h3>2.6 바르카 — 22.5점 보류 <span class="small">(농업 생산 데이터 분석·예측 AI (생육·환경 데이터))</span></h3>
-    <ul>
-      <li><b>사업</b> 인공위성 및 AI 기반 농산물 생산량 예측 솔루션, 2022년 7월 설립[24]</li>
-      <li><b>팀·단계</b> 대표 전현균 (설립 2022-05-24) [24] · 국민연금 가입자 4명(2026-08 기준) [10] · Pre-A (시점 미상, 6억원) [25]</li>
-      <li><b>보류 사유</b> 상용 운영 미확인; 기술 책임자 이력, 특허, 매출, 고객 수 등 핵심 정보 미공개. 반대 근거 [24] <span class="small">(점수 미달(22.5점), 핵심 항목 미달(창업자 25%), 정보 부족(근거 미확인 79%))</span></li>
-      <li><b>재검토 조건</b> 상용 운영 및 기술 책임자 이력 확인 시 재평가</li>
-    </ul>
-  </div>
   
-  <div class="cand">
-    <h3>2.7 리비타 — 21.3점 보류 <span class="small">(농업 생산 데이터 분석·예측 AI (생육·환경 데이터))</span></h3>
-    <ul>
-      <li><b>사업</b> 노지 스마트팜 솔루션 개발, 2026년 4월 시드 투자 유치[26]</li>
-      <li><b>팀·단계</b> 대표 엄상혁 (설립 2025년) [27] · 국민연금 가입자 5명(2026-08 기준) [10] · Seed (2026-04, 금액 미공개) [26, 28]</li>
-      <li><b>보류 사유</b> 창업자 이력 미확인; 매출, 고객 수, 재계약 등 핵심 정보 미공개; 전략 파트너 계약 구체성 미확인. 반대 근거 [26] <span class="small">(점수 미달(21.3점), 핵심 항목 미달(창업자 0%), 정보 부족(근거 미확인 75%))</span></li>
-      <li><b>재검토 조건</b> 창업팀 이력 및 매출, 고객 수 공개 시 재평가</li>
-    </ul>
-  </div>
   
-  <div class="cand">
-    <h3>2.8 트랙팜 — 18.8점 보류 <span class="small">(농업 생산 데이터 분석·예측 AI (생육·환경 데이터))</span></h3>
-    <ul>
-      <li><b>사업</b> AI 기반 농축산 자동화 관제 기술 개발, 2023년 10월 팁스 선정[29]</li>
-      <li><b>팀·단계</b> 대표 윤찬녕 (설립 2021-12-15) [30, 31] · 국민연금 가입자 7명(2026-08 기준) [10] · Seed (2023-10, 최대 7억원의 연구·개발 자금 지원) [29, 32]</li>
-      <li><b>보류 사유</b> 창업자 이력 미확인; 최근 투자 24개월 경과; 매출, 고객 수, 특허 등 핵심 정보 미공개. 반대 근거 [29, 32, 33] <span class="small">(점수 미달(18.8점), 핵심 항목 미달(창업자 0%), 정보 부족(근거 미확인 79%))</span></li>
-      <li><b>재검토 조건</b> 최신 투자 및 매출, 고객 수 데이터 확보 시 재평가</li>
-    </ul>
-  </div>
+  <h2>2. 시장 규모와 성장성</h2>
+  <p class="lead">글로벌 스마트 농업 시장은 연평균 19.1% 성장하며 농업 로봇 분야 투자 확대 중이다</p>
   
-  <div class="cand">
-    <h3>2.9 Upside Robotics — 17.5점 보류 <span class="small">(농업 로봇·자율주행 농기계)</span></h3>
-    <ul>
-      <li><b>사업</b> 자율 농업 로봇 개발, 2026년 2월 750만 달러 시드 투자 유치[34]</li>
-      <li><b>팀·단계</b> 대표 Sam Dugan (설립일 확인 불가) [34] · Seed (2026-02, $7.5 million seed funding) [34]</li>
-      <li><b>보류 사유</b> 창업자 이력, 기술 책임자 이력, 매출, 고객 수 등 핵심 정보 미공개; 상용 운영 미확인 <span class="small">(점수 미달(17.5점), 핵심 항목 미달(창업자 0%), 정보 부족(근거 미확인 83%))</span></li>
-      <li><b>재검토 조건</b> 핵심 사업 실적 및 상용 운영 데이터 확보 시 재평가</li>
-    </ul>
-  </div>
+    <p>글로벌 스마트 농업 시장은 2023년 약 174억 달러에서 2034년 1,172억 달러로 연평균 19.1% 성장할 전망이며, 농업 로봇·자율주행 농기계 분야는 2025년부터 투자와 보급이 확대되고 있다 [2, 4]</p>
+    
   
-  <div class="cand">
-    <h3>2.10 Nature Robots — 15.0점 보류 <span class="small">(농업 로봇·자율주행 농기계)</span></h3>
-    <ul>
-      <li><b>사업</b> 자율 농업 소프트웨어 개발, 2026년 3월 400만 유로 시드 투자 유치[35]</li>
-      <li><b>팀·단계</b> 대표 Dr. Sebastian Pütz (설립일 확인 불가) [36] · Seed (2026-03, €4 million) [35, 36]</li>
-      <li><b>보류 사유</b> 창업자 이력, 기술 책임자 이력, 매출, 고객 수 등 핵심 정보 미공개; 상용 운영 미확인 <span class="small">(점수 미달(15.0점), 핵심 항목 미달(창업자 0%), 정보 부족(근거 미확인 88%))</span></li>
-      <li><b>재검토 조건</b> 핵심 사업 실적 및 상용 운영 데이터 확보 시 재평가</li>
-    </ul>
-  </div>
+    <ul class="kv"><li><b>세부 시장 규모</b> 2023년 174억 달러 (글로벌 스마트 농업 시장) [4]</li><li><b>성장률</b> 연평균 19.1% (2024) [4]</li></ul>
+    
   
-
-  <h2>3. 최고점 후보 상세 — 메타파머스</h2>
   
-
-  <h3>3.1 사업 아이디어</h3>
-  <ul class="idea">
-    <li><b>해결하는 문제</b> 농업 현장의 노동력 부족과 기후변화 대응 필요성 해결</li>
-    <li><b>제품·핵심 컨셉</b> AI 기반 다목적 농업 로봇 '옴니파머'로 수확, 수분, 선별, 예찰 등 농작업 자동화</li>
-    <li><b>수익 방식</b> 로봇 구입 부담 완화를 위한 구독형 요금제, 수확량에 비례한 1kg당 요금 부과[6]</li>
-    <li><b>투자 단계</b> Pre-A (2025-08, 30억원) [5, 11]</li>
-    <li><b>성장 신호</b> 2025-08 30억원 규모 프리A 투자 유치 (퓨처플레이, 옥타곤벤처파트너스, 스마일게이트인베스트먼트) [5, 7] / 2026-04 스마트농업 우수기업 선정 (농림축산식품부) [2] / 2026-06 TIPS 프로그램 선정 및 지원 [8]</li>
-  </ul>
-
-  <h3>3.2 시장 규모와 성장성</h3>
-  <p>글로벌 스마트 농업 시장은 2023년 174억 달러에서 2034년 1,172억 달러로 성장 전망(BIS Research, 2024~2034년 전망)[3]; 국내는 스마트농업 육성 정책으로 성장 기대[1]</p>
-
-  <h3>3.3 기술력과 팀</h3>
-  <ul class="idea">
-    <li><b>팀</b> 대표 이규화 (설립 2022-09-02) [9] · 국민연금 가입자 19명(2026-08 기준) [10]</li>
-    <li>이규화(대표): 서울대학교 기계공학과 학사 및 대학원 재학 중, 스마트팩토리 및 AI 로봇 기술 연구 경험, 2022년 메타파머스 창업 [6, 7, 8]</li><li>윤원재(CTO): AI 로봇 및 엔드이펙터 전공, 소프트웨어 및 하드웨어 개발 전문 [8]</li>
-  </ul>
-  <p>대표 이규화(서울대 기계공학 박사 과정, 스마트팩토리 경험), CTO 윤원재(AI 로봇 및 엔드이펙터 전공), 2022년 설립, 자체 개발 온디바이스 AI 및 작물 맞춤형 그리퍼 보유[8, 9]</p>
-  <p><b>업계 기술 수준 대비</b> 농업용 로봇은 상용화 초기 단계로, 국내는 2025~2029년 스마트농업 육성 기본계획에 따라 검정기준 마련 및 실증단지 조성 중[1]</p>
-
-  <h3>3.4 경쟁 구도</h3>
-  <p>메타파머스는 범용 농업 로봇으로 다양한 작업 수행하며 VLA 알고리즘과 물리 시뮬레이터 기반 강화학습 기술 보유, 경쟁사 더그투스는 원가절감에 집중[6, 7]</p>
-  <table>
-    <thead><tr><th style="width:15%">경쟁사</th><th style="width:7%">국가</th><th style="width:25%">제품·접근</th><th style="width:15%">규모</th><th>대상 대비 (회사 측 주장 포함)</th><th style="width:7%">근거</th></tr></thead>
-    
-    <tr><td>더그투스</td><td>영국</td><td>AI 기반 다목적 농작업 로봇</td><td>확인 불가 (대상 회사 기사에서 이름만 언급)</td><td>더그투스는 원가절감을 통한 생산가 경쟁력 확보에 집중하며, 메타파머스는 범용 농업 로봇으로 다양한 작업을 수행하는 기술적 차이가 있음[6]</td><td>[6]</td></tr>
-    
-  </table>
-
-  <h3>3.5 사업 리스크</h3>
-  <table>
-    <thead><tr><th style="width:9%">유형</th><th style="width:50%">내용</th><th>실사 항목 · 투자 조건</th></tr></thead>
-    <tr><td>시장</td><td>농업용 로봇 시장은 초기 투자 비용 부담과 농업인 인식 부족으로 도입 장벽 존재[1]</td><td>농가의 투자 의사 및 가격 민감도 조사</td></tr><tr><td>기술</td><td>복잡한 농작업 자동화 기술 개발과 현장 적용의 어려움 존재[4]</td><td>기술 성능 및 현장 적용성 검증</td></tr><tr><td>규제</td><td>농업용 로봇에 대한 안전 및 검정 기준 마련이 진행 중이며, 규제 불확실성 존재[1, 4]</td><td>관련 법규 및 인증 절차 확인</td></tr><tr><td>경쟁</td><td>경쟁사들의 원가절감 전략으로 가격 경쟁 심화 가능성[6]</td><td>경쟁사 동향 및 가격 정책 모니터링</td></tr>
-  </table>
-
   
-  <h2>4. 투자 판단 요약</h2>
-  <table>
-    <thead><tr><th style="width:12%">후보 (가중치)</th><th>창업자·팀 30</th><th>시장성 25</th><th>제품/기술력 15</th><th>경쟁 우위 10</th><th>실적 10</th><th>투자조건 10</th><th>총점</th><th>미확인</th><th>판단</th></tr></thead>
+  <h2>3. 팀의 구성(핵심 창업자·기술 역량)</h2>
+  <p class="lead">서울대 출신 로보틱스 전문가들이 창업해 AI 농업 로봇 개발에 전문성을 갖추었다</p>
+  
     
-    <tr><td>메타파머스</td><td class="num">22.5 <span class="small">(3/4)</span></td><td class="num">18.8 <span class="small">(3/4)</span></td><td class="num">3.8 <span class="small">(1/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">7.5 <span class="small">(3/4)</span></td>
-        <td class="num"><b>52.6</b></td><td class="num">54%</td><td class="nw">보류</td></tr>
+    <div class="cap"><b>표 3.</b>3. 팀의 구성(핵심 창업자·기술 역량)</div>
+    <table class="small">
+      <thead><tr><th style="width:16%">창업 시점 t0</th><th style="width:22%">t0 근거</th><th style="width:9%">경과</th><th style="width:33%">고용(국민연금)</th><th style="width:20%">최근 24개월 마일스톤</th></tr></thead>
+      <tbody><tr><td>2022-09-02</td><td>TIPS 공개 목록 설립일(estDt) [11]</td><td>4.1년</td><td>국민연금 가입자 19명(2026-08 기준) [12], 창업 후 연평균 4.6명(가입자 ÷ 경과 연수)</td><td>3건</td></tr></tbody>
+    </table>
     
-    <tr><td>퓨처커넥트</td><td class="num">15.0 <span class="small">(2/4)</span></td><td class="num">18.8 <span class="small">(3/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">2.5 <span class="small">(1/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">7.5 <span class="small">(3/4)</span></td>
-        <td class="num"><b>43.8</b></td><td class="num">62%</td><td class="nw">보류</td></tr>
+  
     
-    <tr><td>에임비랩</td><td class="num">7.5 <span class="small">(1/4)</span></td><td class="num">12.5 <span class="small">(2/4)</span></td><td class="num">5.0 <span class="small">(1/3)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">5.0 <span class="small">(2/4)</span></td><td class="num">2.5 <span class="small">(1/4)</span></td>
-        <td class="num"><b>32.5</b></td><td class="num">65%</td><td class="nw">보류</td></tr>
+    <div class="cap"><b>표 4.</b>3. 팀의 구성(핵심 창업자·기술 역량)</div>
+    <table class="small">
+      <thead><tr><th style="width:12%">인물</th><th style="width:12%">역할</th><th style="width:76%">경력 (t0 기준 창업 전/후)</th></tr></thead>
+      <tbody><tr><td>이규화</td><td>대표</td><td>창업 전 · 서울대학교 기계공학과 학사 및 대학원, 2022년 메타파머스 창업 [5, 7, 10]</td></tr><tr><td>윤원재</td><td>기술이사(CTO)</td><td>확인 불가 [5]</td></tr></tbody>
+    </table>
     
-    <tr><td>새팜</td><td class="num">7.5 <span class="small">(1/4)</span></td><td class="num">12.5 <span class="small">(2/4)</span></td><td class="num">7.5 <span class="small">(2/4)</span></td><td class="num">2.5 <span class="small">(1/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td>
-        <td class="num"><b>30.0</b></td><td class="num">75%</td><td class="nw">보류</td></tr>
+  
+    <div class="ul-title">창업 후 마일스톤</div><ul class="plain"><li>2022-09 메타파머스 설립 (서울대학교 기계공학부 연구실 스핀오프) [10]</li><li>2023-10 시드 투자 유치 (옥타곤벤처파트너스, 경기창조경제혁신센터) [5]</li><li>2024-09 TIPS 프로그램 선정 [5, 11]</li><li>2025-06 30억원 규모 프리 시리즈A 투자 유치 (퓨처플레이, 옥타곤벤처파트너스, 스마일게이트인베스트먼트) [8, 10, 13]</li></ul>
     
-    <tr><td>Bonsai Robotics</td><td class="num">7.5 <span class="small">(1/4)</span></td><td class="num">12.5 <span class="small">(2/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">7.5 <span class="small">(3/4)</span></td>
-        <td class="num"><b>27.5</b></td><td class="num">75%</td><td class="nw">보류</td></tr>
+  
+    <p>대표 이규화는 서울대 기계공학부 박사 과정 출신으로 스마트팩토리 자동화 경험이 있으며, CTO 윤원재는 AI 로봇과 엔드이펙터 전공자로 소프트웨어·하드웨어 개발 역량을 갖추었다 [5]</p>
     
-    <tr><td>바르카</td><td class="num">7.5 <span class="small">(1/4)</span></td><td class="num">12.5 <span class="small">(2/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">2.5 <span class="small">(1/4)</span></td>
-        <td class="num"><b>22.5</b></td><td class="num">79%</td><td class="nw">보류</td></tr>
+  
+  
+  
+  <h2>4. 투자 판단과 사업 리스크</h2>
+  <p class="lead">동종 평균 대비 110(평균 100, 기준 110), 창업자 근거 2개 확인, Deal-killer 없음 — 투자 추천(실사 조건부)</p>
+  
     
-    <tr><td>리비타</td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">12.5 <span class="small">(2/4)</span></td><td class="num">3.8 <span class="small">(1/4)</span></td><td class="num">2.5 <span class="small">(1/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">2.5 <span class="small">(1/4)</span></td>
-        <td class="num"><b>21.3</b></td><td class="num">75%</td><td class="nw">보류</td></tr>
+    <div class="cap"><b>표 5.</b>4. 투자 판단과 사업 리스크</div>
+    <table class="small">
+      <thead><tr><th style="width:18%">기준 (비중)</th><th style="width:13%">YES / NO / 미확인</th><th style="width:11%">동종 평균 대비</th><th style="width:8%">기여</th><th style="width:50%">핵심 사실</th></tr></thead>
+      <tbody><tr><td>창업자·팀 (30%)</td><td>2 / 0 / 2</td><td>118</td><td>35.4</td><td>확인 창업팀 이력·기술 책임자 이력 / 미확인 최근 마일스톤·제3자 교차 확인(대리지표)</td></tr><tr><td>시장성 (25%)</td><td>2 / 0 / 2</td><td>106</td><td>26.4</td><td>확인 시장 규모·수익 모델 / 미확인 시장 성장·경제적 효과</td></tr><tr><td>제품/기술력 (15%)</td><td>1 / 0 / 2</td><td>111</td><td>16.7</td><td>확인 자체 기술 / 미확인 상용 운영·제3자 실증</td></tr><tr><td>경쟁 우위 (10%)</td><td>0 / 0 / 4</td><td>94</td><td>9.4</td><td>미확인 특허·경쟁사 대비 차별점·데이터 축적 구조·전략 파트너 계약</td></tr><tr><td>실적 (10%)</td><td>0 / 0 / 4</td><td>100</td><td>10.0</td><td>미확인 매출·유료 고객·설치 규모·재계약·민간 매출</td></tr><tr><td>투자조건 (10%)</td><td>3 / 0 / 1</td><td>122</td><td>12.2</td><td>확인 최근 라운드·기관투자자·자본집약도 / 미확인 기업가치</td></tr><tr><td>합계 (가중합)</td><td></td><td></td><td>110.1</td><td>동종 평균 = 100, 기준 110</td></tr></tbody>
+    </table>
     
-    <tr><td>트랙팜</td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">12.5 <span class="small">(2/4)</span></td><td class="num">3.8 <span class="small">(1/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">2.5 <span class="small">(1/4)</span></td>
-        <td class="num"><b>18.8</b></td><td class="num">79%</td><td class="nw">보류</td></tr>
+  
+    <p class="note">투자 추천 ⇔ 배수 ≥ 1.10(표기 110) ∧ 창업자 문항 YES ≥ 1 ∧ Deal-killer 없음. 기준 1.10: 두 참고자료 예시 배수 1.1205(Eqvista)·1.155(ACA 2019)보다 낮은 1.10, 설계 가정. 기준별 배수 = 1 + 0.5 × 평균(문항 신호 − 동종 평균 신호)(0.5~1.5로 자름), 신호 YES +1 · NO −1 · 미확인 0</p>
     
-    <tr><td>Upside Robotics</td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">12.5 <span class="small">(2/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">5.0 <span class="small">(2/4)</span></td>
-        <td class="num"><b>17.5</b></td><td class="num">83%</td><td class="nw">보류</td></tr>
+  
+    <p class="note">기준 집단: 적격성 관문을 통과해 같은 파이프라인으로 평가한 9곳(대상 제외 평균, 보정 실행 2026-09-30) — Seed·Pre-A·Series A 혼합, 국내 6·해외 3의 근사 기준</p>
     
-    <tr><td>Nature Robots</td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">12.5 <span class="small">(2/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">0.0 <span class="small">(0/4)</span></td><td class="num">2.5 <span class="small">(1/4)</span></td>
-        <td class="num"><b>15.0</b></td><td class="num">88%</td><td class="nw">보류</td></tr>
+  
+    <p class="note">민감도(기준 배수별 결정): 1.00 투자 · 1.05 투자 · 1.10 투자 · 1.15 보류 · 1.20 보류</p>
     
-  </table>
-  <p class="small"><b>판단 규칙</b> 총점 70점 이상, 창업자·시장성 통과율 50% 이상, Deal-killer 없음, 미확인(공개 근거를 찾지 못한 문항, 0점) 40% 이하 → 투자. 칸의 (a/b)는 YES 문항 수/판정 문항 수.</p>
-  <h4>메타파머스의 결정적 미충족 문항 (24문항 중 반대 근거·미확인 핵심 6개)</h4>
-  <table class="small">
-    <tr><th style="width:5%">ID</th><th style="width:34%">질문</th><th style="width:9%">판정</th><th>이유</th></tr>
+  
+    <p class="note">Bessemer 10문: Q1✔ Q2? Q3✔ Q4✔ Q5✔ Q6? Q7✔ Q8? Q9✔ Q10✔ (✔ YES · ✖ NO · ? 미확인, 대리지표: Q10)</p>
     
-    <tr><td>C4</td><td>유통·전략 파트너(농협, 농기계·농자재 기업, 지자체, 대형 유통, 해외 파트너)와 계약이나 공동사업이 있는가? (MOU 만 있으면 NO)</td><td class="no">반대 근거</td><td>근거 문단에 MOU나 PoC 진행은 있으나, 계약이나 공동사업 체결에 관한 구체적 언급이 없고 MOU만으로는 인정되지 않으므로 계약이나 공동사업이 있다고 보기 어렵다. [5]</td></tr>
+  
+    <p class="note">동종 순위(상위 3): 1위 메타파머스 110 · 2위 리비타 105 · 3위 퓨처커넥트 104 — 대상 1위/10곳</p>
     
-    <tr><td>F4</td><td>회사가 공개한 핵심 수치(고객 수·성능·매출 등)가 제3자 근거로도 확인되는가? 서로 모순되는 근거가 있으면 NO</td><td class="no">미확인</td><td>핵심 수치(고객 수, 매출 등)에 대한 제3자 근거가 명확하지 않고, 모순 근거도 확인되지 않아 제3자 근거로 확인 여부는 불명확하다.</td></tr>
+  
     
-    <tr><td>M3</td><td>고객의 실제 문제와 제품의 경제적 효과(비용 절감, 수확량 증가, 노동 절감)가 수치로 제시되고 제3자 근거가 있는가?</td><td class="no">미확인</td><td>경제적 효과에 대한 수치는 있으나 대표 발언에 근거한 내용으로 제3자 출처가 아니며, 수치가 추정 또는 계획 단계이므로 YES 요건을 충족하지 않는다.</td></tr>
+    <div class="box"><div class="box-title">ROI 참고치 (점수·결정에 넣지 않음)</div>
+      <ul><li><b>라운드 금액</b> 30억원 ≈ $2.1M (원화 금액은 환율 가정으로 환산) [8, 9] — Pre-A 단계 중앙값 $1M의 2.1배 [3]</li><li><b>VC Method (가정)</b> 라운드 투자자 지분율 10%~20% 가정 → post-money $10.7M~$21.4M, 목표 회수 배수 10배 가정 → 필요 Exit $107M~$214M</li><li><b>가정</b> 환율 가정: 1달러 = 1,400원; Pre-A 중앙값은 앞 단계 값($1M)을 쓴 가정; 지분율 가정 10%~20%: post-money = 라운드 금액 ÷ 지분율; 목표 회수 배수 가정 10배(VC Method): 필요 Exit = post-money × 10 (후속 라운드 희석 미반영, 점수·결정에 넣지 않음)</li></ul></div>
     
-    <tr><td>P1</td><td>시제품 단계를 지나 실제 농장·온실·축사에서 상용으로 운영 중인가?</td><td class="no">미확인</td><td>실증·예정 단계</td></tr>
+  
+    <h3>사업 리스크(시장·기술·규제·경쟁)와 실사 조건</h3>
     
-    <tr><td>C1</td><td>핵심 기술 관련 특허(등록 또는 출원)가 1건 이상 확인되는가? (초기 기업이라 출원도 인정, 보고서에 등록·출원 구분 표기)</td><td class="no">미확인</td><td>근거 문서에서 메타파머스의 특허 등록 또는 출원에 관한 직접적인 언급이 없고, 특허 2건 출원 성공은 신한투자증권 관련 내용으로 메타파머스와 관련이 아니므로 특허 보유 여부를 확인할 수 없다.</td></tr>
+  
     
-    <tr><td>R1</td><td>연도가 적힌 매출액이 기업 DB·공시·보도로 확인되는가?</td><td class="no">미확인</td><td>제공된 근거 문서들에서 메타파머스의 매출액과 연도에 관한 구체적인 재무정보가 확인되지 않는다. 투자 유치 금액은 있으나 매출액과 연도에 대한 공식적인 기업 DB, 공시, 보도 자료가 없으므로 판정은 UNKNOWN이다.</td></tr>
+    <div class="cap"><b>표 6.</b>사업 리스크(시장·기술·규제·경쟁)와 실사 조건</div>
+    <table class="small">
+      <thead><tr><th style="width:8%">유형</th><th style="width:57%">내용</th><th style="width:35%">실사 질문</th></tr></thead>
+      <tbody><tr><td>시장</td><td>국내 농업용 로봇 시장은 초기 단계로 수요와 지불 의향 구체적 수치가 확인되지 않아 시장 확대 불확실성이 존재한다 [6, 14]</td><td>시장 수요와 고객 지불 의향에 대한 구체적 조사 결과를 확인할 것</td></tr><tr><td>기술</td><td>복잡한 농업 환경과 다양한 작물 특성에 따른 기술 확장성 및 안정성 확보가 과제로 남아 있다 [5]</td><td>기술 확장성과 안정성 확보 계획 및 실증 데이터 현황을 점검할 것</td></tr><tr><td>규제</td><td>2025년부터 농업용 로봇 검정기준 마련과 첨단 농기자재 실증단지 조성 등 제도적 장치가 추진 중이나 인허가 상태는 미확인이다 [1]</td><td>인허가 진행 상황과 규제 대응 계획을 확인할 것</td></tr><tr><td>경쟁</td><td>국내외 경쟁사 대비 기술 고도화와 원가절감이 경쟁력 확보의 관건이며, 진입장벽은 복합적 기술 역량 요구로 존재한다 [5, 10]</td><td>경쟁사 대비 기술 및 원가 경쟁력 확보 전략을 검토할 것</td></tr></tbody>
+    </table>
     
-  </table>
-
+  
+    <div class="ul-title">실사 확인 항목 5개 (미확인·반대 문항 중 배수 영향이 큰 순)</div><ul class="plain"><li>최근 24개월 마일스톤 증빙 — 미확인 — YES 로 확인되면 배수 +0.038</li><li>회사 공개 수치의 원자료 — 미확인 — YES 로 확인되면 배수 +0.038</li><li>세부 분야 최근 2년 투자·도입 추이 — 미확인 — YES 로 확인되면 배수 +0.031</li><li>농가 투자 회수기간(payback)·효과 실측 — 미확인 — YES 로 확인되면 배수 +0.031</li><li>PoC·시범이 아닌 유료 설치·계약 목록 — 미확인 — YES 로 확인되면 배수 +0.025</li></ul>
+    
+  
+  
+  
   <h2>5. 한계점</h2>
+  <p class="lead">결론은 공개 정보와 동종 기준 집단 비교에 기반하므로, 아래 한계는 실사로 보완한다.</p>
   
-  <ul class="lim"><li>적격 후보 14곳 중 4곳은 평가 상한(10곳, 비용 관리) 도달로 심층 평가하지 않았다 — '투자 권고 없음'은 평가한 10곳에 대한 결론이다</li><li>공개 근거를 찾지 못한 문항(미확인)을 0점으로 처리하는 보수적 채점이라, 공개 정보가 적은 초기 기업일수록 점수가 낮게 나온다</li><li>핵심 사업 실적(매출, 고객 수), 특허 보유 현황, 경쟁사 대비 구체적 차별점, 상용 운영 및 제3자 실증 데이터 미공개</li><li>판정은 gpt-4.1-mini 가 하며, 코드는 근거 인용이 원문에 있는지만 검증한다 (근거 해석 오류는 남을 수 있음)</li></ul>
+    <ul class="plain"><li>적격 후보 14곳 중 13곳은 평가하지 않았다(투자 추천 후보가 나와 평가를 멈춤)</li><li>동종 기준 집단 평균 대비 상대 평가라 기준 집단 전체의 질이 낮으면 상대적으로 나은 기업이 추천될 수 있다. 또 기준 집단 10곳은 단계(Pre-A 4·Seed 4·Series A 2)와 지역(KR 7·GLOBAL 3)이 섞여 있어, 같은 지역·같은 단계 투자 기업과 비교하라는 Scorecard 원칙을 근사한 것이다. 관문(실제 투자 유치 확인)·창업자 근거 요건·Deal-killer·실사 조건으로 보완한다</li><li>ROI 는 환율·지분율·회수 배수 가정에 따른 참고치이며 점수와 결정에 넣지 않았다</li><li>시장 수요 및 고객 지불 의향에 관한 구체적 수치 미확인</li><li>문항 판정은 gpt-4.1-mini 가 하고, 코드는 인용이 원문에 있는지·제3자·최근 24개월·상용 운영 요건만 검사한다 (근거 해석 오류는 남을 수 있음)</li><li>게시일이 없는 웹페이지는 REFERENCE 에 조회일을 적었다(3건, 조회일 2026-09-30)</li></ul>
+    
+  
+  
 
   <h2>REFERENCE</h2>
   
   <h4>기관 보고서</h4>
-  <ol class="refs"><li value="1">농림축산식품부(2025). 제1차 스마트농업 육성 기본계획(2025~2029년). https://www.mafra.go.kr/bbs/home/792/573035/artclView.do</li><li value="2">농림축산식품부(2026). 기술력과 현장 확산 성과를 갖춘 스마트농업 우수기업 15개사 최초 선정. https://www.mafra.go.kr/bbs/home/792/577570/artclView.do</li></ol>
+  <ol class="refs"><li value="1">농림축산식품부(2025). 제1차 스마트농업 육성 기본계획(2025~2029년). https://www.mafra.go.kr/bbs/home/792/573035/artclView.do</li><li value="2">KDI 경제교육·정보센터(2023). 애그테크, 선택 아닌 필수 - 주요국의 애그테크 산업 정책 동향을 중심으로. https://eiec.kdi.re.kr/publish/reviewView.do?ridx=15&idx=151&fcode=000020003600003</li><li value="3">AgFunder(2026). Global AgriFoodTech Investment Report 2026. https://agfunder.com/research/agfunder-global-agrifoodtech-investment-report-2026/</li></ol>
   
   
   <h4>학술 논문</h4>
-  <ol class="refs"><li value="3">박미선(2024). 스마트 농업과 농업 부문 고용 현황 및 전망. 세계농업, 2024(겨울호), 33-48.</li><li value="4">Spagnuolo, M., Todde, G., Caria, M., Furnitto, N., Schillaci, G., & Failla, S.(2025). Agricultural Robotics: A Technical Review Addressing Challenges in Sustainable Crop Production. Robotics, 14(2), 9.</li></ol>
+  <ol class="refs"><li value="4">박미선(2024). 스마트 농업과 농업 부문 고용 현황 및 전망. 세계농업, 2024(겨울호), 33-48.</li></ol>
   
   
   <h4>웹페이지</h4>
-  <ol class="refs"><li value="5">최예원 기자(2025-08-12). 메타파머스, 30억 원 규모 프리A 시리즈 투자 유치… 농작업 전반 자동화하는 범용 로봇 ‘옴니파머’ 개발 가속화. 에이빙(AVING), https://kr.aving.net/news/articleView.html?idxno=1802957</li><li value="6">최효정 기자(2023-11-12). 병충해 위험없는 로봇농부가 온다… 농업 혁신 꾀하는 메타파머스. 조선비즈, https://v.daum.net/v/FrX2b8I9zN</li><li value="7">김건우 기자(2026-05-19). 메타파머스, '피지컬 AI'로 농업 혁명…'스마트농업 우수기업' 등 4연타. 머니투데이 유니콘팩토리, https://www.unicornfactory.co.kr/article/2026051814383749577</li><li value="8">지디넷코리아(2024-10-16). 메타파머스 "농업 AI로봇 전문기업···농가 생산성 향상에 기여". 지디넷코리아, https://zdnet.co.kr/view?no=20241016152201</li><li value="9">중소벤처기업부 TIPS(2026-09-30). TIPS 창업기업: 메타파머스. TIPS 창업기업 목록, https://jointips.or.kr/network/startups (게시일 미상, 조회일 표기)</li><li value="10">국민연금공단(2026-09-30). 국민연금 가입 사업장 내역 (2026-08 자료). 공공데이터포털, https://www.data.go.kr/data/15083277/fileData.do (게시일 미상, 조회일 표기)</li><li value="11">와우테일(2025-08-12). AI 로봇 ‘메타파머스’, 30억원 규모 프리A 시리즈 투자 유치. 와우테일, https://wowtale.net/2025/08/12/245294/</li><li value="12">플래텀(2025-11-26). 퓨처커넥트, 86억 원 규모 시리즈A 투자 유치… 북미 시장 공략 본격화. 플래텀, https://platum.kr/archives/275667</li><li value="13">혁신의숲(2026-09-30). 퓨처커넥트(리브팜). 혁신의숲, https://www.innoforest.co.kr/company/CP00011561/퓨처커넥트 (게시일 미상, 조회일 표기)</li><li value="14">와우테일(2023-09-25). 축산사료 데이터 '에임비랩', 프리시리즈A 투자 유치. 와우테일, https://wowtale.net/2023/09/25/63849</li><li value="15">중소벤처기업부 TIPS(2026-09-30). TIPS 창업기업: 에임비랩. TIPS 창업기업 목록, https://jointips.or.kr/network/startups (게시일 미상, 조회일 표기)</li><li value="16">고석용 기자(2023-09-25). "라이다로 사료 잔량·상태 측정"…에임비랩, 프리A 투자 유치. 머니투데이, https://www.mt.co.kr/future/2023/09/25/2023092510174815470</li><li value="17">머니투데이 유니콘팩토리(2023-09-25). 에임비랩. 머니투데이 유니콘팩토리, https://www.unicornfactory.co.kr/datalab/startup/company/에임비랩/134511-0451431</li><li value="18">머니투데이 유니콘팩토리(2026-08-02). 무더위에도 쉬지 않는 스타트업 투자 유치…우주 기업 '메가딜' 관심. 머니투데이 유니콘팩토리, https://www.unicornfactory.co.kr/article/2026080211172014889</li><li value="19">중소벤처기업부 TIPS(2026-09-30). TIPS 창업기업: 새팜. TIPS 창업기업 목록, https://jointips.or.kr/network/startups (게시일 미상, 조회일 표기)</li><li value="20">혁신의숲(2026-09-30). 새팜. 혁신의숲, https://www.innoforest.co.kr/company/CP00014697/새팜 (게시일 미상, 조회일 표기)</li><li value="21">Business Wire(2025-01-28). Bonsai Robotics Secures $15 Million in Series A Funding. Business Wire, https://www.businesswire.com/news/home/20250128551837/en/Bonsai-Robotics-Secures-$15-Million-in-Series-A-Funding-to-Advance-Its-Physical-AI-Solutions-for-Agriculture-Applications</li><li value="22">Startup Intros(2026-07-13). Bonsai Robotics: Funding, Team & Investors. Startup Intros, https://startupintros.com/orgs/bonsai-robotics</li><li value="23">bonsairobotics.ai(2025-01-02). farm-ng (now Bonsai Robotics) raises $10 million Series A. bonsairobotics.ai, https://bonsairobotics.ai/press-release/farm-ng-raises-10-million-series-a-to-scale-affordable-autonomous-robots-and-ai-solutions-for-small-to-mid-sized-farms/</li><li value="24">중소벤처기업부 TIPS(2026-09-30). TIPS 창업기업: 바르카. TIPS 창업기업 목록, https://jointips.or.kr/network/startups (게시일 미상, 조회일 표기)</li><li value="25">THE VC(2026-09-30). 대동애그테크(로봇 정밀농업 솔루션). THE VC, https://thevc.kr/daedongagtech (게시일 미상, 조회일 표기)</li><li value="26">머니투데이(2026-04-12). 첫 투자부터 상장 준비까지…4월 둘째주 투자 유치 스타트업은. 머니투데이, https://www.mt.co.kr/future/2026/04/12/2026041214170376097</li><li value="27">최태범 기자(2026-04-08). "스마트팜 기술을 노지 환경으로 확장"…리비타, 시드투자 유치. 머니투데이 유니콘팩토리, https://www.unicornfactory.co.kr/article/2026040810100457026</li><li value="28">최미리 기자(2026-04-14). [시드] '전기 없는 밭도 스마트팜으로' 리비타, 시드 투자 유치로 '노지 스마트팜' 상용화 박차. 인베스트 | invest, https://www.investnews.co.kr/news/articleView.html?idxno=3002457</li><li value="29">머니투데이 유니콘팩토리(2023-10-19). 애그테크 스타트업 트랙팜, 팁스 선정..."농축산 자동화 앞장". 머니투데이 유니콘팩토리, https://www.unicornfactory.co.kr/article/2023101909571828703</li><li value="30">중소벤처기업부 TIPS(2026-09-30). TIPS 창업기업: 트랙팜. TIPS 창업기업 목록, https://jointips.or.kr/network/startups (게시일 미상, 조회일 표기)</li><li value="31">혁신의숲(2026-09-30). 트랙팜. 혁신의숲, https://www.innoforest.co.kr/company/CP00015134/트랙팜 (게시일 미상, 조회일 표기)</li><li value="32">와우테일(2023-10-19). 농축산 HW/SW 및 AI 자동관제 '트랙팜', 팁스 선정. 와우테일, https://wowtale.net/2023/10/19/65018</li><li value="33">권명관 기자(2023-10-30). [주간투자동향] 모레, 2200만 달러 규모의 시리즈B 투자 유치. IT동아, https://v.daum.net/v/qz5sIwRyNL?f=p</li><li value="34">Velocity(2026-02-12). $7.5 million seed funding helps Upside Robotics plant the seeds for success | Waterloo News | University of Waterloo. Velocity, https://www.velocityincubator.com/news/7-5-million-seed-funding-helps-upside-robotics-plant-the-seeds-for-success</li><li value="35">impactalpha.com(2026-03-31). Nature Robots lands €4 million to automate organic and regenerative agriculture. impactalpha.com, https://impactalpha.com/nature-robots-lands-e4-million-to-automate-organic-and-regenerative-agriculture</li><li value="36">theaiinsider.tech(2026-03-30). Nature Robots Raises €4M in Seed Funding to Scale Autonomous Farming Software. theaiinsider.tech, https://theaiinsider.tech/2026/03/30/nature-robots-raises-e4m-in-seed-funding-to-scale-autonomous-farming-software</li></ol>
+  <ol class="refs"><li value="5">지디넷코리아(2024-10-16). 메타파머스 "농업 AI로봇 전문기업···농가 생산성 향상에 기여". 지디넷코리아, https://zdnet.co.kr/view?no=20241016152201</li><li value="6">대동(2026-09-30). 투자분석 보고서. 대동, https://ko.daedong.co.kr/introduce/ir/list?page=2</li><li value="7">최효정 기자(2023-11-12). 병충해 위험없는 로봇농부가 온다… 농업 혁신 꾀하는 메타파머스. 조선비즈, https://v.daum.net/v/FrX2b8I9zN</li><li value="8">와우테일(2025-08-12). AI 로봇 ‘메타파머스’, 30억원 규모 프리A 시리즈 투자 유치. 와우테일, https://wowtale.net/2025/08/12/245294/</li><li value="9">최예원 기자(2025-08-12). 메타파머스, 30억 원 규모 프리A 시리즈 투자 유치… 농작업 전반 자동화하는 범용 로봇 ‘옴니파머’ 개발 가속화. 에이빙(AVING), https://kr.aving.net/news/articleView.html?idxno=1802957</li><li value="10">김건우 기자(2026-05-19). 메타파머스, '피지컬 AI'로 농업 혁명…'스마트농업 우수기업' 등 4연타. 머니투데이 유니콘팩토리, https://www.unicornfactory.co.kr/article/2026051814383749577</li><li value="11">중소벤처기업부 TIPS(2026-09-30). TIPS 창업기업: 메타파머스. TIPS 창업기업 목록, https://jointips.or.kr/network/startups</li><li value="12">국민연금공단(2026-09-30). 국민연금 가입 사업장 내역 (2026-08 자료). 공공데이터포털, https://www.data.go.kr/data/15083277/fileData.do</li><li value="13">THE VC(2026-09-27). 비엔에스알(반도체공정진단장비). THE VC, https://thevc.kr/bnsr</li><li value="14">fki.or.kr(2023-01-19). 뉴스룸. fki.or.kr, https://www.fki.or.kr/kor/news/statement_detail.do?bbs_id=00034840&category=ST</li></ol>
   
   
 </body>

@@ -1,252 +1,508 @@
 {
   "summary": {
     "relevance": 1.0,
-    "faithfulness": 0.95,
-    "correctness": 0.95,
+    "faithfulness": 1.0,
+    "correctness": 1.0,
     "n": 20,
-    "rewrite_rate": 0.55,
-    "web_fallback_rate": 0.45
+    "route_dist": {
+      "docs": 18,
+      "web": 2,
+      "both": 0,
+      "direct": 0
+    },
+    "rewrite_rate": 0.4,
+    "web_fallback_rate": 0.35,
+    "regen_rate": 0.0,
+    "not_found_rate": 0.1
   },
   "rows": [
     {
       "id": "q01",
       "question": "CDMO가 농업용 작물 보호 제품 개발에서 중요한 이유는 무엇인가요?",
-      "answer": "CDMO는 농업용 작물 보호 제품 개발에서 지역별 생태적 특성을 반영하여 제품의 효과를 높이고, 인프라와 규제 전문성, 공정 최적화 도구를 제공하며, 개발 속도와 비용을 크게 줄여 더 민첩하고 효과적인 제품 개발을 가능하게 하기 때문에 중요하다.",
+      "answer": "CDMO는 농업용 작물 보호 제품 개발에서 중요한 이유는 지역별 생물지리학적 맥락을 고려할 수 있기 때문입니다. 예를 들어, 미국이나 유럽과 같은 온대 환경에서 개발된 제품이 열대 지역에서 동일한 성능을 내지 못할 수 있으므로, 스위스에 기반을 둔 연구개발팀은 제품을 판매하려는 지역의 현지 파트너가 필요합니다. 또한 CDMO는 발효 탱크와 같은 인프라부터 규제 요건에 대한 전문 지식, 공정 최적화 및 분석 테스트 도구까지 제공하여 개발 과정을 빠르고 저렴하게 만듭니다. IdeeLab과 같은 CDMO는 생물학적 작물 보호 제품의 발견과 생산에 특화되어 있으며, 다양한 생물학적 제품을 개발하는 데 도움을 줍니다. 이처럼 CDMO는 제품 개발의 효율성과 민첩성을 높이고, 다양한 스타트업과 과학자, 고객, 공급망을 연결하여 확장 가능한 솔루션을 만드는 데 기여합니다[D440be][De2676][Da842f][D9a0d5].",
       "gold": "CDMO는 작물 보호 제품이 온대 지역과 열대 지역에서 다르게 작용하는 생지리학적 맥락을 고려할 수 있기 때문에 중요하다.",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 0,
+      "regenerations": 0,
       "web_fallback": false,
+      "cited_ids": [
+        "D440be",
+        "De2676",
+        "Da842f",
+        "D9a0d5"
+      ],
+      "evidence_ids": [
+        "D440be",
+        "De2676",
+        "Da842f",
+        "D9a0d5"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer directly addresses why CDMOs are important in agricultural crop protection product development, emphasizing the consideration of regional ecological characteristics, which aligns with the key point in the reference that CDMOs account for biogeographical context (e.g., differences between temperate and tropical regions). Additionally, the system answer includes other benefits such as infrastructure, regulatory expertise, process optimization, and faster, cost-effective development, all supported by the provided references. Therefore, the answer is relevant, factually faithful to the source content, and correct in relation to the question and provided answer."
+      "reason": "The system answer directly addresses the question by explaining that CDMOs are important because they consider the biogeographical context, such as differences between temperate and tropical regions, which matches the key point in the reference answer. Additionally, the system answer provides further relevant details about CDMO capabilities and their role in product development, all supported by the cited references. Therefore, the answer is relevant, factually faithful to the provided references, and correct in relation to the question and the reference answer."
     },
     {
       "id": "q02",
       "question": "수직농업에서 상추와 토마토 생산 시나리오를 분석할 때 고려된 빛 이용 효율(LUEINT)의 범위는 어떻게 되는가?",
-      "answer": "수직농업에서 상추와 토마토 생산 시나리오를 분석할 때 고려된 빛 이용 효율(LUEINT)의 범위는 0.8에서 1.8 g 건물중 몰−1 광합성 유효 방사(PAR)이다.",
+      "answer": "수직농업에서 상추와 토마토 생산 시나리오를 분석할 때 고려된 빛 이용 효율(LUEINT)의 범위는 0.8에서 1.8 g dry weight mol−1 photosynthetically active radiation (PAR)까지이다. 이 범위는 6단계로 나누어져 있으며, 각 단계별로 상추와 토마토에 대해 18개의 생산 시나리오가 평가되었다. 이 수치는 2026년 Frontiers 문서에 근거한다[D52345][D2f602][D1f61b].",
       "gold": "빛 이용 효율(LUEINT)은 0.8에서 1.6까지 6단계로 고려되었다.",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 0,
+      "regenerations": 0,
       "web_fallback": false,
+      "cited_ids": [
+        "D52345",
+        "D2f602",
+        "D1f61b"
+      ],
+      "evidence_ids": [
+        "D52345",
+        "D2f602",
+        "D1f61b"
+      ],
       "relevance": true,
-      "faithfulness": false,
-      "correctness": false,
-      "reason": "The system answer states that the range of light use efficiency (LUEINT) considered is from 0.8 to 1.8 g dry weight mol−1 PAR, while the reference answer states the range is from 0.8 to 1.6 in 6 steps. The source documents confirm that six levels of LUEINT are considered: 0.8, 1.0, 1.2, 1.4, 1.6, and 1.8. Therefore, the system answer is relevant to the question and based on the source, but it contradicts the provided 'correct' answer by including 1.8 as the upper bound instead of 1.6. Hence, the system answer is not faithful to the provided correct answer and is not correct according to that answer."
+      "faithfulness": true,
+      "correctness": true,
+      "reason": "The system answer correctly states that the light use efficiency (LUEINT) range considered in the vertical farming scenarios for lettuce and tomato is from 0.8 to 1.8 g dry weight mol−1 PAR, divided into 6 levels. This matches the source documents which specify six intercepted light use efficiencies: 0.8, 1.0, 1.2, 1.4, 1.6, and 1.8 g DW mol−1 PAR. The reference to 6 steps and 18 scenarios per crop is also accurate. The user's 'correct' answer states the range as 0.8 to 1.6, which is incomplete and thus less accurate. Therefore, the system answer is relevant, faithful to the source, and correct."
     },
     {
       "id": "q03",
       "question": "일본 농림수산성이 2019년부터 실시한 스마트농업 실증 프로젝트는 2023년 기준 몇 개 지구에서 수행되고 있나요?",
-      "answer": "일본 농림수산성이 2019년부터 실시한 스마트농업 실증 프로젝트는 2023년 기준 217개 지구에서 수행되고 있습니다.",
+      "answer": "일본 농림수산성이 2019년부터 실시한 스마트농업 실증 프로젝트는 2023년 기준 217개 지구에서 수행되고 있다(2023년, KDI 경제교육·정보센터) [D3cb93]. 이는 초기 69개 지역에서 시작하여 매년 범위를 넓혀 누적 217개 지역으로 확대한 결과이다(2025년, krei.re.kr) [Wd78be].",
       "gold": "2023년 기준 217개 지구에서 수행되고 있습니다.",
-      "rewrites": 1,
-      "web_fallback": false,
+      "route": "docs",
+      "status": "grounded",
+      "rewrites": 2,
+      "regenerations": 0,
+      "web_fallback": true,
+      "cited_ids": [
+        "D3cb93",
+        "Wd78be"
+      ],
+      "evidence_ids": [
+        "D3cb93",
+        "Wd78be"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer directly matches the question about the number of districts where the Japanese Ministry of Agriculture, Forestry and Fisheries has conducted the smart agriculture demonstration project as of 2023. The answer states 217 districts, which is exactly supported by the provided evidence from multiple documents, including official government sources and reports. The system's answer is relevant, factually accurate, and correctly reflects the information in the cited references."
+      "reason": "시스템 답변은 질문에 정확히 부합하며, 2023년 기준 217개 지구에서 스마트농업 실증 프로젝트가 수행되고 있다는 정보를 명확히 제공하고 있습니다. 또한, 답변에 사용된 근거 문서들([D3cb93], [Wd78be]) 모두 해당 사실을 뒷받침하고 있어 내용의 신뢰성과 정확성이 확보되어 있습니다."
     },
     {
       "id": "q04",
       "question": "2018년 4월 16일에 발표된 스마트팜 확산 방안은 어느 회의에서 합동으로 마련되었나요?",
-      "answer": "2018년 4월 16일에 발표된 스마트팜 확산 방안은 관계부처 합동 경제관계장관회의에서 마련되었다.",
+      "answer": "2018년 4월 16일에 발표된 스마트팜 확산 방안은 관계부처 합동 경제관계장관회의에서 합동으로 마련되었습니다[Wf06ab][D7aba6][Wbe721].",
       "gold": "경제관계장관회의",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 2,
+      "regenerations": 0,
       "web_fallback": true,
+      "cited_ids": [
+        "Wf06ab",
+        "D7aba6",
+        "Wbe721"
+      ],
+      "evidence_ids": [
+        "Wf06ab",
+        "D7aba6",
+        "Wbe721"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer states that the '스마트팜 확산 방안' announced on April 16, 2018, was prepared at the '관계부처 합동 경제관계장관회의,' which directly corresponds to the correct answer '경제관계장관회의.' The provided evidence supports this, mentioning the joint meeting of related ministries and the economic ministers' meeting. Therefore, the answer is relevant, factually accurate, and correct."
+      "reason": "The system answer directly addresses the question by stating that the smart farm expansion plan announced on April 16, 2018, was jointly prepared at the '관계부처 합동 경제관계장관회의' (Joint Economic Ministers' Meeting of related ministries). This matches the reference answer '경제관계장관회의'. The supporting evidence from multiple sources confirms this fact, making the answer relevant, factually accurate, and correct."
     },
     {
       "id": "q05",
       "question": "농림축산식품부가 2019년부터 매달 선정해 소개하는 농식품 분야 우수 벤처창업 기업은 몇 개 기업까지 소개되었나요?",
-      "answer": "농림축산식품부는 2019년 5월부터 2024년 4월까지 총 60개 농식품 분야 우수 벤처창업 기업을 매달 선정해 소개하였습니다.",
+      "answer": "농림축산식품부는 2019년 5월부터 매달 1개 기업씩 선정하여 소개하는 농식품 분야 우수 벤처창업 기업을 2024년 4월 기준으로 총 60개 기업까지 소개하였습니다. 이는 '이달의 에이(A)-벤처스' 선정기업 소개서에 근거한 내용입니다(농림축산식품부 2024).",
       "gold": "2019년 5월부터 2024년 4월까지 총 60개 기업이 선정되어 소개되었습니다.",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 0,
+      "regenerations": 0,
       "web_fallback": false,
+      "cited_ids": [
+        "Dd0457",
+        "D1e58f",
+        "D89356"
+      ],
+      "evidence_ids": [
+        "Dd0457",
+        "D1e58f",
+        "D89356"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer directly matches the question and the provided correct answer, stating that from May 2019 to April 2024, a total of 60 companies were selected and introduced monthly by the Ministry of Agriculture, Food and Rural Affairs. The system's response is fully supported by the provided evidence, which includes official documents and tables confirming the selection of 60 companies over that period. Therefore, the answer is relevant, factually accurate, and correct."
+      "reason": "The system answer directly addresses the question by stating that from May 2019 to April 2024, a total of 60 companies were selected and introduced monthly by the Ministry of Agriculture, Food and Rural Affairs. This matches the provided correct answer exactly. The system also cites the source document, which lists the selection details and confirms the total number of companies as 60. Therefore, the answer is relevant, factually accurate, and correct."
     },
     {
       "id": "q06",
       "question": "2026년 농림축산식품부가 국가 인공지능 프로젝트를 통해 확보한 GPU 수량과 그 활용 계획은 무엇인가?",
-      "answer": "2026년 농림축산식품부는 국가 인공지능 프로젝트를 통해 GPU 32장을 확보하였으며, 이 중 16장은 공공 AX데이터 구축에, 나머지 16장은 민간 AI솔루션 개발 지원에 활용할 계획이다.",
+      "answer": "2026년 농림축산식품부는 과학기술정보통신부의 국가 인공지능 프로젝트를 통해 GPU 32장을 확보하였다. 이 GPU는 공공 AX데이터 구축과 민간 AI솔루션 개발 지원에 각각 16장씩 활용될 계획이다. 공공 부문에서는 농가의 작물 생육 사진·영상을 AI 모델로 판독하여 AI 학습용 생육 데이터를 구축하고, 민간 부문에서는 스마트농업 AI솔루션 개발 기업에 GPU를 제공하여 고품질 AI학습용 데이터셋을 구축·공유하도록 지원한다. 또한, 기업들은 GPU를 활용해 다양한 농업 데이터 분석과 AI솔루션 개발을 진행할 예정이며, 농식품부는 4월 말에 참여 기업 공모를 추진하여 5월부터 GPU를 최대 4장까지 배분할 계획이다 [Dd2e30][D5e12a][Df3a64].",
       "gold": "총 32장의 GPU를 확보하여, 16장은 공공 AX데이터 구축에, 나머지 16장은 민간 AI솔루션 개발 지원에 활용한다.",
-      "rewrites": 1,
+      "route": "docs",
+      "status": "grounded",
+      "rewrites": 0,
+      "regenerations": 0,
       "web_fallback": false,
+      "cited_ids": [
+        "Dd2e30",
+        "D5e12a",
+        "Df3a64"
+      ],
+      "evidence_ids": [
+        "Dd2e30",
+        "D5e12a",
+        "Df3a64"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "시스템 답변은 질문에 대해 정확하게 2026년 농림축산식품부가 국가 인공지능 프로젝트를 통해 확보한 GPU 수량(32장)과 그 활용 계획(16장은 공공 AX데이터 구축에, 나머지 16장은 민간 AI솔루션 개발 지원에 활용)을 명확히 기술하고 있습니다. 제공된 근거 문서들에서도 동일한 내용이 확인되므로, 답변은 질문에 적절히 관련되어 있고, 사실에 부합하며, 정확합니다."
+      "reason": "The system answer directly addresses the question by stating that the Ministry of Agriculture, Food and Rural Affairs secured 32 GPUs through the national AI project in 2026, with 16 GPUs allocated for public AX data construction and 16 GPUs for supporting private AI solution development. This matches the provided correct answer exactly. Furthermore, the system answer elaborates on the utilization plans with detailed information supported by the cited documents, confirming the faithfulness and correctness of the response."
     },
     {
       "id": "q07",
       "question": "2025년에 농식품 모태펀드가 결성한 자펀드 규모와 민간투자 비중은 각각 얼마인가요?",
-      "answer": "2025년에 농식품 모태펀드가 결성한 자펀드 규모는 3,179억원이며, 민간투자 비중은 64.6%입니다.",
+      "answer": "2025년에 농식품 모태펀드가 결성한 자펀드 규모는 3,179억원이며, 민간투자 비중은 64.6%입니다. 이는 2010년 출범 이후 역대 최대 실적이며, 민간투자 비중은 전년 대비 20.1%p 대폭 확대된 수치입니다(농림축산식품부 2026년 발표) [D449be][W63e6c][W7a1dd].",
       "gold": "2025년에 농식품 모태펀드는 3,179억원 규모로 결성했으며, 민간투자 비중은 64.6%입니다.",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 2,
+      "regenerations": 0,
       "web_fallback": true,
+      "cited_ids": [
+        "D449be",
+        "W63e6c",
+        "W7a1dd"
+      ],
+      "evidence_ids": [
+        "D449be",
+        "W63e6c",
+        "W7a1dd"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "시스템 답변은 질문에 정확히 부합하며, 자펀드 규모 3,179억원과 민간투자 비중 64.6%라는 수치를 정답과 동일하게 제시하고 있습니다. 또한, 제공된 근거 문서들에서 해당 수치가 명확히 확인되므로 답변은 사실에 충실하고 정확합니다."
+      "reason": "시스템 답변은 질문에 정확히 부합하며, 2025년에 농식품 모태펀드가 결성한 자펀드 규모(3,179억원)와 민간투자 비중(64.6%)을 정확하게 제시하고 있습니다. 또한, 제공된 근거 문서들과 일치하는 내용으로, 추가적인 배경 정보도 포함되어 있어 사실에 부합합니다. 따라서 답변은 질문에 적절하고, 사실에 충실하며, 정확합니다."
     },
     {
       "id": "q08",
       "question": "2025년부터 2029년까지 스마트농업 전문교육기관은 몇 개소로 확대되며, 스마트농업관리사 자격증은 언제부터 양성과정이 운영되는가?",
-      "answer": "2025년부터 2029년까지 스마트농업 전문교육기관은 4개소에서 8개소로 확대되며, 스마트농업관리사 자격증 양성과정은 2025년 하반기부터 운영된다.",
+      "answer": "2025년부터 2029년까지 스마트농업 전문교육기관은 4개소에서 8개소로 확대된다(농림축산식품부 2025년 발표). 스마트농업관리사 자격증 양성과정은 2025년 하반기부터 운영된다(농림축산식품부 2025년 발표).",
       "gold": "스마트농업 전문교육기관은 2029년까지 누적 8개소로 확대되며, 스마트농업관리사 양성과정은 2025년 하반기부터 운영된다.",
-      "rewrites": 0,
+      "route": "docs",
+      "status": "grounded",
+      "rewrites": 1,
+      "regenerations": 0,
       "web_fallback": false,
+      "cited_ids": [
+        "D9d9ae",
+        "D971e8",
+        "D14917"
+      ],
+      "evidence_ids": [
+        "D9d9ae",
+        "D971e8",
+        "D14917"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "시스템 답변은 질문에 대해 정확하게 답변하고 있습니다. 스마트농업 전문교육기관은 2025년 4개소에서 2029년까지 누적 8개소로 확대된다는 점과, 스마트농업관리사 자격증 양성과정이 2025년 하반기부터 운영된다는 점이 모두 정답과 일치합니다. 근거 문서에서도 동일한 내용을 명확히 확인할 수 있어, 답변은 관련성, 사실성, 정확성 모두 충족합니다."
+      "reason": "The system answer directly addresses the question by stating that the number of smart agriculture specialized education institutions will expand from 4 to 8 between 2025 and 2029, and that the smart agriculture manager qualification training course will be operated from the second half of 2025. This matches the provided correct answer exactly. The supporting evidence from the Ministry of Agriculture, Food and Rural Affairs 2025 documents confirms these details, ensuring the answer is faithful and correct. Therefore, all criteria are met with true."
     },
     {
       "id": "q09",
       "question": "2026년에 농림축산식품부가 선정한 스마트농업 우수기업 중에서 AI 자동화 로봇 'Omni'를 개발한 기업은 어디인가?",
-      "answer": "2026년에 농림축산식품부가 선정한 스마트농업 우수기업 중에서 AI 자동화 로봇 'Omni'를 개발한 기업은 메타파머스이다.",
+      "answer": "2026년에 농림축산식품부가 선정한 스마트농업 우수기업 중에서 AI 자동화 로봇 'Omni'를 개발한 기업은 근거에서 확인되지 않음.",
       "gold": "메타파머스",
-      "rewrites": 2,
-      "web_fallback": true,
+      "route": "web",
+      "status": "not_found",
+      "rewrites": 0,
+      "regenerations": 0,
+      "web_fallback": false,
+      "cited_ids": [],
+      "evidence_ids": [
+        "We358f",
+        "W3dc1c",
+        "W3f7dc"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer directly matches the question and the provided correct answer, stating that the company developing the AI automation robot 'Omni' selected by the Ministry of Agriculture, Food and Rural Affairs in 2026 is MetaFarmers (메타파머스). The supporting evidence from the documents clearly lists MetaFarmers as the developer of the AI automation robot 'Omni' and as one of the 15 smart agriculture excellent companies selected in 2026. Therefore, the system's answer is relevant, factually supported by the provided evidence, and correct."
+      "reason": "The system's answer states that the information about the company developing the AI automation robot 'Omni' among the 2026 smart agriculture excellent companies selected by the Ministry of Agriculture, Food and Rural Affairs is not confirmed in the provided evidence. The provided evidence includes mentions of MetaFarmers as a smart agriculture excellent company and their work in physical AI and agricultural automation robots, but does not explicitly confirm that MetaFarmers developed the 'Omni' robot. Therefore, the system's answer is relevant, faithful to the evidence, and correct in not asserting information not supported by the evidence."
     },
     {
       "id": "q10",
       "question": "농업용 로봇이 수행하는 주요 작업에는 어떤 것들이 있나요?",
-      "answer": "농업용 로봇이 수행하는 주요 작업에는 운반, 방제, 제초, 수확, 적과, 적엽 등 다관절 작업이 포함된다. 또한, 파종, 시비, 관측, 토양 준비, 식재, 수확, 잡초 제거, 작물 보호, 수확량 추정 및 표현형 분석 등이 있다.",
+      "answer": "농업용 로봇이 수행하는 주요 작업에는 운반, 방제, 제초 작업이 중심이며, 수확, 적과, 적엽 등 다관절 작업도 포함된다. 또한, 토양 준비, 파종, 제초, 식물 보호, 수확, 수확량 추정 및 표현형 분석 등의 작업도 수행한다. 다만, 비료 살포, 잔디 깎기, 토양 경운, 관개 등의 작업은 아직 경제적·관리적으로 수익성이 낮아 제한적으로 사용되고 있다. [D2a5aa][D9c83a][Dcaa38]",
       "gold": "농업용 로봇은 토양 준비, 파종, 제초, 식물 보호, 수확, 수확량 추정 및 표현형 분석 등의 작업을 수행합니다.",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 0,
+      "regenerations": 0,
       "web_fallback": false,
+      "cited_ids": [
+        "D2a5aa",
+        "D9c83a",
+        "Dcaa38"
+      ],
+      "evidence_ids": [
+        "D2a5aa",
+        "D9c83a",
+        "Dcaa38"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer lists major tasks performed by agricultural robots, including transportation, pest control, weeding, harvesting, thinning, defoliation, seeding, fertilization, observation, soil preparation, planting, weed removal, crop protection, yield estimation, and phenotyping analysis. These tasks align well with the reference answer, which mentions soil preparation, seeding, weeding, plant protection, harvesting, yield estimation, and phenotyping analysis. The system answer is comprehensive and consistent with the provided evidence, accurately reflecting the main functions of agricultural robots. Therefore, the answer is relevant, faithful to the reference, and correct."
+      "reason": "The system answer directly addresses the question by listing the main tasks performed by agricultural robots, including soil preparation, sowing, weeding, plant protection, harvesting, yield estimation, and phenotyping, which matches the provided correct answer. Additionally, it provides extra details about other tasks and economic considerations, all supported by the cited references. Therefore, the answer is relevant, factually faithful to the sources, and correct."
     },
     {
       "id": "q11",
       "question": "스마트농업 정책 추진체계 고도화에서 중점적으로 다뤄야 할 데이터 관련 요소는 무엇인가요?",
-      "answer": "스마트농업 정책 추진체계 고도화에서 중점적으로 다뤄야 할 데이터 관련 요소는 데이터 수집과 축적, 데이터의 정밀성과 목적성, 효율적인 데이터 수집 및 호환 활용 체계 구축, 데이터셋의 양적·질적 개선과 민간 주도의 데이터 자산 형성 및 거래 활성화이다.",
+      "answer": "스마트농업 정책 추진체계 고도화에서 중점적으로 다뤄야 할 데이터 관련 요소는 데이터 생산 방식의 다각화, 데이터 자산화 및 거래 활성화, 그리고 데이터 수집의 정밀성과 목적성에 대한 주의이다. 정부가 직접 수집하는 방식 외에 민간 주도의 고품질 데이터셋 축적 방식을 도입하고, 데이터 가치를 평가하여 농가 및 기업의 자산화를 지원하며, 거래 가이드라인과 플랫폼 고도화를 통해 시장 활성화를 도모해야 한다. 또한, 정책사업의 기본 단계부터 필요한 데이터의 범위와 형태를 명확히 하고, 효율적인 데이터 수집과 호환 활용 체계를 구축하는 것이 중요하다[D93da4][Dc49b7].",
       "gold": "데이터 수집과 축적, 이용에 초점을 맞추는 방식이다.",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 0,
+      "regenerations": 0,
       "web_fallback": false,
+      "cited_ids": [
+        "D93da4",
+        "Dc49b7"
+      ],
+      "evidence_ids": [
+        "D93da4",
+        "Dc49b7"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer comprehensively covers the key data-related elements emphasized in the question about smart agriculture policy advancement. It includes data collection and accumulation, which matches the correct answer's focus, and further elaborates on data precision, purpose, efficient collection and interoperability, dataset quality and quantity improvement, and private sector-led data asset formation and trading activation. These points are directly supported by the provided evidence from official documents and plans, confirming the system's response is relevant, faithful to the source, and correct."
+      "reason": "시스템 답변은 스마트농업 정책 추진체계 고도화에서 중점적으로 다뤄야 할 데이터 관련 요소로 데이터 수집과 축적, 이용에 초점을 맞추는 방식을 상세히 설명하고 있으며, 이는 정답과 일치한다. 답변은 데이터 생산 방식의 다각화, 데이터 자산화 및 거래 활성화, 데이터 수집의 정밀성과 목적성에 대한 주의 등 정답의 핵심 요소를 포함하고 있어 질문에 적절히 부합한다. 또한, 제시된 근거 문서들을 바탕으로 한 내용으로 사실에 부합하므로 정답과 비교해 정확하다."
     },
     {
       "id": "q12",
       "question": "2021년 미국 우유 생산의 몇 퍼센트가 개별 소 생산 기록, 영양사 설계 사료, 또는 번식 관련 기술을 사용한 농장에서 나왔나요?",
-      "answer": "2021년 미국 우유 생산의 최소 90퍼센트가 개별 소 생산 기록, 영양사 설계 사료, 또는 번식 관련 기술을 사용한 농장에서 나왔습니다.",
+      "answer": "2021년 미국 우유 생산의 90퍼센트 이상이 개별 소 생산 기록, 영양사 설계 사료, 또는 번식 관련 기술(예: 성별 선별 정액)을 사용하는 농장에서 나왔습니다. 이는 USDA Economic Research Service의 2026년 보고서에 근거한 수치입니다[D8e6a0].",
       "gold": "2021년 미국 우유 생산의 최소 90%가 해당 기술을 사용하는 농장에서 생산되었습니다.",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 0,
+      "regenerations": 0,
       "web_fallback": false,
+      "cited_ids": [
+        "D8e6a0"
+      ],
+      "evidence_ids": [
+        "D8e6a0"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer directly addresses the question by stating that at least 90% of U.S. milk production in 2021 came from farms using individual cow production records, nutritionist-designed feed, or reproduction-related technologies, which matches the provided correct answer. The supporting evidence from the USDA Economic Research Service report confirms this figure and the technologies mentioned, ensuring the answer is relevant, faithful to the source, and correct."
+      "reason": "The system answer directly addresses the question by stating that at least 90% of U.S. milk production in 2021 came from farms using individual cow production records, nutritionist-designed feed, or reproduction-related technologies, matching the provided correct answer. The system also cites a credible source (USDA Economic Research Service 2026 report) that supports this data. Therefore, the answer is relevant, faithful to the source, and factually correct."
     },
     {
       "id": "q13",
       "question": "2050년 전 세계 인구가 얼마나 될 것으로 예상되나요?",
-      "answer": "2050년 전 세계 인구는 약 97억 명에 이를 것으로 예상된다.",
+      "answer": "2050년 전 세계 인구는 약 97억 명으로 예상된다(2022년 UN 발표 전망) [D7b11f]. 이 전망은 UN(2022)의 발표를 근거로 하며, 여러 출처에서도 비슷한 수치를 제시하고 있다 [Dd77fd][W364c6].",
       "gold": "2050년 전 세계 인구는 97억 명을 초과할 것으로 예상됩니다.",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 2,
+      "regenerations": 0,
       "web_fallback": true,
+      "cited_ids": [
+        "D7b11f",
+        "Dd77fd",
+        "W364c6"
+      ],
+      "evidence_ids": [
+        "D7b11f",
+        "Dd77fd",
+        "W364c6"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer states that the world population in 2050 is expected to reach about 9.7 billion, which aligns closely with the reference answer stating it will exceed 9.7 billion. The supporting evidence from multiple sources, including UN projections cited in the documents, confirms this estimate. Therefore, the system's answer is relevant to the question, factually accurate based on the provided evidence, and correct in terms of the expected population figure."
+      "reason": "The system answer directly addresses the question about the projected world population in 2050, stating it as approximately 9.7 billion, which aligns with the question's focus. The answer is faithful to the provided references, especially [D7b11f], which cites the UN 2022 projection of about 9.7 billion by 2050. The system's answer is correct as it matches the factual data from the sources and the expected population figure."
     },
     {
       "id": "q14",
       "question": "2021년에 코로나19 시기에 30억 달러 규모의 시리즈 D 투자를 받은 중국의 식품 배달 스타트업 이름은 무엇인가?",
-      "answer": "2021년에 코로나19 시기에 30억 달러 규모의 시리즈 D 투자를 받은 중국의 식품 배달 스타트업 이름은 Xingsheng Youxuan이다.",
+      "answer": "근거에서 확인되지 않음",
       "gold": "Xingsheng Youxuan",
-      "rewrites": 2,
-      "web_fallback": true,
+      "route": "web",
+      "status": "not_found",
+      "rewrites": 0,
+      "regenerations": 0,
+      "web_fallback": false,
+      "cited_ids": [],
+      "evidence_ids": [
+        "W049b9"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system's answer directly addresses the question by naming 'Xingsheng Youxuan' as the Chinese food delivery startup that received a $3 billion Series D investment in 2021 during the COVID-19 period. The provided evidence from the Global AgriFoodTech Investment Report 2026 explicitly confirms this information, making the answer relevant, factually supported, and correct."
+      "reason": "The question asks for the name of a Chinese food delivery startup that received a $3 billion Series D investment in 2021 during the COVID-19 period. The system's answer is '근거에서 확인되지 않음' (not confirmed in the evidence), and the provided evidence does not contain any information about such a startup or investment. Therefore, the system's response is relevant (it addresses the question), faithful (it does not provide unsupported information), and correct (since the evidence does not confirm the answer, stating that it cannot be confirmed is accurate)."
     },
     {
       "id": "q15",
       "question": "수직농업에서 상추와 토마토의 전력 소비량이 각각 얼마나 감소하는가?",
-      "answer": "수직농업에서 상추의 전력 소비량은 7.83 kWh/kg에서 2.31 kWh/kg로, 토마토는 20.64 kWh/kg에서 6.69 kWh/kg로 감소한다.",
+      "answer": "수직농업에서 상추의 전력 소비량은 7.83 kWh kg−1 FW에서 2.31 kWh kg−1 FW로 감소하며, 토마토는 20.64 kWh kg−1 FW에서 6.69 kWh kg−1 FW로 감소한다(2026년 Frontiers 발표 전망) [Df206b][D1f61b]. 이는 조명 에너지 소비가 여전히 지배적이지만, 광합성 효율(LUEINT) 증가에 따라 단위 생산량당 전력 소비가 줄어든 결과이다 [Df206b].",
       "gold": "상추는 7.83에서 2.31 kWh/kg FW로, 토마토는 20.64에서 6.69 kWh/kg FW로 감소한다.",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 0,
+      "regenerations": 0,
       "web_fallback": false,
+      "cited_ids": [
+        "Df206b",
+        "D1f61b"
+      ],
+      "evidence_ids": [
+        "Df206b",
+        "D1f61b"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer directly addresses the question by providing the exact figures for the reduction in electricity consumption for lettuce and tomato in vertical farming, matching the values given in the reference answer (lettuce from 7.83 to 2.31 kWh/kg FW, tomato from 20.64 to 6.69 kWh/kg FW). The system's answer is supported by the cited evidence from the Frontiers 2026 document, which confirms these values. Therefore, the answer is relevant, faithful to the source, and correct."
+      "reason": "The system answer directly addresses the question by providing the exact figures for the reduction in electricity consumption for lettuce and tomato in vertical farming, matching the given correct answer. It also cites the source documents accurately, explaining the context of the reduction due to increased photosynthetic efficiency (LUEINT). Therefore, the answer is relevant, factually faithful to the source, and correct."
     },
     {
       "id": "q16",
       "question": "일본에서 2019년 4월부터 서비스가 시작되어 2023년 5월 말 현재 90여 개 민간 사업자가 이용 중인 농업 데이터 플랫폼의 이름은 무엇인가?",
-      "answer": "일본에서 2019년 4월부터 서비스가 시작되어 2023년 5월 말 현재 90여 개 민간 사업자가 이용 중인 농업 데이터 플랫폼의 이름은 WAGRI이다.",
+      "answer": "일본에서 2019년 4월부터 서비스가 시작되어 2023년 5월 말 현재 90여 개 민간 사업자가 이용 중인 농업 데이터 플랫폼의 이름은 'WAGRI'이다. 이 플랫폼은 데이터 제휴·공유·제공 기능을 갖추고 있으며, 농업인의 생산성 향상과 경영 개선을 지원하는 환경 조성을 목표로 한다. 민간 기업의 참여가 늘어나면서 WAGRI를 활용한 다양한 농업인 대상 서비스 개발도 활발히 이루어지고 있다.[Deb5c3][W1512b][D3cb93]",
       "gold": "WAGRI",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 2,
+      "regenerations": 0,
       "web_fallback": true,
+      "cited_ids": [
+        "Deb5c3",
+        "W1512b",
+        "D3cb93"
+      ],
+      "evidence_ids": [
+        "Deb5c3",
+        "W1512b",
+        "D3cb93"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "시스템 답변은 질문에 정확히 부합하며, 일본에서 2019년 4월부터 서비스가 시작되어 2023년 5월 말 현재 90여 개 민간 사업자가 이용 중인 농업 데이터 플랫폼의 이름을 'WAGRI'라고 명확히 제시하고 있다. 또한, 제공된 근거 문서들에서 동일한 정보를 확인할 수 있어 답변의 신뢰성과 정확성이 보장된다."
+      "reason": "시스템 답변은 질문에 정확히 부합하는 'WAGRI'라는 농업 데이터 플랫폼의 이름을 명확히 제시하고 있으며, 2019년 4월부터 서비스가 시작되어 2023년 5월 말 현재 90여 개 민간 사업자가 이용 중이라는 사실을 근거 문서에서 직접 인용하여 설명하고 있다. 따라서 답변은 질문에 적절히 관련되어 있고, 근거 문서 내용과 일치하며, 정답과도 정확히 일치한다."
     },
     {
       "id": "q17",
       "question": "글로벌 스마트 농업 시장의 2023년 BIS Research와 Grand View Research의 시장 규모 추정치는 각각 얼마인가?",
-      "answer": "BIS Research는 2023년 글로벌 스마트 농업 시장 규모를 174억 달러로, Grand View Research는 2023년 226억 5천만 달러로 추정하였다.",
+      "answer": "글로벌 스마트 농업 시장의 2023년 시장 규모 추정치는 BIS Research가 174억 달러로 평가하였고, Grand View Research는 226억 5천만 달러로 평가하였다. 두 기관 모두 2023년을 기준으로 시장 규모를 산정하였으며, BIS Research는 2023~2034년 동안 연평균 19.1% 성장할 것으로, Grand View Research는 2024~2030년 동안 연평균 13.7% 성장할 것으로 전망하였다. 이 수치는 각각 2024년 발표된 전망치이다[D66bcb][Deaac5][D5b883][D4f90b].",
       "gold": "BIS Research는 2023년 시장 규모를 174억 달러로, Grand View Research는 226억 5천만 달러로 추정하였다.",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 0,
+      "regenerations": 0,
       "web_fallback": false,
+      "cited_ids": [
+        "D66bcb",
+        "Deaac5",
+        "D5b883",
+        "D4f90b"
+      ],
+      "evidence_ids": [
+        "D66bcb",
+        "Deaac5",
+        "D5b883",
+        "D4f90b"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "시스템 답변은 질문에 정확히 부합하며, BIS Research와 Grand View Research의 2023년 글로벌 스마트 농업 시장 규모 추정치를 각각 174억 달러와 226억 5천만 달러로 명확히 제시하고 있다. 이는 제공된 근거 문서의 표와 설명과 일치하여, 답변이 질문에 적절하고 사실에 기반하며 정확함을 확인할 수 있다."
+      "reason": "시스템 답변은 질문에 대해 BIS Research와 Grand View Research의 2023년 글로벌 스마트 농업 시장 규모 추정치를 각각 174억 달러와 226억 5천만 달러로 정확히 제시하고 있다. 또한, 답변은 두 기관의 성장률과 분석 기간에 대한 추가 정보를 포함하여 근거 문서의 내용을 충실히 반영하고 있다. 따라서 답변은 질문에 적절히 관련되어 있고, 근거 문서와 일치하며, 정답과도 정확히 부합한다."
     },
     {
       "id": "q18",
       "question": "농식품 분야 우수 벤처창업 기업 정보를 제공하는 박람회 이름과 개최 연도는 무엇인가요?",
-      "answer": "농식품 분야 우수 벤처창업 기업 정보를 제공하는 박람회 이름은 \"농식품 테크 스타트업 박람회(AFRO 2024)\"이며, 개최 연도는 2024년입니다.",
+      "answer": "농식품 분야 우수 벤처창업 기업 정보를 제공하는 박람회 이름은 '농식품 테크 스타트업 박람회(AFRO 2024)'이며, 개최 연도는 2024년입니다. 이 박람회는 농식품 분야 창업기업과 예비창업자 등에게 기업 홍보 및 성과 확산에 활용될 계획입니다[D0aa3e].",
       "gold": "농식품 테크 스타트업 박람회(AFRO 2024)",
-      "rewrites": 2,
-      "web_fallback": true,
+      "route": "docs",
+      "status": "grounded",
+      "rewrites": 0,
+      "regenerations": 0,
+      "web_fallback": false,
+      "cited_ids": [
+        "D0aa3e"
+      ],
+      "evidence_ids": [
+        "D0aa3e"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer directly matches the question by providing the name of the exhibition '농식품 테크 스타트업 박람회(AFRO 2024)' and the year 2024. The provided evidence clearly mentions the exhibition name and the year, confirming the accuracy and faithfulness of the answer. Therefore, the answer is relevant, faithful to the source, and correct."
+      "reason": "The system answer correctly provides the name of the exhibition as '농식품 테크 스타트업 박람회(AFRO 2024)' and the year as 2024, which matches the given correct answer. The answer is directly relevant to the question, faithful to the provided source document, and factually correct."
     },
     {
       "id": "q19",
       "question": "2026년 농림축산식품부가 추진하는 스마트농업 AI학습용 데이터셋 구축 사업에서 선정된 기업에 제공되는 GPU 최대 장수는 몇 개인가?",
-      "answer": "2026년 농림축산식품부가 추진하는 스마트농업 AI학습용 데이터셋 구축 사업에서 선정된 기업에 제공되는 GPU 최대 장수는 4개이다.",
+      "answer": "2026년 농림축산식품부가 추진하는 스마트농업 AI학습용 데이터셋 구축 사업에서 선정된 기업에 제공되는 GPU 최대 장수는 4장이다. 이 사업은 2026년 5월부터 선정 기업에 GPU를 최대 4장까지 배분하며, 정부가 구축한 스마트팜 데이터도 함께 제공한다. 이는 농림축산식품부가 과학기술정보통신부의 국가 인공지능 프로젝트를 통해 확보한 32장의 GPU 중 일부를 민간 AI솔루션 개발 기업에 지원하는 방식이다[Dd2e30][D5e12a][W6841b][Wdd6b9][W85d83].",
       "gold": "최대 4장까지 제공된다.",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 2,
+      "regenerations": 0,
       "web_fallback": true,
+      "cited_ids": [
+        "Dd2e30",
+        "D5e12a",
+        "W6841b",
+        "Wdd6b9",
+        "W85d83"
+      ],
+      "evidence_ids": [
+        "Dd2e30",
+        "D5e12a",
+        "W6841b",
+        "Wdd6b9",
+        "W85d83"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer states that the maximum number of GPUs provided to selected companies in the 2026 smart agriculture AI dataset construction project by the Ministry of Agriculture, Food and Rural Affairs is 4. The provided evidence clearly supports this, mentioning that selected companies will be allocated up to 4 GPUs starting from May. The system's answer matches the question and the provided reference information exactly, making it relevant, faithful, and correct."
+      "reason": "The system answer directly addresses the question about the maximum number of GPUs provided to companies selected in the 2026 smart agriculture AI dataset project by the Ministry of Agriculture, Food and Rural Affairs. It states that up to 4 GPUs are provided, which matches the provided correct answer. The system's response is supported by multiple cited sources that confirm the maximum allocation of 4 GPUs per company starting from May 2026. Therefore, the answer is relevant, factually accurate, and correct."
     },
     {
       "id": "q20",
       "question": "푸드테크 분야에서 7년 이내 창업 기업에 적용되던 업력 제한이 폐지된 이유는 무엇인가?",
-      "answer": "푸드테크 분야에서 7년 이내 창업 기업에 적용되던 업력 제한이 폐지된 이유는 후속 투자 등 스케일업 지원을 강화하고, 상대적으로 영세한 청년 기업들이 충분한 투자를 적기에 공급받을 수 있도록 하기 위해서이다.",
+      "answer": "푸드테크 분야에서 7년 이내 창업 기업에 적용되던 업력 제한이 폐지된 이유는 후속 투자 등 스케일업 지원을 강화하기 위함이다. 그간 투자심의위원회와 제도개선협의체에서 운용사와 투자자 등의 규제 개선 요구를 반영한 결과이며, 이를 통해 성장 단계가 진전된 푸드테크 기업에 자금 접근성을 제공하고자 한다. 또한, 청년기업성장펀드의 투자금액 상한도 폐지하여 영세한 청년 기업들이 충분한 투자를 적기에 공급받을 수 있도록 하는 목적도 있다[D6d5c6][W5547e][W70e6a][W156d7][W7a1dd].",
       "gold": "후속 투자 등 스케일업 지원을 위해 업력 제한을 폐지하였다.",
+      "route": "docs",
+      "status": "grounded",
       "rewrites": 2,
+      "regenerations": 0,
       "web_fallback": true,
+      "cited_ids": [
+        "D6d5c6",
+        "W5547e",
+        "W70e6a",
+        "W156d7",
+        "W7a1dd"
+      ],
+      "evidence_ids": [
+        "D6d5c6",
+        "W5547e",
+        "W70e6a",
+        "W156d7",
+        "W7a1dd"
+      ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "시스템 답변은 질문에 대해 정확하고 관련성 있는 답변을 제공하고 있습니다. 정답과 일치하게, 푸드테크 분야에서 7년 이내 창업 기업에 적용되던 업력 제한이 후속 투자 등 스케일업 지원을 위해 폐지되었다고 명확히 설명하고 있습니다. 또한, 제공된 근거 문서들에서도 동일한 이유를 뒷받침하고 있어 답변의 신뢰성과 정확성이 높습니다."
+      "reason": "시스템 답변은 질문에 대해 정확하고 직접적으로 답변하고 있으며, '후속 투자 등 스케일업 지원을 강화하기 위함'이라는 이유를 명확히 제시하고 있다. 또한, 제공된 근거 문서들에서 해당 내용이 상세히 뒷받침되고 있어 답변의 신뢰성과 정확성이 높다. 따라서 답변은 질문과 정답에 모두 부합하며, 사실에 근거한 정확한 설명을 포함하고 있다."
     }
   ]
 }

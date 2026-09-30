@@ -1,3 +1,6 @@
 {"run_date": "2026-09-30", "finished_at": "2026-09-30 04:49:56", "elapsed_sec": 783.8, "fresh": false, "api_calls": 168, "cache_hits": 35, "input_tokens": 1245009, "output_tokens": 58842, "usd": 0.5812}
 {"run_date": "2026-09-30", "finished_at": "2026-09-30 05:05:02", "elapsed_sec": 713.3, "fresh": false, "api_calls": 148, "cache_hits": 60, "input_tokens": 1199634, "output_tokens": 56911, "usd": 0.5475}
 {"run_date": "2026-09-30", "finished_at": "2026-09-30 05:07:27", "elapsed_sec": 58.6, "fresh": false, "api_calls": 3, "cache_hits": 205, "input_tokens": 99313, "output_tokens": 5852, "usd": 0.0412}
+{"run_date": "2026-09-30", "finished_at": "2026-09-30 08:16:24", "elapsed_sec": 1088.8, "fresh": false, "mode": "calibrate", "api_calls": 327, "cache_hits": 57, "input_tokens": 1497037, "output_tokens": 80915, "usd": 0.7125}
+{"run_date": "2026-09-30", "finished_at": "2026-09-30 08:17:47", "elapsed_sec": 45.2, "fresh": false, "mode": "main", "api_calls": 2, "cache_hits": 82, "input_tokens": 42553, "output_tokens": 2036, "usd": 0.0176}
+{"run_date": "2026-09-30", "finished_at": "2026-09-30 08:29:47", "elapsed_sec": 53.9, "fresh": false, "mode": "scenario", "api_calls": 2, "cache_hits": 384, "input_tokens": 65169, "output_tokens": 3786, "usd": 0.0279}
