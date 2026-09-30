@@ -1,6 +1,6 @@
 {
   "run_date": "2026-09-30",
-  "elapsed_sec": 24.5,
+  "elapsed_sec": 25.5,
   "mode": "main",
   "threshold": 1.0,
   "end_reason": "max_evaluations",
@@ -3400,8 +3400,7 @@
       "Wbf33c",
       "Wa4ac8",
       "Weeb95",
-      "W299f0",
-      "Wd558b"
+      "W299f0"
     ],
     "checks": {
       "pages": 4,
@@ -3423,11 +3422,11 @@
       "consistency_violations": [],
       "density_level": 0,
       "rewrites": 1,
-      "references": 12,
+      "references": 11,
       "reference_groups": {
         "기관 보고서": 2,
         "학술 논문": 2,
-        "웹페이지": 8
+        "웹페이지": 7
       },
       "summary_ratio_of_a4": 0.233,
       "scorecard_consistency_violations": []
@@ -3435,7 +3434,7 @@
     "title": "메타파머스 투자 검토 — 투자 추천(실사 조건부)",
     "target": "메타파머스",
     "decision": "투자 추천",
-    "generated_at": "2026-09-30T13:44:51"
+    "generated_at": "2026-09-30T13:59:36"
   },
   "rag_traces": [
     {
@@ -5815,7 +5814,7 @@
     "[시장성] 농업 생산 데이터 분석·예측 AI (생육·환경 데이터): 분석 캐시 재사용 → 시장성 YES 1/4",
     "[경쟁사] 바르카: 제품 유형 '농산물 생산량 예측 솔루션', 검색 5건, 근거 속 경쟁사 없음 → 경쟁사 3곳 비교, 주장 2건(제3자 확인 0·반대 근거 0) → 경쟁 우위 YES 0/4",
     "[투자 판단] 바르카: 동종 평균 대비 96.4(동종 평균 100, 창업자 기준 104.2, 기준 집단 9곳 자기 제외) · YES 3 · NO 0 · 미확인 87% · 창업자 YES 1 · Deal-killer 없음 → 보류 (동종 평균 이하) [여기서 판정한 기준: traction, deal]",
-    "[보고서] invest investment_report.pdf 4쪽 (≤5), SUMMARY A4 대비 23%, REFERENCE 12건, 형식 검사 통과 → RAG-Output_울산-2반_김가연+김진녕+문지후+이준희+정승우.pdf"
+    "[보고서] invest investment_report.pdf 4쪽 (≤5), SUMMARY A4 대비 23%, REFERENCE 11건, 형식 검사 통과 → RAG-Output_울산-2반_김가연+김진녕+문지후+이준희+정승우.pdf"
   ],
   "sources_collected": 899,
   "failed_searches": [],

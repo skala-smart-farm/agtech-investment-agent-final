@@ -6,13 +6,14 @@
     1.15,
     1.2
   ],
-  "threshold": 1.1,
+  "threshold": 1.0,
   "reference_n": 10,
   "members": [
     {
       "name": "메타파머스",
       "multiplier_loo": 1.0958,
       "founder_yes": 2,
+      "founder_c": 1.181,
       "killers": [],
       "decision_at": {
         "1.00": "투자",
@@ -26,6 +27,7 @@
       "name": "에임비랩",
       "multiplier_loo": 1.0819,
       "founder_yes": 2,
+      "founder_c": 1.181,
       "killers": [],
       "decision_at": {
         "1.00": "투자",
@@ -39,6 +41,7 @@
       "name": "새팜",
       "multiplier_loo": 1.0681,
       "founder_yes": 0,
+      "founder_c": 0.903,
       "killers": [],
       "decision_at": {
         "1.00": "보류",
@@ -52,6 +55,7 @@
       "name": "리비타",
       "multiplier_loo": 1.0125,
       "founder_yes": 1,
+      "founder_c": 1.042,
       "killers": [],
       "decision_at": {
         "1.00": "투자",
@@ -65,6 +69,7 @@
       "name": "Bonsai Robotics",
       "multiplier_loo": 0.9819,
       "founder_yes": 1,
+      "founder_c": 1.042,
       "killers": [],
       "decision_at": {
         "1.00": "보류",
@@ -78,6 +83,7 @@
       "name": "퓨처커넥트",
       "multiplier_loo": 0.9778,
       "founder_yes": 0,
+      "founder_c": 0.903,
       "killers": [],
       "decision_at": {
         "1.00": "보류",
@@ -91,6 +97,7 @@
       "name": "트랙팜",
       "multiplier_loo": 0.9639,
       "founder_yes": 0,
+      "founder_c": 0.903,
       "killers": [],
       "decision_at": {
         "1.00": "보류",
@@ -104,6 +111,7 @@
       "name": "바르카",
       "multiplier_loo": 0.9639,
       "founder_yes": 1,
+      "founder_c": 1.042,
       "killers": [],
       "decision_at": {
         "1.00": "보류",
@@ -117,6 +125,7 @@
       "name": "Upside Robotics",
       "multiplier_loo": 0.9361,
       "founder_yes": 0,
+      "founder_c": 0.903,
       "killers": [],
       "decision_at": {
         "1.00": "보류",
@@ -130,6 +139,7 @@
       "name": "Nature Robots",
       "multiplier_loo": 0.9222,
       "founder_yes": 0,
+      "founder_c": 0.903,
       "killers": [],
       "decision_at": {
         "1.00": "보류",

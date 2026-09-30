@@ -401,6 +401,33 @@ def _cite(reg: SourceRegistry, ids, limit: int = 3) -> str:
     return f" [{', '.join(ids)}]" if ids else ""
 
 
+COMPANY_DB_HOSTS = ("thevc.kr", "innoforest.co.kr", "crunchbase.com", "nextunicorn.kr")
+
+
+def _other_company_page(s: dict, keys: list[str]) -> bool:
+    """기업 DB 페이지(THE VC·혁신의숲 등)인데 제목이 다른 회사인 경우. 뉴스 목록 속에 이름만 나온 페이지라
+    이 회사의 사실(마일스톤·경력)의 근거로 쓰지 않는다. 예) 메타파머스 마일스톤에 붙었던 'THE VC 비엔에스알' 페이지."""
+    host = urlparse(s.get("url") or "").netloc.lower().removeprefix("www.")
+    if s.get("kind") != "web" or not host.endswith(COMPANY_DB_HOSTS):
+        return False
+    title = norm(s.get("title") or "")
+    return not any(len(norm(k)) >= 2 and norm(k) in title for k in keys)
+
+
+def _cite_about(reg: SourceRegistry, ids, keys: list[str], limit: int = 3) -> str:
+    """회사 사실에 붙이는 인용: 다른 회사의 기업 DB 페이지는 뺀다."""
+    ids = [i for i in _usable(reg, ids) if not _other_company_page(reg.get(i), keys)][:limit]
+    return f" [{', '.join(ids)}]" if ids else ""
+
+
+def _about(text: str, reg: SourceRegistry, keys: list[str]) -> str:
+    """LLM 이 문장 안에 직접 넣은 인용([W..][W..])에서도 다른 회사의 기업 DB 페이지를 뺀다."""
+    def keep(m: re.Match) -> str:
+        ids = [i for i in re.split(r"\s*[,，]\s*", m.group(1)) if not (reg.get(i) and _other_company_page(reg.get(i), keys))]
+        return f"[{', '.join(ids)}]" if ids else ""
+    return CITE.sub(keep, text or "")
+
+
 def _own_source(s: dict, keys: list[str]) -> bool:
     """회사 자체 홈페이지 근거인지 (호스트에 회사 영문 키가 들어 있음)."""
     host = re.sub(r"[^a-z0-9]", "", urlparse(s.get("url") or "").netloc.lower().removeprefix("www."))
@@ -662,13 +689,17 @@ def _reference_mix() -> str:
     if not ms:
         return " (기준 집단 파일이 없어 동종 평균 신호를 0 으로 두었다, 설계 가정)"
 
+    label = {"KR": "국내", "GLOBAL": "해외"}  # 4장 기준 집단 줄과 같은 말로
+
     def mix(key: str) -> str:
         cnt: dict[str, int] = {}
         for m in ms:
-            cnt[m.get(key) or "미상"] = cnt.get(m.get(key) or "미상", 0) + 1
+            k = label.get(m.get(key), m.get(key)) or "미상"
+            cnt[k] = cnt.get(k, 0) + 1
         return "·".join(f"{k} {v}" for k, v in sorted(cnt.items(), key=lambda kv: -kv[1]))
 
-    return (f". 또 기준 집단 {len(ms)}곳은 단계({mix('stage')})와 지역({mix('region')})이 섞여 있어, "
+    return (f". 또 기준 집단 {len(ms)}곳(각 후보는 자신을 뺀 {len(ms) - 1}곳 평균과 비교)은 단계({mix('stage')})와 "
+            f"지역({mix('region')})이 섞여 있어, "
             "같은 지역·같은 단계 투자 기업과 비교하라는 Scorecard 원칙을 근사한 것이다")
 
 
@@ -683,7 +714,8 @@ def _limitations(cfg, pool: dict, failed_by: dict[str, int], data_limits: list[s
         out.append(f"웹 검색 질의 {n}건이 실패(검색 한도 초과 등)해 빈 결과로 진행했다 — {parts}. "
                    f"해당 후보의 미확인 판정 일부는 근거 부재가 아니라 검색 실패 때문일 수 있다")
     if pool["unevaluated"]:
-        out.append(f"적격 후보 {pool['eligible']}곳 중 {len(pool['unevaluated'])}곳은 평가하지 않았다({pool['why']})"
+        out.append(f"적격 후보 {pool['eligible']}곳 중 {len(pool['unevaluated'])}곳은 평가하지 않았다({pool['why']}: "
+                   f"{'·'.join(u['name'] for u in pool['unevaluated'])})"
                    + (f" — '투자 추천 없음'은 평가한 {pool['evaluated']}곳에 대한 결론이다" if mode == "hold"
                       else f" — 투자 추천 대상은 평가한 {pool['evaluated']}곳 중에서 골랐다" if pool["evaluated"] > 1 else ""))
     if mode != "none":
@@ -837,6 +869,7 @@ def _market_blocks(target: dict, d: dict, reg: SourceRegistry) -> list[dict]:
 def _team_blocks(target: dict, d: dict, reg: SourceRegistry, detail: bool) -> list[dict]:
     """팀의 구성: 창업 시점 t0 표, 인물(창업 전 경력), 창업 후 마일스톤, 팀 평가 문장."""
     f, prof = target.get("founder") or {}, target.get("profile") or {}
+    keys = company_keys(prof)
     tips = next((x for n in (prof.get("name"), prof.get("official_name"), target.get("name")) if n and (x := reg._find(f"tips:{n}"))), None)
     t0 = _t0(target)
     t0_ids = [tips] if tips and "TIPS" in (f.get("t0_source") or "TIPS") else []
@@ -849,12 +882,13 @@ def _team_blocks(target: dict, d: dict, reg: SourceRegistry, detail: bool) -> li
                        (nps + (f", 창업 후 연평균 {_num(hires)}명(가입자 ÷ 경과 연수)" if hires else "")) if nps else "-",
                        f"{f.get('milestones_24m', 0)}건"]], ["16%", "22%", "9%", "33%", "20%"], small=True)]
     people = [[x.get("name") or "-", x.get("role") or "-",
-               {True: "창업 전 · ", False: "창업 후 · "}.get(x.get("before_t0"), "") + (x.get("background") or "경력 확인 불가")
-               + (_cite(reg, x.get("evidence_ids"), 2) if not CITE.search(x.get("background") or "") else "")]
+               {True: "창업 전 · ", False: "창업 후 · "}.get(x.get("before_t0"), "") + (_about(x.get("background"), reg, keys) or "경력 확인 불가")
+               + (_cite_about(reg, x.get("evidence_ids"), keys, 2) if not CITE.search(x.get("background") or "") else "")]
               for x in (f.get("people") or [])[:4]]
     if people and detail:
         blocks.append(_table(["인물", "역할", "경력 (t0 기준 창업 전/후)"], people, ["12%", "12%", "76%"], small=True))
-    ms = [f"{m.get('date')} {m.get('what')}{_cite(reg, m.get('evidence_ids'), 2)}" for m in (f.get("milestones") or [])[:4]
+    ms = [f"{m.get('date')} {_about(m.get('what'), reg, keys)}{_cite_about(reg, m.get('evidence_ids'), keys, 2)}"
+          for m in (f.get("milestones") or [])[:4]
           if m.get("date") and m.get("what")]
     if ms and detail:
         blocks.append(_ul(ms, "창업 후 마일스톤"))
