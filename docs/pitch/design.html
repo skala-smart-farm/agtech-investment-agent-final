@@ -111,7 +111,7 @@
   <ul class="l body">
     <li><b>A. Domain</b> <span>— AgTech AI(작물·병해충·수확·축산·데이터), 비상장 · Seed~Series C · Exit 전 스타트업</span></li>
     <li><b>B. 설계</b> <span>— 에이전트 7개(가이드 6 + 창업자 평가), RAG 는 기술 요약·시장성·탐색에, 임베딩 nlpai-lab/KURE-v1 하이브리드</span></li>
-    <li><b>C. 평가표</b> <span>— Payne Scorecard 6개 기준 × 4문항 = 24문항, Bessemer 10문 점검, 투자 ⇔ 배수 ≥ 1.10 · 창업자 근거 · Deal-killer 없음</span></li>
+    <li><b>C. 평가표</b> <span>— 가이드 6개 기준·가중치 × 4문항 = 24문항, 비교는 Payne Scorecard 의 '평균 = 100' 원리, Bessemer 10문 점검, 투자 ⇔ 배수 ≥ 1.10 · 창업자 근거 · Deal-killer 없음</span></li>
     <li><b>D. 그래프</b> <span>— State 22개 키, 탐색 → 창업자 → 기술 → 시장 → 경쟁 → 판단 → 보고서, 보류면 탐색으로(최대 10곳)</span></li>
     <li><b>E. 보고서</b> <span>— SUMMARY(반 장) → 본문 5장 → REFERENCE, 투자 추천 / 모두 보류 / 후보 없음 3가지 목차</span></li>
   </ul>
@@ -162,13 +162,13 @@
 <!-- B-1 -->
 <section>
   <div class="kick"><b>B</b>설계 · 에이전트 정의</div>
-  <h2>에이전트는 7개 — 가이드 6개에 <em>창업자 평가</em>를 더해,<br>한 에이전트가 평가표의 한 기준을 맡습니다.</h2>
+  <h2>에이전트는 7개 — 가이드 6개에 <em>창업자 평가</em>를 더해,<br>분석 에이전트가 평가표 기준을 나눠 맡습니다.</h2>
   <table class="t s body">
     <tr><th style="width:17%">에이전트</th><th>역할</th><th style="width:21%">맡은 평가 기준</th><th style="width:22%">RAG</th></tr>
     <tr><td class="k">스타트업 탐색</td><td>평가할 <strong>다음 적격 스타트업 1곳</strong>을 정한다. 내부 3단계: 발굴 → 적격성 관문 G1~G6 → 다음 후보 선택</td><td>— (평가 전 관문)</td><td>O — 문서 속 기관 선정 기업(교정형 검색)</td></tr><tr class="hl"><td class="k">창업자 평가<span class="chip">추가</span></td><td>창업 시점(t0)을 먼저 고정하고, 창업 <strong>전</strong> 전문성과 창업 <strong>후</strong> 실행력을 나눠 판정</td><td>창업자 30% (F1~F4)</td><td>X — 사람에 관한 사실은 문서 코퍼스에 없음</td></tr><tr><td class="k">기술 요약</td><td>핵심 기술·장단점을 요약하고, 경쟁사 비교가 검증할 <strong>차별점 주장</strong>을 정리</td><td>제품/기술력 15% (P1~P4)</td><td>O — 분야 기술 기준선(논문·보고서)</td></tr><tr><td class="k">시장성 평가</td><td>세부 분야의 시장 크기·성장·수요(실제 문제·지불 의향)</td><td>시장성 25% (M1~M4)</td><td><strong>O (주 사용처)</strong> — 하위 질문 3~6개마다 Agentic RAG</td></tr><tr><td class="k">경쟁사 비교</td><td>같은 제품 유형의 국내외 경쟁사와 비교하고, 기술 요약의 차별점 주장을 검증</td><td>경쟁 우위 10% (C1~C4)</td><td>X (가이드 표 그대로)</td></tr><tr><td class="k">투자 판단</td><td>실적·투자조건을 판정하고 6개 기준을 <strong>종합</strong>(동종 대비 배수). 리스크(Deal-killer)·ROI·후보 리스트를 곁들여 <strong>투자/보류</strong> 결정</td><td>실적 10%·투자조건 10% (R1~R4, D1~D4)</td><td>X — 문항별 원문 인용 대조(RAG 아님)</td></tr><tr><td class="k">보고서 생성</td><td><strong>단계별 결과를 장마다 연결</strong>해 5쪽 이내 PDF를 만들고 형식을 검사. 새로 조사하지 않음</td><td>—</td><td>X</td></tr>
   </table>
   <div class="src">설계서 B.1</div><div class="pg">5</div>
-  <aside class="notes">에이전트는 일곱 개입니다. 가이드의 여섯 개를 그대로 두고, 교수님께서 창업 시점 문제를 짚어 주신 창업자 평가를 따로 떼어 하나 더했습니다. 각 에이전트는 평가표의 기준 하나씩을 책임지고, 투자 판단은 실적과 투자조건을 판정하면서 여섯 기준을 종합합니다.</aside>
+  <aside class="notes">에이전트는 일곱 개입니다. 가이드의 여섯 개를 그대로 두고, 교수님께서 창업 시점 문제를 짚어 주신 창업자 평가를 따로 떼어 하나 더했습니다. 창업자·기술·시장·경쟁 에이전트가 평가표 기준을 하나씩 맡고, 투자 판단은 실적과 투자조건을 판정하면서 여섯 기준을 종합합니다.</aside>
 </section>
 
 <!-- B-2 탐색 -->
@@ -196,7 +196,7 @@
 <!-- B-3 RAG 적용 대상 -->
 <section>
   <div class="kick"><b>B</b>설계 · RAG 적용 대상</div>
-  <h2>RAG 는 <em>숫자가 문서에 있는</em> 곳에만 씁니다 —<br>시장성 · 기술 요약 · 탐색.</h2>
+  <h2>RAG 는 가이드 표에서 <em>'O'인 세 에이전트</em>에 적용합니다 —<br>시장성 · 기술 요약 · 탐색.</h2>
   <div class="g12 body">
     <table class="t s">
       <tr><th>에이전트</th><th>RAG</th><th>이유</th></tr>
@@ -208,12 +208,12 @@
     </table>
     <div>
       <div class="topline g"><div class="num">13<small>종</small> 196<small>쪽</small></div>
-        <div class="lab">공공·연구 문서 (한도 200쪽)<br>기관 보고서 10 · 논문 3 · 한국어 8 · 영어 5</div></div>
+        <div class="lab">공공·연구 문서 중심, 민간 AgFunder 1종 포함 (한도 200쪽)<br>기관 보고서 10 · 논문 3 · 한국어 8 · 영어 5</div></div>
       <p class="note">정책(농림축산식품부 기본계획·법률), 투자 흐름(AgFunder 2026), 기술(로봇 리뷰·수직농장 경제성), 해외 실증(USDA) — <b>시장성 평가가 묻는 질문에 답이 있는 문서만</b> 골랐습니다.</p>
     </div>
   </div>
   <div class="src">설계서 B.4 · 문서 목록</div><div class="pg">7</div>
-  <aside class="notes">RAG를 모든 에이전트에 넣지 않았습니다. 시장 규모처럼 숫자가 문서에 있는 곳에만 씁니다. 창업자나 경쟁사 정보는 문서에 없어서 웹 검색을 씁니다. 문서는 200쪽 한도 안에서 13종 196쪽을 골랐습니다.</aside>
+  <aside class="notes">RAG는 가이드 표에서 O로 표시된 세 에이전트, 시장성·기술 요약·탐색에 적용합니다. 시장 규모 같은 수치가 문서에 있기 때문입니다. 창업자나 경쟁사 정보는 문서에 없어서 웹 검색을 씁니다. 문서는 200쪽 한도 안에서 13종 196쪽을 골랐습니다.</aside>
 </section>
 
 <!-- B-4 임베딩 -->
@@ -337,17 +337,17 @@
   <div class="kick"><b>C</b>투자판단 기준 · 근거</div>
   <h2>"평가 기준이 뭐예요?" — 임의로 만들지 않고,<br><em>글로벌 표준 두 가지</em>를 가져왔습니다.</h2>
   <div class="g2 body">
-    <div class="topline"><div style="font-size:28px;font-weight:800">Bill Payne Scorecard</div>
-      <div class="lab">어떻게 합칠까 — 기준과 가중치, 그리고<br><b style="color:#111">'투자를 받은 동종 평균 기업 = 100'</b>과 비교하는 원리</div>
+    <div class="topline"><div style="font-size:28px;font-weight:800">Scorecard 방식</div>
+      <div class="lab">어떻게 합칠까 — 6개 기준·가중치는 과제 가이드 표,<br>비교는 Bill Payne 의 <b style="color:#111">'투자를 받은 평균 기업 = 100%'</b> 원리</div>
       <table class="t s" style="margin-top:14px">
         <tr><td class="k">창업자·팀 (Owner)</td><td style="text-align:right;font-weight:800">30%</td></tr><tr><td class="k">시장성 (Opportunity Size)</td><td style="text-align:right;font-weight:800">25%</td></tr><tr><td class="k">제품/기술력</td><td style="text-align:right;font-weight:800">15%</td></tr><tr><td class="k">경쟁 우위</td><td style="text-align:right;font-weight:800">10%</td></tr><tr><td class="k">실적</td><td style="text-align:right;font-weight:800">10%</td></tr><tr><td class="k">투자조건 (Deal Terms)</td><td style="text-align:right;font-weight:800">10%</td></tr>
       </table></div>
     <div class="topline g"><div style="font-size:28px;font-weight:800">Bessemer 체크리스트 10문</div>
       <div class="lab">무엇을 물을까 — 과제 가이드의 10개 질문을<br>AgTech 실패 요인과 함께 <b style="color:#111">24개 판정 문항</b>으로 풀었습니다</div>
-      <p class="note" style="margin-top:18px">AgTech 실패 요인: 농가 ROI · 다작기 실증 · 인허가 · 자본집약도 · 보조금 의존<br><br>표준에 없는 값은 하나뿐 — <b>기준 110</b>. 참고자료 예시 배수(1.1205 · 1.155)보다 낮게 둔 <b>설계 가정</b>이며, 1.00~1.20 민감도를 함께 싣습니다.</p></div>
+      <p class="note" style="margin-top:18px">AgTech 실패 요인: 농가 ROI · 다작기 실증 · 인허가 · 자본집약도 · 보조금 의존<br><br>표준에 없는 <b>설계 가정</b>: 기준 110 · 창업자 YES ≥ 1 · 비교율 계수(0.5, 0.5~1.5). 결론을 가장 크게 좌우하는 <b>기준 110</b>은 참고자료 예시 배수(1.1205 · 1.155)보다 낮게 두고 1.00~1.20 민감도를 함께 싣습니다.</p></div>
   </div>
   <div class="src">설계서 C.1 · Payne Scorecard(ACA 2019) · 과제 가이드 Bessemer 체크리스트</div><div class="pg">9</div>
-  <aside class="notes">임원분들이 늘 물으신다는 질문, 평가 기준이 뭐냐, 임의대로 했냐에 대한 답입니다. 기준과 가중치는 Bill Payne의 Scorecard에서, 무엇을 물을지는 과제의 Bessemer 체크리스트에서 가져왔습니다. 저희가 정한 값은 기준 110 하나이고, 이것도 가정이라고 밝히고 민감도를 함께 계산합니다.</aside>
+  <aside class="notes">임원분들이 늘 물으신다는 질문, 평가 기준이 뭐냐, 임의대로 했냐에 대한 답입니다. 기준과 가중치는 과제 가이드 표를 따르고, 비교 방식은 Bill Payne Scorecard의 '투자받은 평균 기업 = 100' 원리를, 무엇을 물을지는 과제의 Bessemer 체크리스트를 가져왔습니다. 표준에 없는 값은 설계 가정이라고 밝히고, 가장 영향이 큰 기준 110은 민감도를 함께 계산합니다.</aside>
 </section>
 
 <!-- C-2 평가표 -->
@@ -517,7 +517,7 @@
     <tr><th style="width:15%">항목</th><th>설계 결정</th><th style="width:16%">설계서</th></tr>
     <tr><td class="k">A. Domain</td><td>AgTech AI · 비상장 · Seed~Series C · Exit 전, 세부 분야 5개, 조정 국면의 옥석 가리기</td><td>A.1 · A.2</td></tr>
     <tr><td class="k">B. 설계</td><td>에이전트 7개(가이드 6 + 창업자 평가) · RAG 는 시장성·기술·탐색 · KURE-v1 하이브리드(Hit@4 0.986)</td><td>B.1 ~ B.5</td></tr>
-    <tr><td class="k">C. 평가표</td><td>Payne Scorecard 6기준 × 4문항 · Bessemer 10문 · 동종 평균 대비 110 ∧ 창업자 근거 ∧ Deal-killer 없음 · 민감도 1.00~1.20</td><td>C.1 ~ C.8</td></tr>
+    <tr><td class="k">C. 평가표</td><td>가이드 6기준 × 4문항 · Payne '평균 = 100' 비교 · Bessemer 10문 · 동종 평균 대비 110 ∧ 창업자 근거 ∧ Deal-killer 없음 · 민감도 1.00~1.20</td><td>C.1 ~ C.8</td></tr>
     <tr><td class="k">D. 그래프</td><td>State 22개 키 · 가이드 Graph(안) + 창업자 평가 · 보류 → 다음 후보(최대 10곳) · Agentic RAG 서브그래프</td><td>D.1 ~ D.4</td></tr>
     <tr><td class="k">E. 보고서</td><td>SUMMARY 반 장 → 본문 5장 이내 → REFERENCE · 투자 추천 / 모두 보류 / 후보 없음 목차</td><td>E</td></tr>
     <tr><td class="k">운영</td><td>gpt-4.1-mini · 임베딩 비용 0원 · 검색·LLM 응답을 캐시해 API 키 없이 같은 결과를 재현</td><td>A.2 · B.5</td></tr>
