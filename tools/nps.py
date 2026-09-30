@@ -8,12 +8,19 @@
 을 준다. 3인 미만 법인은 목록에 없으므로 "못 찾음"은 탈락 사유가 아니다(보류 신호만).
 
 원본 CSV(약 115MB)는 저장소에 넣지 않고, 회사별 조회 결과만 스냅샷으로 남겨 재현한다.
+
+적격성 관문(agents/eligibility.py)이 후보 4곳을 스레드로 동시에 검사하므로 스냅샷 읽기·쓰기와 CSV 내려받기·적재는
+한 잠금 안에서 한다. 스냅샷은 임시 파일에 쓴 뒤 교체해(원자적 저장) 쓰는 도중의 파일을 다른 스레드가 읽지 않게 한다.
+예전 버전이 동시에 써서 깨진 스냅샷(JSONDecodeError: Extra data)은 앞의 온전한 JSON 을 살리고 원본은 백업한다.
 """
 from __future__ import annotations
 
 import json
 import os
 import re
+import tempfile
+import threading
+import time
 from functools import lru_cache
 from pathlib import Path
 
@@ -30,9 +37,43 @@ def _snapshot_file() -> Path:
     return path(f"{get_config().cache.dir}/snapshots/nps_lookup.json")
 
 
+_LOCK = threading.RLock()  # 스냅샷 읽기·쓰기와 CSV 내려받기·적재를 한 스레드씩 (적격성 관문이 4스레드로 부른다)
+
+
 def _load_snapshot() -> dict:
     f = _snapshot_file()
-    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+    if not f.exists():
+        return {}
+    text = f.read_text(encoding="utf-8")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # 예전 버전의 동시 쓰기로 JSON 뒤에 다른 쓰기의 꼬리가 붙은 경우: 앞의 온전한 JSON 을 살린다
+        backup = f.with_name(f"{f.stem}.corrupt-{time.strftime('%Y%m%d-%H%M%S')}{f.suffix}")
+        f.replace(backup)
+        try:
+            snap, _ = json.JSONDecoder().raw_decode(text)
+            snap = snap if isinstance(snap, dict) else {}
+        except json.JSONDecodeError:
+            snap = {}
+        print(f"[국민연금] 깨진 조회 스냅샷을 복구했습니다: {len(snap)}건 유지, 원본은 {backup.name} 로 보관")
+        _save_snapshot(snap)
+        return snap
+
+
+def _save_snapshot(snap: dict) -> None:
+    """임시 파일에 다 쓴 뒤 한 번에 교체한다 — 다른 스레드·프로세스가 반쯤 쓴 파일을 읽지 않는다."""
+    f = _snapshot_file()
+    f.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=f.parent, prefix=f".{f.stem}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as out:
+            json.dump(snap, out, ensure_ascii=False, indent=1)
+        os.replace(tmp, f)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
 
 
 def _csv_file() -> Path | None:
@@ -50,7 +91,9 @@ def _csv_file() -> Path | None:
         return None
     f = d / f"nps_{m.group(1)}.csv"
     url = f"https://www.data.go.kr/cmm/cmm/fileDownload.do?atchFileId={m.group(1)}&fileDetailSn={m.group(2)}"
-    f.write_bytes(requests.get(url, headers=UA, timeout=300).content)
+    tmp = f.with_suffix(".csv.part")  # 다 받은 뒤에만 이름을 바꿔, 받다 멈춘 파일을 원본으로 쓰지 않는다
+    tmp.write_bytes(requests.get(url, headers=UA, timeout=300).content)
+    os.replace(tmp, f)
     return f
 
 
@@ -77,6 +120,11 @@ def lookup(names: list[str]) -> dict:
     keys = [k for k in dict.fromkeys(_norm(n) for n in names if n) if len(k) >= 2]
     if not keys:
         return {"status": "not_found", "matches": [], "ym": ""}
+    with _LOCK:  # 읽기 → 조회 → 쓰기를 한 번에 (스레드끼리 서로의 결과를 덮어쓰지 않게)
+        return _lookup_locked(keys)
+
+
+def _lookup_locked(keys: list[str]) -> dict:
     snap = _load_snapshot()
     sid = "|".join(keys)
     if sid in snap:
@@ -90,7 +138,7 @@ def lookup(names: list[str]) -> dict:
     status = "not_found" if not matches else ("matched" if len(brns) == 1 else "ambiguous")
     out = {"status": status, "matches": matches[:5], "ym": ym}
     snap[sid] = out
-    _snapshot_file().write_text(json.dumps(snap, ensure_ascii=False, indent=1), encoding="utf-8")
+    _save_snapshot(snap)
     return out
 
 
