@@ -4,12 +4,24 @@
 # AI Startup Investment Evaluation Agent
 공개 정보만으로 AgTech AI 스타트업을 찾아 평가하고, 투자 · 보류 판단과 그 근거를 5쪽 이내 보고서로 만드는 LangGraph 멀티 에이전트입니다.
 
-SKALA {{ cfg.submission.campus }}캠퍼스 {{ cfg.submission['class'] }} {{ cfg.submission.team }} · 투자 보고서 [PDF]({{ report_pdf }}) · 설계서 {{ ('[PDF](' ~ design_pdf ~ ') / ') if design_pdf else '' }}[Markdown](docs/design.md)
+<p>
+<img alt="Python 3.11" src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white">
+<img alt="LangGraph" src="https://img.shields.io/badge/LangGraph-Multi--Agent-1C3C3C">
+<img alt="Agentic RAG" src="https://img.shields.io/badge/Agentic%20RAG-{{ corpus.n }}%EC%A2%85%20{{ corpus.pages }}%EC%AA%BD-0F766E">
+<img alt="LLM" src="https://img.shields.io/badge/LLM-{{ cfg.models.generator | replace('-', '--') }}-412991">
+<img alt="Embedding" src="https://img.shields.io/badge/Embedding-KURE--v1-FF9D00">
+<img alt="Reproducible" src="https://img.shields.io/badge/%EC%9E%AC%ED%98%84-API%20%ED%82%A4%20%EC%97%86%EC%9D%B4-2EA44F">
+</p>
 
-> - **결론** {{ conclusion }}{{ (' — 동종 평균 대비 **' ~ target.m ~ '** (동종 평균 ' ~ thr100 ~ ' 초과, 창업자 기준 ' ~ target.founder_c ~ '), ' ~ target.rank) if target else '' }}
-> - **기준** Scorecard(Payne)의 동종 기업 비교 + Bessemer 체크리스트 {{ rb.n_bessemer }}문 → {{ rb.n_q }}문항. YES·NO 는 원문 인용이 확인될 때만 인정
-> - **검증** 검색 Hit@4 {{ rt.hit4 }} · MRR@4 {{ rt.mrr4 }} · 적격성 판정 정확도 {{ elig.gold.acc if elig.gold else '-' }} (홀드아웃 {{ elig.holdout.acc if elig.holdout else '-' }})
-> - **재현** API 키 없이 `python app.py` 한 줄로 같은 보고서
+SKALA {{ cfg.submission.campus }}캠퍼스 {{ cfg.submission['class'] }} {{ cfg.submission.team }} · 📄 투자 보고서 [PDF]({{ report_pdf }}) · 📐 설계서 {{ ('[PDF](' ~ design_pdf ~ ') / ') if design_pdf else '' }}[Markdown](docs/design.md)
+
+> [!IMPORTANT]
+> **결론** · {{ conclusion }}{{ (' — 동종 평균 대비 **' ~ target.m ~ '** (동종 평균 ' ~ thr100 ~ ' 초과, 창업자 기준 ' ~ target.founder_c ~ '), ' ~ target.rank) if target else '' }}<br>
+> **기준** · Scorecard(Payne)의 동종 기업 비교 + Bessemer 체크리스트 {{ rb.n_bessemer }}문 → {{ rb.n_q }}문항. YES·NO 는 원문 인용이 확인될 때만 인정<br>
+> **검증** · 검색 Hit@4 {{ rt.hit4 }} · MRR@4 {{ rt.mrr4 }} · 적격성 판정 정확도 {{ elig.gold.acc if elig.gold else '-' }} (홀드아웃 {{ elig.holdout.acc if elig.holdout else '-' }})<br>
+> **재현** · API 키 없이 `python app.py` 한 줄로 같은 보고서
+
+**바로가기** · [Overview](#overview) · [Features](#features) · [Tech Stack](#tech-stack) · [Agents](#agents) · [Architecture](#architecture) · [Usage](#usage) · [차별점](#차별점) · [Evaluation](#evaluation) · [투자 보고서 핵심](#투자-보고서-핵심) · [Lessons Learned](#lessons-learned) · [한계와 변경](#알려진-한계와-문제-해결) · [Contributors](#contributors)
 
 
 ## Overview
@@ -70,6 +82,9 @@ SKALA {{ cfg.submission.campus }}캠퍼스 {{ cfg.submission['class'] }} {{ cfg.
 
 
 ## Directory Structure
+<details>
+<summary>폴더 구조 펼치기</summary>
+
 ```
 ├── app.py           # 실행 스크립트 (재현 · 새 평가 · 보정 · 시나리오)
 ├── config.yaml      # 모델명 · 검색 · 상한 · 판단 기준 (코드에 값을 박지 않음)
@@ -89,6 +104,8 @@ SKALA {{ cfg.submission.campus }}캠퍼스 {{ cfg.submission['class'] }} {{ cfg.
 ├── tests/           # 계약 · 라우팅 · 판정 · 최근성 테스트
 └── README.md        # docs/README.md.j2 에서 생성 (숫자는 outputs/ · data/ 에서 채움)
 ```
+
+</details>
 
 
 ## Usage
@@ -112,6 +129,7 @@ python app.py                                            # API 키 없이 제출
 
 
 ## 차별점
+> [!NOTE]
 > **"평가 기준은 임의로 정했나요?"** 아닙니다. 과제가 제시한 두 글로벌 기준을 원 방법대로 썼습니다. {{ rb.n_dims }}개 기준과 비중은 과제의 **Scorecard** 표(원전 Bill Payne), {{ rb.n_q }}문항에는 **Bessemer 체크리스트** {{ rb.n_bessemer }}문을 모두 배치했고, 점수는 Scorecard 원 방법대로 '투자를 받은 동종 기업 평균 = 100' 과 비교합니다. 투자 기준도 새로 정한 숫자가 아니라 원 방법의 기준점입니다 — **동종 평균(100)보다 높고, 창업자 점수가 동종 평균 이상이며, Deal-killer(Payne 워크시트 개념)가 없을 때만** 추천합니다. 팀 조건의 근거는 Payne 의 *"A great team will fix early product flaws, but the reverse is not true."* 입니다.
 
 1. **절대 점수 대신 동종 비교** — v1 의 '100점 만점 70점'을 버리고, 같은 절차로 평가한 동종 {{ sens.n if sens else '-' }}곳의 평균(= 100) 대비 배수로 판단한다. 기준선은 원 방법의 기준점(동종 평균 = 100) 그대로라 임의로 정한 숫자가 없다{{ (' — 참고로 기준을 올리면 투자 추천 수는 ' ~ sens.counts) if sens else '' }}
@@ -155,7 +173,8 @@ python app.py                                            # API 키 없이 제출
 [투자 보고서 PDF]({{ report_pdf }}){{ (' · ' ~ r.pages ~ '쪽') if r.pages else '' }}{{ (' · 목차: ' ~ chapters) if chapters else '' }}
 
 {% if mode == 'invest' and target %}
-**결론: {{ conclusion }}** — 동종 평균 대비 **{{ target.m }}** (동종 평균 {{ thr100 }} 초과) · {{ target.rank }} · 창업자 기준 {{ target.founder_c }} (동종 평균 100 이상) · Deal-killer {{ target.killers | join(', ') if target.killers else '없음' }}
+> [!TIP]
+> **결론: {{ conclusion }}** — 동종 평균 대비 **{{ target.m }}** (동종 평균 {{ thr100 }} 초과) · {{ target.rank }} · 창업자 기준 {{ target.founder_c }} (동종 평균 100 이상) · Deal-killer {{ target.killers | join(', ') if target.killers else '없음' }}
 
 | 기준 (비중) | YES / NO / 미확인 | 동종 평균 대비 |
 |---|---|---|
@@ -165,7 +184,8 @@ python app.py                                            # API 키 없이 제출
 | **가중합** | {{ target.yes }} / {{ target.no }} / {{ target.unk }} | **{{ target.m }}** |
 
 {% if eval_rows | length > 1 %}
-**평가한 후보 {{ eval_rows | length }}곳** — 투자 기준 통과 {{ passed | length }}곳({{ passed | join('·') }}) 중 동종 평균 대비 배수 1위를 대상으로 선정 (첫 투자 추천에서 멈추지 않음)
+#### 평가한 후보 {{ eval_rows | length }}곳
+투자 기준 통과 {{ passed | length }}곳({{ passed | join('·') }}) 중 동종 평균 대비 배수 1위를 대상으로 선정 (첫 투자 추천에서 멈추지 않음)
 
 | 순위 | 후보 | 단계 · 지역 | 동종 평균 대비 | 창업자 기준 | 판정 |
 |---|---|---|---|---|---|
@@ -224,13 +244,15 @@ python app.py                                            # API 키 없이 제출
 
 
 ## Lessons Learned
-1. **임의 기준은 설명할 수 없다** — v1 의 '100점 만점 70점'은 근거를 댈 수 없었다 → Scorecard 원 방법(동종 비교)으로 바꿨다. 처음에는 원전에 없는 투자 기준선(110)을 가정으로 두었지만, 가정은 근거가 될 수 없어 원 방법의 기준점(동종 평균 100)으로 바꿨다.{{ (' 그래도 실제 투자를 받은 후기 기업 ' ~ pc.n ~ '곳 중 투자 추천은 ' ~ pc.invest ~ '곳 — 공개 정보만으로 내리는 결론은 실사 대상 선별까지다') if pc else '' }}
-2. **"근거 없음"과 "반대 근거"는 다르다** — LLM 은 근거를 못 찾으면 NO 를 썼다 → NO 에도 반대 사실의 원문 인용을 요구했다
-3. **형식 검사는 내용 오류를 못 잡는다** — 5쪽 · 반 쪽 검사는 통과했지만, 과제 원문과 한 줄씩 대조하자 지난 전망 · 대표 발언을 근거로 쓴 판정이 나왔다 → 인용 · 제3자 · 날짜 규칙을 코드로 옮겼다
-4. **지표는 실제 동작으로 재야 한다** — 후보 8개 안 적중(Hit@8)으로 고른 검색기가 앞 {{ rt.top_k }}개만 쓰는 실제 설정에서는 1위가 아니었다 → 측정 전에 규칙을 정하고 Hit@4 · MRR@4 로 다시 골랐다
-5. **날짜와 실패는 조용히 틀린다** — 조회일 · 설립일을 게시일로 읽거나 기준일 뒤의 '예정' 투자를 최근 투자로 셌고, 검색 한도 초과로 빈 결과가 '반증 없음'으로 통과했다 → 날짜 규칙(`core/recency.py`)과 fail-closed 로 막았다
-6. **문서는 평가 대상에 맞춰 다시 본다** — {{ (corpus.why ~ '이 속한 ') if corpus.why else '' }}작물 병해 진단 · 농업 데이터 분야에 기술 기준선 문서가 없었다 → 2종을 넣고 쓰지 않는 표지 · 목차 · 참고문헌 쪽을 빼서 {{ corpus.limit }}쪽 한도를 지켰다({{ corpus.pages }}쪽)
-7. **AI 코딩 도구는 빨랐지만 검증은 사람 몫** — 코드 대부분을 AI 도구로 작성했고, 가이드와 한 줄씩 맞춰 보는 검증에 가장 오래 걸렸다
+| # | 교훈 | 겪은 문제 | 바꾼 것 |
+|---|---|---|---|
+| 1 | **임의 기준은 설명할 수 없다** | v1 의 '100점 만점 70점', 그다음의 투자 기준선 110 은 원전에 없는 가정이라 근거를 댈 수 없었다 | Scorecard 원 방법의 기준점(동종 평균 100)으로 바꿨다{{ (' — 그래도 실제 투자를 받은 후기 기업 ' ~ pc.n ~ '곳 중 추천은 ' ~ pc.invest ~ '곳, 결론은 실사 대상 선별까지') if pc else '' }} |
+| 2 | **"근거 없음"과 "반대 근거"는 다르다** | LLM 은 근거를 못 찾으면 NO 를 썼다 | NO 에도 반대 사실의 원문 인용을 요구했다 |
+| 3 | **형식 검사는 내용 오류를 못 잡는다** | 5쪽 · 반 쪽 검사는 통과했지만, 과제 원문과 대조하자 지난 전망 · 대표 발언을 근거로 쓴 판정이 나왔다 | 인용 · 제3자 · 날짜 규칙을 코드로 옮겼다 |
+| 4 | **지표는 실제 동작으로 재야 한다** | 후보 8개 안 적중(Hit@8)으로 고른 검색기가 앞 {{ rt.top_k }}개만 쓰는 실제 설정에서는 1위가 아니었다 | 측정 전에 규칙을 정하고 Hit@4 · MRR@4 로 다시 골랐다 |
+| 5 | **날짜와 실패는 조용히 틀린다** | 조회일 · 설립일을 게시일로 읽거나 기준일 뒤 '예정' 투자를 최근 투자로 셌고, 검색 한도 초과로 빈 결과가 '반증 없음'으로 통과했다 | 날짜 규칙(`core/recency.py`)과 fail-closed |
+| 6 | **문서는 평가 대상에 맞춰 다시 본다** | {{ (corpus.why ~ '이 속한 ') if corpus.why else '' }}작물 병해 진단 · 농업 데이터 분야에 기술 기준선 문서가 없었다 | 2종을 넣고 쓰지 않는 표지 · 목차 · 참고문헌 쪽을 빼서 {{ corpus.limit }}쪽 한도 안({{ corpus.pages }}쪽) |
+| 7 | **AI 코딩 도구는 빨랐지만 검증은 사람 몫** | 코드 대부분을 AI 도구로 작성했다 | 가이드와 한 줄씩 맞춰 보는 검증에 가장 오래 걸렸다 |
 
 
 ## 알려진 한계와 문제 해결
@@ -242,14 +264,19 @@ python app.py                                            # API 키 없이 제출
 - **결론은 수집 시점의 자료 기준이다** — 재현(`python app.py`)은 {{ run.run_date or "-" }} 에 수집한 검색 결과 · LLM 판정을 캐시에서 다시 계산하므로 같은 결론이 나온다. 새로 수집하면(`--fresh`) 검색 결과가 달라져 후보 · 판정 · 보고서 대상이 바뀔 수 있다. 이때는 같은 캐시로 `--calibrate` 를 먼저 실행해 동종 기준 집단도 다시 만들어야 하며, 기준 집단에 없는 후보를 평가하면 보고서 한계에 그 사실을 적는다
 
 ### 설계서 제출 이후 바뀐 것
-- **RAG 문서 {{ (corpus.old ~ ' → ') if corpus.old else '' }}{{ corpus.n }}종 {{ corpus.pages }}쪽** : {{ corpus.added | join(' · ') }} 추가, {{ corpus.trimmed }}개 문서에서 쓰지 않는 표지 · 목차 · 참고문헌 쪽 제외 (`data/manifest.yaml`)
 {% macro delta(name, a, b) %}{{ name }} {{ (a ~ '(같음)') if a == b else (a ~ ' → ' ~ b) }}{% endmacro %}
-- **검색기 재측정** : 기존 {{ rt.n }}문항 {{ (delta('Hit@4', rt.design.hit4, rt.hit4) ~ ', ' ~ delta('MRR@4', rt.design.mrr4, rt.mrr4)) if rt.design else ('Hit@4 ' ~ rt.hit4 ~ ', MRR@4 ' ~ rt.mrr4) }}, 검색 설정은 그대로{{ ' (이유는 Evaluation 표 아래)' if rt.rule_top else '' }}
-- **첫 투자 추천에서 멈추지 않음** : 설계서는 노션 Graph(안)의 '투자 추천 → 보고서 생성' 화살표대로 첫 투자 추천에서 평가를 멈췄다. 그러면 발굴 순서가 결론을 정한다(먼저 평가한 후보가 추천되고 뒤의 후보는 비교되지 않는다). 그래서 투자 추천이어도 평가 상한({{ pipe.max_eval }}곳)까지 평가하고, 투자 기준 통과 후보 중 배수 1위를 보고서 대상으로 삼는다. 노드 · 간선은 그대로이고 분기 조건만 바뀌었다(`config.yaml` `workflow.stop_on_invest: false`)
-- **투자 판단 기준 110 → 100** : 설계서의 기준 110(창업자 문항 YES 1개 이상)은 원전에 없는 설계 가정이었다. 근거를 댈 수 있는 값은 Scorecard 원 방법의 기준점(투자를 받은 동종 평균 기업 = 100)뿐이라 '동종 평균 100 초과 · 창업자 점수 동종 평균 이상'으로 바꿨다. 실행 결과가 나온 뒤의 변경이라 설계서의 '결과를 보고 기준을 바꾸지 않는다'는 원칙에서 벗어난다. 바꾼 이유는 결과가 아니라 근거 부재이며, 110 에서의 결과(추천 0곳)도 기준 민감도로 함께 공개한다
-- **검토 지적 반영** : 근거 id 해시가 겹치면 먼저 등록된 근거를 덮어쓰지 않고 더 긴 id 를 준다 · 평가 기준일 이후 날짜와 예정 라운드는 '최근 투자'로 인정하지 않는다 · 검색 요청에 제한 시간을 두고, 인증 · 한도 오류가 나면 그 공급자를 끄고 실패로 기록한다
+| 항목 | 설계서(10시 제출) | 지금 | 왜 바꿨나 |
+|---|---|---|---|
+| **평가 흐름** | 노션 Graph(안)의 '투자 추천 → 보고서 생성' 화살표대로 첫 투자 추천에서 멈춤 | 투자 추천이어도 평가 상한({{ pipe.max_eval }}곳)까지 평가 → 투자 기준 통과 후보 중 배수 1위가 보고서 대상 | 멈추면 발굴 순서가 결론을 정한다(먼저 평가한 후보가 추천되고 뒤의 후보는 비교되지 않음). 노드 · 간선은 그대로, 분기 조건만(`workflow.stop_on_invest: false`) |
+| **투자 판단 기준** | 110 · 창업자 문항 YES 1개 이상 | 동종 평균 100 초과 · 창업자 점수 동종 평균 이상 · Deal-killer 없음 | 110 은 원전에 없는 설계 가정이었다. 근거를 댈 수 있는 값은 원 방법의 기준점(투자를 받은 동종 평균 = 100)뿐이다. **실행 결과가 나온 뒤의 변경이라 설계서의 '결과를 보고 기준을 바꾸지 않는다'는 원칙에서 벗어난다.** 이유는 결과가 아니라 근거 부재이며, 110 결과(추천 0곳)도 민감도로 공개한다 |
+| **RAG 문서** | {{ corpus.old or '-' }} | {{ corpus.n }}종 {{ corpus.pages }}쪽 | {{ corpus.added | join(' · ') }} 추가, {{ corpus.trimmed }}개 문서에서 쓰지 않는 표지 · 목차 · 참고문헌 쪽 제외 (`data/manifest.yaml`) |
+| **검색기 재측정** | {{ ('Hit@4 ' ~ rt.design.hit4 ~ ' · MRR@4 ' ~ rt.design.mrr4) if rt.design else '-' }} | Hit@4 {{ rt.hit4 }} · MRR@4 {{ rt.mrr4 }} | 문서가 바뀌어 기존 {{ rt.n }}문항으로 다시 쟀고, 검색 설정은 그대로{{ ' (이유는 Evaluation 표 아래)' if rt.rule_top else '' }} |
+| **검토 지적 반영** | — | 근거 id 충돌 방지 · 기준일 이후 · 예정 라운드 불인정 · 검색 제한 시간과 공급자 차단 | 외부 검토 지적: id 해시가 겹치면 먼저 등록된 근거를 덮어쓸 수 있었고, 미래 날짜가 '최근 투자'로 인정될 수 있었고, Tavily 키만 있으면 검색이 매우 느렸다 |
 
 ### 문제 해결
+<details>
+<summary>실행 오류 · 느릴 때 대처 펼치기</summary>
+
 | 증상 | 원인과 해결 |
 |---|---|
 | `PDF 생성용 브라우저가 없습니다` | 처음 한 번 `python -m playwright install chromium` |
@@ -262,6 +289,8 @@ python app.py                                            # API 키 없이 제출
 - 새 평가는 검색이 수백 번이다. **Serper 를 권장**한다. `SERPER_API_KEY` 가 없으면 모든 검색이 Tavily 로 가서 느리고 무료 한도를 많이 쓴다 (시작할 때 안내 한 줄이 나온다)
 - 요청마다 제한 시간 {{ cfg.search.timeout_sec }}초, 실시간 검색 {{ cfg.search.progress_every }}회마다 진행 한 줄(`실시간 웹 검색 N회 · 공급자 … · 평균 …초/회`)이 나온다
 - 인증 · 한도 오류는 1번, 일시 오류는 연속 {{ cfg.search.breaker_after }}번이면 그 공급자를 이번 실행에서 끈다. 남은 공급자가 없으면 이후 검색은 실패로 기록되고 관련 판정은 통과시키지 않는다(fail-closed) → 키 · 한도를 확인한 뒤 `python app.py --retry-failed` 로 실패한 검색만 다시 한다
+
+</details>
 
 
 ## Contributors
