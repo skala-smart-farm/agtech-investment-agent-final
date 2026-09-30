@@ -10,7 +10,7 @@ reasons, 뒤집힘 조건, 강등된 YES(rejected_yes), 미확인 문항, 기준
 
 LLM·웹 검색 API 를 부른다 (유료). 키 없이 돌리면 캐시에 없는 호출에서 그 기업은 '실행 실패'로 기록된다.
 
-    uv run python -m eval.eval_positive_control
+    python -m eval.eval_positive_control
 """
 from __future__ import annotations
 

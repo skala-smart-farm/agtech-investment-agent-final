@@ -1,11 +1,11 @@
 """AgTech 스타트업 투자 평가 에이전트 실행 스크립트.
 
-    uv run python app.py                  # 탐색 → 창업자·기술·시장성·경쟁사 → 투자 판단 → 보고서(PDF)
-    uv run python app.py --offline        # 재현 테스트: 저장소의 캐시(replay/)만 쓰고 API 키 없이 실행
-    uv run python app.py --calibrate      # 보정 실행: 투자여도 멈추지 않고 평가 상한까지 평가해 동종 기준 집단
+    python app.py                  # 탐색 → 창업자·기술·시장성·경쟁사 → 투자 판단 → 보고서(PDF)
+    python app.py --offline        # 재현 테스트: 저장소의 캐시(replay/)만 쓰고 API 키 없이 실행
+    python app.py --calibrate      # 보정 실행: 투자여도 멈추지 않고 평가 상한까지 평가해 동종 기준 집단
                                           #   (data/reference_class.json)과 기준 배수 민감도를 만든다. 보고서는 만들지 않는다
-    uv run python app.py --threshold 1.30 --out outputs/scenario_hold   # 시나리오 실행: 기준 배수만 바꿔 다른 보고서 모드 확인
-    uv run python app.py --graph-only     # 그래프 그림(docs/architecture.png, docs/architecture_langgraph.png)만 생성
+    python app.py --threshold 1.30 --out outputs/scenario_hold   # 시나리오 실행: 기준 배수만 바꿔 다른 보고서 모드 확인
+    python app.py --graph-only     # 그래프 그림(docs/architecture.png, docs/architecture_langgraph.png)만 생성
 """
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ def _check_browser() -> None:
 
     with sync_playwright() as p:
         if not Path(p.chromium.executable_path).exists():
-            raise SystemExit("PDF 생성용 브라우저가 없습니다. 먼저 `uv run playwright install chromium` 을 실행하세요.")
+            raise SystemExit("PDF 생성용 브라우저가 없습니다. 먼저 `python -m playwright install chromium` 을 실행하세요.")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

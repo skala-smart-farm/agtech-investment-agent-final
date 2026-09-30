@@ -4,8 +4,8 @@
 (data/eval/eligibility_gold.jsonl 의 basis). 경계 사례(예: '프리IPO'를 '시리즈C급'으로 보도한 기업)는
 정답을 하나로 정할 수 없어 제외했다.
 
-    uv run python -m eval.eval_eligibility            # 개선에 쓴 20개사
-    uv run python -m eval.eval_eligibility holdout    # 개선에 쓰지 않은 10개사
+    python -m eval.eval_eligibility            # 개선에 쓴 20개사
+    python -m eval.eval_eligibility holdout    # 개선에 쓰지 않은 10개사
 """
 from __future__ import annotations
 

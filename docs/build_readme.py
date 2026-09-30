@@ -2,7 +2,7 @@
 항상 같도록 템플릿(docs/README.md.j2)으로 만든다. 숫자는 여기서 파일을 읽어 채우고 템플릿에는 적지 않는다.
 결론 모드(투자 추천 / 모두 보류 / 후보 없음)가 바뀌어도 다시 실행하면 된다 (API 호출 없음).
 
-    uv run python -m docs.build_readme
+    python -m docs.build_readme
 """
 from __future__ import annotations
 

@@ -10,7 +10,7 @@
 - 후보 모델을 하나라도 못 불러오면(다운로드 실패 등) 결과 파일을 덮어쓰지 않고 종료 코드 1로 끝낸다
   (replay/ 에 FAISS 색인·질의 임베딩 캐시가 없는 후보는 모델을 불러오므로 해당 임베딩 모델(수 GB)이 필요하다)
 
-    uv run python -m eval.eval_retrieval
+    python -m eval.eval_retrieval
 """
 from __future__ import annotations
 

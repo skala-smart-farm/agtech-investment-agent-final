@@ -1,15 +1,31 @@
-.env
-.venv/
+# Python
+.python-version
 __pycache__/
 *.pyc
+.venv/
+venv/
 .ipynb_checkpoints/
+
+# Env & secrets (.env.example 은 키 이름만 담은 양식이라 올린다)
+.env
+.env.*
+!.env.example
+
+# OS / Editor
 .DS_Store
+.vscode/
+
+# 환경 스캐폴딩 (설치는 requirements.txt 하나로)
+pyproject.toml
+uv.lock
+
+# 실행 중 생기는 파일
 cache/
 cache_fresh/
-# 재현용 캐시 중 문서 임베딩 캐시만 제외 (FAISS 색인·조각·질의 임베딩은 커밋 → 모델 없이도 같은 검색 결과)
-replay/emb/
 data/candidates/
 outputs/runs/
 *.log
+# 재현용 캐시 중 문서 임베딩 캐시만 제외 (FAISS 색인·조각·질의 임베딩은 커밋 → 모델 없이도 같은 검색 결과)
+replay/emb/
 # 국민연금 원본 CSV(115MB)는 제외, 회사별 조회 결과만 replay/snapshots/ 에 커밋
 replay/nps/

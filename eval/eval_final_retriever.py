@@ -22,7 +22,7 @@ build_qa·Judge 를 거치지 않고 원문을 읽고 만든 문항이라 지표
      Hit@4 · MRR@4 모두 1위보다 0.01 이하로만 낮으면 그 설정을 추천한다
   (판정은 결과 파일에 적힌 소수 셋째 자리 값으로 한다)
 
-    uv run python -m eval.eval_final_retriever
+    python -m eval.eval_final_retriever
 (두 임베딩 모델의 FAISS 색인이 replay/ 에 없으면 모델로 만든다. 질의 임베딩은 replay/qemb/ 캐시를 쓴다)
 """
 from __future__ import annotations

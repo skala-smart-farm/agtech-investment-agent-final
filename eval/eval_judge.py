@@ -8,7 +8,7 @@
 1~5점 척도 대신 이진 판정을 써서 판정 기준을 분명히 한다.
 행마다 경로(route)·재작성·재생성 횟수·상태(status)를 남기고, 요약에 경로 분포와 재작성·웹 보완·재생성·not_found 비율을 더한다.
 
-    uv run python -m eval.eval_judge --n 20
+    python -m eval.eval_judge --n 20
 """
 from __future__ import annotations
 

@@ -874,7 +874,7 @@ def _evaluated_blocks(evals: list[dict], target: dict) -> list[dict]:
             _table(["순위", "후보", "단계 · 지역", "동종 평균 대비", "창업자 기준", "판정"], rows,
                    ["7%", "27%", "17%", "15%", "13%", "21%"], small=True),
             _note(f"보고서 대상: 투자 기준 통과 {len(passed)}곳({'·'.join(passed)}) 중 동종 평균 대비 배수 1위 — {target['name']}. "
-                  f"첫 투자 추천에서 멈추지 않고 평가 상한까지 평가해, 평가 순서가 결론을 정하지 않게 했다")]
+                  f"첫 투자 추천에서 멈추지 않고 평가 상한까지 평가해, 평가한 후보 안에서는 평가 순서가 결론을 바꾸지 않는다")]
 
 
 def _chapters_invest(target: dict, d: dict, t: dict, reg: SourceRegistry, cfg, pool: dict,

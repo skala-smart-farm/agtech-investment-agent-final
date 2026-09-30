@@ -4,7 +4,7 @@ LLM 응답 캐시(SQLite)에는 호출마다 모델명·토큰 수가 남는다.
 캐시가 곧 사용 기록이다(같은 프롬프트를 다시 부르면 캐시가 답해 과금되지 않는다).
 용도는 캐시 키에 남은 응답 스키마 이름으로 나눈다. 결과: outputs/eval/api_usage.md
 
-    uv run python -m eval.api_usage
+    python -m eval.api_usage
 """
 from __future__ import annotations
 

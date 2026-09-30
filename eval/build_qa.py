@@ -4,7 +4,7 @@
 Judge LLM 이 "질문이 구체적이고 이 조각으로 답이 되는가"를 다시 검사해 통과한 것만 남긴다.
 정답 위치는 (문서, 페이지) 단위로 기록한다 → 조각 경계가 달라도 공정하게 비교된다.
 
-    uv run python -m eval.build_qa --n 40
+    python -m eval.build_qa --n 40
 """
 from __future__ import annotations
 

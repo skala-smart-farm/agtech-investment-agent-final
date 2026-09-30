@@ -8,7 +8,7 @@
 --rows-out 을 주면 회사별 판정 행(dim·qid·answer·x)도 따로 쓴다(배수 재계산 테스트용).
 API 를 부르지 않는다.
 
-    uv run python -m eval.build_reference_class --from-runlog outputs/run_log.json \\
+    python -m eval.build_reference_class --from-runlog outputs/run_log.json \\
         --out tests/fixtures/reference_v1.json --rows-out tests/fixtures/rows_v1.json
 """
 from __future__ import annotations

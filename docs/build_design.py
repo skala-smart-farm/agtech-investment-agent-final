@@ -4,7 +4,7 @@
 코드(graph/, agents/, tools/)가 이 상수와 같은지는 코드 반영 뒤 비교한다.
 문서 목록·검색기 실측·적격성 정확도는 data/manifest.yaml 과 outputs/eval/ 에서 읽는다.
 
-    uv run python -m docs.build_design
+    python -m docs.build_design
 """
 from __future__ import annotations
 

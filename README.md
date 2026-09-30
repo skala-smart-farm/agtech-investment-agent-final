@@ -97,16 +97,17 @@ graph TD
 
 ## Usage
 ```bash
-uv sync
-uv run playwright install chromium   # PDF 를 만드는 브라우저 (처음 한 번)
-uv run python app.py                 # API 키 없이 제출 보고서 재현 → outputs/
+python3.11 -m venv .venv && source .venv/bin/activate   # Python 3.11 (Windows: .venv\Scripts\activate)
+pip install -r requirements.txt                          # 버전 고정 목록
+python -m playwright install chromium                    # PDF 를 만드는 브라우저 (처음 한 번)
+python app.py                                            # API 키 없이 제출 보고서 재현 → outputs/
 ```
-- pip 사용 시 : `pip install -r requirements.txt` → `python -m playwright install chromium` → `python app.py`
+- 테스트 : `python -m pytest` (API 키 없이 실행, 설정은 `pytest.ini`)
 - `python app.py --offline` : 엄격한 재현 테스트. `replay/` 캐시에 없는 검색 · LLM 호출이 하나라도 생기면 바로 실패한다
 - 새로 평가하기(유료) : `.env.example` 을 `.env` 로 복사해 `OPENAI_API_KEY` 와 검색 키(`SERPER_API_KEY` 권장, 또는 `TAVILY_API_KEY`)를 넣는다
   ```bash
-  uv run python app.py --fresh --calibrate   # 새 데이터로 최대 10곳 평가 → 동종 기준 집단(data/reference_class.json)
-  uv run python app.py --fresh               # 같은 새 캐시(cache_fresh/)로 본 실행 → 보고서
+  python app.py --fresh --calibrate   # 새 데이터로 최대 10곳 평가 → 동종 기준 집단(data/reference_class.json)
+  python app.py --fresh               # 같은 새 캐시(cache_fresh/)로 본 실행 → 보고서
   ```
   보정 실행 실측은 LLM $0.53~0.71 · 12~18분이다(`outputs/cost_history.jsonl`, 검색 결과가 캐시에 있을 때). 새 검색이 많으면 더 걸린다 → [실행이 느리거나 멈춘 것 같을 때](#실행이-느리거나-멈춘-것-같을-때)
 - 기준만 바꿔 보기 : `python app.py --threshold 1.30 --out outputs/scenario_hold` (제출 보고서를 덮어쓰지 않음)
@@ -203,7 +204,7 @@ uv run python app.py                 # API 키 없이 제출 보고서 재현 �
 ### 문제 해결
 | 증상 | 원인과 해결 |
 |---|---|
-| `PDF 생성용 브라우저가 없습니다` | 처음 한 번 `uv run playwright install chromium` |
+| `PDF 생성용 브라우저가 없습니다` | 처음 한 번 `python -m playwright install chromium` |
 | `캐시에 없는 호출이라 OPENAI_API_KEY … 가 필요합니다` | 코드 · 설정 · 문서가 제출본과 달라 `replay/` 에 없는 호출이 생겼다. 제출본 그대로면 키 없이 끝난다(`git status` 확인). 새로 평가하려면 `.env` 를 만든다 |
 | `--offline` 이 바로 멈춤 | 위와 같은 원인이다. 캐시에 없는 호출을 재현 실패로 보고 멈추는 것이 이 옵션의 목적이다 |
 | 새 평가 첫 실행이 오래 걸림 | 캐시에 없는 문서 · 질의를 임베딩하려고 nlpai-lab/KURE-v1(약 2GB)을 한 번 내려받는다. 재현 실행은 커밋된 색인 · 질의 임베딩을 써서 받지 않는다 |

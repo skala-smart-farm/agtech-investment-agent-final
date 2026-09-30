@@ -3,8 +3,8 @@
 docs/pitch/design_deck.html.j2 를 설계서와 같은 값(docs.build_design.context)으로 렌더링해 docs/pitch/design.html 을 만들고,
 reveal.js 의 print-pdf 모드로 PDF 를 만든다.
 
-    uv run python -m docs.build_pitch            # docs/RAG-Design-Deck_*.pdf
-    uv run python -m docs.build_pitch /tmp/out   # 장마다 PNG 도 저장
+    python -m docs.build_pitch            # docs/RAG-Design-Deck_*.pdf
+    python -m docs.build_pitch /tmp/out   # 장마다 PNG 도 저장
 """
 from __future__ import annotations
 
