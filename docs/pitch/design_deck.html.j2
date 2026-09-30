@@ -75,6 +75,14 @@
   section.cover .who { position:absolute; left:96px; bottom:56px; font-size:18px; color:#c9ced4; line-height:1.6; }
   section.cover .who b { color:#fff; }
   .reveal .slide-number { display:none; }
+  .reveal .slides section > .in { display:flex; flex-direction:column; }
+  .in > .content { flex:1; display:flex; flex-direction:column; justify-content:center; padding-bottom:34px; min-height:0; }
+  .in > .content > .body:first-child, .in > .content > .g2:first-child, .in > .content > .g12:first-child { margin-top:0 !important; }
+  ul.l li { font-size:22px; padding:11px 0; }
+  table.t { font-size:18px; } table.t.s { font-size:16px; } table.t.xs { font-size:14px; }
+  .lab { font-size:20px; } .note { font-size:19px; }
+  .etoc ul.l li { font-size:18px; padding:6px 0; }
+  .etoc .note { font-size:16px; }
 </style>
 </head>
 <body>
@@ -133,7 +141,7 @@
     <div>
       <table class="t">
         <tr><th colspan="2">평가 대상 (과제 조건 그대로)</th></tr>
-        <tr><td class="k">비상장</td><td>코스피·코스닥 상장사 제외 (한국거래소 목록과 코드로 대조)</td></tr>
+        <tr><td class="k">비상장</td><td>코스피·코스닥 상장사 제외 (한국거래소 상장 목록과 자동 대조)</td></tr>
         <tr><td class="k">투자 단계</td><td>Seed ~ Series C</td></tr>
         <tr><td class="k">Exit 전</td><td>M&A·IPO 미완료</td></tr>
         <tr><td class="k">범위</td><td>국내외 (검증 자리 국내 12 + 해외 6)</td></tr>
@@ -147,7 +155,7 @@
     </div>
   </div>
   <p class="note"><b>산출물</b> 투자 추천 기업의 평가 보고서(5장 이내). 모두 보류면 루프를 끝내고 후보마다 '왜 안 되는지'로 보고서를 만듭니다.</p>
-  <div class="src">설계서 A.2 · config.yaml(domain.segments · workflow)</div><div class="pg">4</div>
+  <div class="src">설계서 A.2</div><div class="pg">4</div>
   <aside class="notes">문제 정의입니다. 대상은 과제 조건 그대로 비상장, Seed부터 Series C, Exit 전 스타트업이고, 가이드의 도메인 문구에 맞춰 세부 분야를 다섯 개로 나눴습니다. 최종 산출물은 임원이 바로 판단할 수 있는 5장 이내 보고서입니다.</aside>
 </section>
 
@@ -159,7 +167,7 @@
     <tr><th style="width:17%">에이전트</th><th>역할</th><th style="width:21%">맡은 평가 기준</th><th style="width:22%">RAG</th></tr>
     {% for a in agents %}<tr{% if a.node == 'founder' %} class="hl"{% endif %}><td class="k">{{ a.name | noemoji }}{% if a.node == 'founder' %}<span class="chip">추가</span>{% endif %}</td><td>{{ a.role | inline }}</td><td>{{ a.criterion }}</td><td>{{ a.rag | inline }}</td></tr>{% endfor %}
   </table>
-  <div class="src">설계서 B.1 · docs/build_design.py(AGENTS)</div><div class="pg">5</div>
+  <div class="src">설계서 B.1</div><div class="pg">5</div>
   <aside class="notes">에이전트는 일곱 개입니다. 가이드의 여섯 개를 그대로 두고, 교수님께서 창업 시점 문제를 짚어 주신 창업자 평가를 따로 떼어 하나 더했습니다. 각 에이전트는 평가표의 기준 하나씩을 책임지고, 투자 판단은 실적과 투자조건을 판정하면서 여섯 기준을 종합합니다.</aside>
 </section>
 
@@ -174,14 +182,14 @@
       <li><b>보조 공공데이터</b> <span>국민연금 가입 사업장 — 첫 고용 시점·인원·탈퇴</span></li>
     </ul>
     <ul class="l">
-      <li><b>G1</b> <span>비상장 — 한국거래소 목록과 코드로 대조</span></li>
+      <li><b>G1</b> <span>비상장 — 한국거래소 상장 목록과 자동 대조</span></li>
       <li><b>G2</b> <span>Seed~Series C — 회사명과 단계가 함께 있는 인용만</span></li>
       <li><b>G3 · G4</b> <span>Exit 없음 · 폐업·회생 반증 검색 + 국민연금 탈퇴</span></li>
       <li><b>G5 · G6</b> <span>AI 가 핵심인 농업 생산성 기술 · 제3자 근거 1곳 이상</span></li>
     </ul>
   </div>
   <p class="note"><b>링크드인으로 찾지 않습니다.</b> 팔로워는 가입한 날부터 쌓여 창업 시점과 맞지 않기 때문입니다.</p>
-  <div class="src">설계서 B.3 · agents/discovery.py · agents/eligibility.py</div><div class="pg">6</div>
+  <div class="src">설계서 B.3</div><div class="pg">6</div>
   <aside class="notes">탐색 에이전트는 사람이 아니라 회사에 일어난 날짜 있는 사건으로 후보를 찾습니다. 그리고 여섯 개 관문으로 과제의 스타트업 조건을 확인하는데, 확인하지 못하면 통과시키지 않습니다.</aside>
 </section>
 
@@ -196,7 +204,7 @@
       <tr><td class="k">기술 요약</td><td>사용</td><td>분야 기술 수준의 기준선(논문·보고서)과 회사 주장을 비교</td></tr>
       <tr><td class="k">스타트업 탐색</td><td>사용</td><td>문서 속 기관 선정 기업을 후보로</td></tr>
       <tr><td class="k">창업자 · 경쟁사</td><td>안 씀</td><td>사람·경쟁사 사실은 문서에 없다 → 웹 검색</td></tr>
-      <tr><td class="k">투자 판단</td><td>안 씀</td><td>문항별 원문 인용을 코드로 대조</td></tr>
+      <tr><td class="k">투자 판단</td><td>안 씀</td><td>문항별 원문 인용을 자동 대조</td></tr>
     </table>
     <div>
       <div class="topline g"><div class="num">{{ corpus | length }}<small>종</small> {{ total_pages }}<small>쪽</small></div>
@@ -204,7 +212,7 @@
       <p class="note">정책(농림축산식품부 기본계획·법률), 투자 흐름(AgFunder 2026), 기술(로봇 리뷰·수직농장 경제성), 해외 실증(USDA) — <b>시장성 평가가 묻는 질문에 답이 있는 문서만</b> 골랐습니다.</p>
     </div>
   </div>
-  <div class="src">설계서 B.4 · data/manifest.yaml</div><div class="pg">7</div>
+  <div class="src">설계서 B.4 · 문서 목록</div><div class="pg">7</div>
   <aside class="notes">RAG를 모든 에이전트에 넣지 않았습니다. 시장 규모처럼 숫자가 문서에 있는 곳에만 씁니다. 창업자나 경쟁사 정보는 문서에 없어서 웹 검색을 씁니다. 문서는 200쪽 한도 안에서 13종 196쪽을 골랐습니다.</aside>
 </section>
 
@@ -220,12 +228,12 @@
         <div><div class="num" style="font-size:50px">{{ rt[1] }}</div><div class="lab">Hit@4</div></div>
         <div><div class="num" style="font-size:50px">{{ rt[2] }}</div><div class="lab">MRR@4</div></div>
       </div>
-      <p class="note">오픈소스 6종 · 우리 질문 70개 · 실제 파이프라인 설정 그대로. 노트북 CPU 로 돌아 <b>임베딩 비용 0원</b>, MIT 라이선스, 최대 8,192토큰.</p>
+      <p class="note">오픈소스 6종 · 우리 문서로 만든 질문 70개 · 검색 설정(후보 8개 → 상위 4개) 그대로. 노트북 CPU 로 돌아 <b>임베딩 비용 0원</b>, MIT 라이선스, 최대 8,192토큰.</p>
     </div>
     <div class="emb">{{ runtime_table | md }}</div>
   </div>
-  <div class="src">설계서 B.5 · outputs/eval/runtime_retriever.json · 질문 70개(1문항 = 0.014)</div><div class="pg">8</div>
-  <aside class="notes">임베딩은 리더보드 순위로 고르지 않았습니다. 가이드에서도 그건 적절한 이유가 아니라고 하셨습니다. 오픈소스 여섯 개를 저희 문서로 만든 질문 70개로, 실제로 쓸 설정 그대로 비교했고, KURE-v1과 키워드 검색을 섞은 방식이 Hit@4 0.986으로 가장 좋았습니다.</aside>
+  <div class="src">설계서 B.5 · 임베딩 선정 실험(질문 70개, 1문항 = 0.014)</div><div class="pg">8</div>
+  <aside class="notes">임베딩은 리더보드 순위로 고르지 않았습니다. 가이드에서도 그건 적절한 이유가 아니라고 하셨습니다. 오픈소스 여섯 개를 저희 문서로 만든 질문 70개로, 쓸 검색 설정 그대로 비교했고, KURE-v1과 키워드 검색을 섞은 방식이 Hit@4 0.986으로 가장 좋았습니다.</aside>
 </section>
 
 <!-- C-1 -->
@@ -242,7 +250,7 @@
       <div class="lab">무엇을 물을까 — 과제 가이드의 10개 질문을<br>AgTech 실패 요인과 함께 <b style="color:#111">24개 판정 문항</b>으로 풀었습니다</div>
       <p class="note" style="margin-top:18px">AgTech 실패 요인: 농가 ROI · 다작기 실증 · 인허가 · 자본집약도 · 보조금 의존<br><br>표준에 없는 값은 하나뿐 — <b>기준 {{ thr }}</b>. 참고자료 예시 배수(1.1205 · 1.155)보다 낮게 둔 <b>설계 가정</b>이며, 1.00~1.20 민감도를 함께 싣습니다.</p></div>
   </div>
-  <div class="src">설계서 C.1 · rubric.yaml · Payne Scorecard(ACA 2019) · 과제 가이드 Bessemer 체크리스트</div><div class="pg">9</div>
+  <div class="src">설계서 C.1 · Payne Scorecard(ACA 2019) · 과제 가이드 Bessemer 체크리스트</div><div class="pg">9</div>
   <aside class="notes">임원분들이 늘 물으신다는 질문, 평가 기준이 뭐냐, 임의대로 했냐에 대한 답입니다. 기준과 가중치는 Bill Payne의 Scorecard에서, 무엇을 물을지는 과제의 Bessemer 체크리스트에서 가져왔습니다. 저희가 정한 값은 기준 110 하나이고, 이것도 가정이라고 밝히고 민감도를 함께 계산합니다.</aside>
 </section>
 
@@ -254,10 +262,10 @@
     <tr><th style="width:19%">기준 (가중치)</th><th>문항 1</th><th>문항 2</th><th>문항 3</th><th>문항 4</th><th style="width:15%">판정</th></tr>
     {% for d in rubric.dimensions %}<tr><td class="k">{{ d.name }} ({{ d.weight }})</td>{% for q in d.questions %}<td><b>{{ q.id }}</b> {{ q.short }}</td>{% endfor %}<td>{{ {'founder':'창업자 평가','market':'시장성 평가','tech':'기술 요약','competition':'경쟁사 비교','decision':'투자 판단','decide':'투자 판단'}.get(d.owner, d.owner) }}</td></tr>{% endfor %}
   </table>
-  <p class="note"><b>YES·NO 는 원문 인용이 있어야 인정</b>하고, 인용이 실제 원문에 있는지는 코드가 확인합니다. 근거가 없으면 NO 가 아니라 <b>미확인</b>. 애매한 1~5점 척도 대신 이진 판정입니다.
+  <p class="note"><b>YES·NO 는 원문 인용이 있어야 인정</b>하고, 인용이 실제 원문에 있는지 자동으로 대조합니다. 근거가 없으면 NO 가 아니라 <b>미확인</b>. 애매한 1~5점 척도 대신 이진 판정입니다.
   Deal-killer: {% for k in rubric.deal_killers %}<b>{{ k.id }}</b> {{ k.text }}{{ ' · ' if not loop.last }}{% endfor %}</p>
-  <div class="src">설계서 C.2 · rubric.yaml(24문항 · Bessemer 번호 · 실사 문구)</div><div class="pg">10</div>
-  <aside class="notes">이것이 저희 평가표입니다. 여섯 기준에 네 문항씩 스물네 문항이고, 교수님 말씀대로 애매한 점수 척도 대신 YES, NO, 미확인의 이진 판정을 씁니다. YES와 NO는 원문 인용이 있어야 인정하고, 그 인용이 진짜 원문에 있는지 코드가 검사합니다.</aside>
+  <div class="src">설계서 C.2 · 문항별 Bessemer 번호·실사 문구는 설계서 표 참고</div><div class="pg">10</div>
+  <aside class="notes">이것이 저희 평가표입니다. 여섯 기준에 네 문항씩 스물네 문항이고, 교수님 말씀대로 애매한 점수 척도 대신 YES, NO, 미확인의 이진 판정을 씁니다. YES와 NO는 원문 인용이 있어야 인정하고, 그 인용이 진짜 원문에 있는지 자동으로 대조하도록 설계했습니다.</aside>
 </section>
 
 <!-- C-3 점수·결정 -->
@@ -273,27 +281,31 @@
       <li><b>ROI</b> <span>참고치로만 표시 — 점수·결정에 넣지 않음</span></li>
     </ul>
   </div>
-  <div class="src">설계서 C.3 · C.4 · C.6 · C.7 · config.yaml(decision) · agents/decision.py</div><div class="pg">11</div>
+  <div class="src">설계서 C.3 · C.4 · C.6 · C.7</div><div class="pg">11</div>
   <aside class="notes">점수는 Scorecard 원 방법 그대로, 투자받은 동종 평균 기업을 100으로 두고 기준마다 비율을 구해 가중합합니다. 미확인은 0점이 아니라 동종 기업과 비교하기 때문에, 정보가 적다는 이유만으로 떨어지지 않습니다. 보류가 나오면 왜 보류인지 유형을 붙이고, 무엇이 확인되면 투자로 바뀌는지도 계산합니다.</aside>
 </section>
 
-<!-- C-4 사전 점검 -->
+<!-- C-4 기준값 검증 계획 -->
 <section>
-  <div class="kick"><b>C</b>투자판단 기준 · 사전 점검</div>
-  <h2>규칙을 먼저 고정하고 돌려 보니, 10곳 중 <em>1곳</em>만 넘었습니다.</h2>
-  <div class="g12 body" style="grid-template-columns:1.6fr 1fr;gap:44px">
-    <table class="t xs">
-      <tr><th>후보</th><th>동종 평균 대비</th><th>창업자 YES</th><th>미확인</th><th>기준 {{ thr }} 판정</th></tr>
-      {% for r in calib.rows %}<tr{% if r.decision == '투자' %} class="hl"{% endif %}><td class="k">{{ r.name }}</td><td>{{ '%.1f' % (r.M * 100) }}</td><td>{{ r.founder_yes }}</td><td>{{ '%.0f' % (r.unknown_ratio * 100) }}%</td><td>{{ '투자 추천' if r.decision == '투자' else '보류 · ' ~ r.hold_type }}</td></tr>{% endfor %}
-    </table>
-    <div>
-      <div class="topline"><div class="lab" style="margin-top:0">기준을 바꾸면 (투자 추천 수)</div>
-        <table class="t s" style="margin-top:8px">{% for k, v in calib.sens.items() %}<tr{% if k == '%.2f' % dec.threshold %} class="hl"{% endif %}><td class="k">기준 {{ '%.0f' % (k | float * 100) }}</td><td style="text-align:right;font-weight:800">{{ v }}곳</td></tr>{% endfor %}</table></div>
-      <p class="note">실제로 투자를 받은 기업을 넣어 보면 <b>약 100</b>(99.8 · 100.0) — 척도가 뜻대로 작동합니다.</p>
-    </div>
+  <div class="kick"><b>C</b>투자판단 기준 · 기준값 검증 계획</div>
+  <h2>기준값은 결과를 보기 전에 고정하고,<br><em>민감도와 양성 대조</em>로 점검합니다.</h2>
+  <div class="g2 body">
+    <ul class="l">
+      <li><b>① 동종 기준 집단</b> <span>관문을 통과한 후보를 같은 방식으로 평가해 만든다. 대상 기업은 자기 자신을 빼고 평균을 낸다 (자기 제외). {{ dec.reference_min_n }}곳 미만이면 평균 신호를 0으로 둔다</span></li>
+      <li><b>② 민감도</b> <span>기준 {% for t in dec.sensitivity %}{{ '%.0f' % (t * 100) }}{{ ' · ' if not loop.last }}{% endfor %} 에서 투자 추천이 몇 곳인지 보고서에 함께 싣는다</span></li>
+    </ul>
+    <ul class="l">
+      <li><b>③ 양성 대조</b> <span>실제로 투자를 받은 기업을 넣어, 점수가 '평균 = 100' 근처에 오는지로 척도를 점검한다</span></li>
+      <li><b>④ 고정</b> <span>결과를 본 뒤 기준값을 바꾸지 않는다. 바꾸려면 설정 값 하나로 바꾸고, 바뀐 결과는 민감도 표로 이미 보인다</span></li>
+    </ul>
   </div>
-  <div class="src">설계서 C.8 · data/reference_class.json(기준 집단 {{ calib.n }}곳, 자기 제외) · outputs/eval/positive_control.json</div><div class="pg">12</div>
-  <aside class="notes">규칙은 먼저 고정하고 돌려 봤습니다. 기준 집단 10곳 가운데 110을 넘은 곳은 한 곳이었고, 기준을 100부터 120까지 바꿨을 때 추천 수가 어떻게 달라지는지도 함께 보여 드립니다. 실제로 투자를 받은 회사는 100 근처에 놓여, 척도가 의도대로 작동합니다.</aside>
+  <table class="t s" style="margin-top:34px">
+    <tr><th style="width:22%">보고서에 실릴 민감도 표 (양식)</th>{% for t in dec.sensitivity %}<th style="text-align:center">기준 {{ '%.0f' % (t * 100) }}</th>{% endfor %}</tr>
+    <tr><td class="k">투자 추천 수</td>{% for t in dec.sensitivity %}<td style="text-align:center;color:#9aa1a9">{{ '— 곳' }}</td>{% endfor %}</tr>
+    <tr><td class="k">추천 기업</td>{% for t in dec.sensitivity %}<td style="text-align:center;color:#9aa1a9">—</td>{% endfor %}</tr>
+  </table>
+  <div class="src">설계서 C.8</div><div class="pg">12</div>
+  <aside class="notes">기준 110은 참고자료의 예시보다 낮게 둔 가정이기 때문에, 결과를 보기 전에 고정하고 세 가지로 점검하도록 설계했습니다. 기준을 100부터 120까지 바꿨을 때 추천 수가 어떻게 달라지는지 보고서에 함께 싣고, 실제로 투자를 받은 기업이 평균 100 근처에 오는지로 척도가 맞는지 확인합니다.</aside>
 </section>
 
 <!-- D-1 State -->
@@ -309,7 +321,7 @@
     </table>
     {% endfor %}
   </div>
-  <div class="src">설계서 D.1 · graph/state.py</div><div class="pg">13</div>
+  <div class="src">설계서 D.1</div><div class="pg">13</div>
   <aside class="notes">State는 교수님 말씀대로 데이터를 담는 그릇이 아니라 에이전트 사이의 인터페이스 규격으로 설계했습니다. 22개 키 중 여러 에이전트가 이어 써야 하는 근거 저장소, 평가 누적 같은 키에만 Reducer를 붙이고 나머지는 덮어씁니다.</aside>
 </section>
 
@@ -325,7 +337,7 @@
       <li><b>Loop</b> <span>평가 최대 {{ cfg.workflow.max_evaluations }}곳 · 발굴 {{ cfg.workflow.max_discovery_rounds }}라운드 · recursion_limit {{ wf2.recursion_limit }}</span></li>
     </ul>
   </div>
-  <div class="src">설계서 D.2 · graph/builder.py (간선 10개가 설계 그림과 1:1인지 테스트로 확인)</div><div class="pg">14</div>
+  <div class="src">설계서 D.2 · 간선 10개</div><div class="pg">14</div>
   <aside class="notes">그래프는 가이드의 안을 그대로 따르고 창업자 평가 한 노드만 넣었습니다. 투자 판단이 보류면 탐색으로 돌아가 다른 스타트업을 평가하고, 투자 추천이 나오거나 평가 상한에 닿으면 보고서로 갑니다. 반 공용 키를 쓰기 때문에 반복에는 반드시 상한을 두었습니다.</aside>
 </section>
 
@@ -342,7 +354,7 @@
       <li><b>상한</b> <span>recursion_limit {{ rag2.rag_recursion_limit }} · 점검한 답 중 가장 나은 답을 낸다</span></li>
     </ul>
   </div>
-  <div class="src">설계서 D.4 · rag/agentic_rag.py</div><div class="pg">15</div>
+  <div class="src">설계서 D.4</div><div class="pg">15</div>
   <aside class="notes">RAG도 그래프로 설계했습니다. 어디서 찾을지 LLM이 도구를 고르고, 찾은 조각이 관련 있는지 판정해 모자라면 질의를 고쳐 다시 찾습니다. 마지막으로 답변이 근거에 맞는지 점검하고, 각 반복에는 상한이 있습니다.</aside>
 </section>
 
@@ -350,7 +362,7 @@
 <section>
   <div class="kick"><b>E</b>투자 보고서 목차(초안)</div>
   <h2>보고서는 SUMMARY 반 장으로 결론을 내고,<br>근거는 본문 몇 장에 있는지 <em>연결</em>합니다.</h2>
-  <div class="g3 body" style="gap:30px">
+  <div class="g3 body etoc" style="gap:30px">
     <div class="topline g"><div style="font-size:22px;font-weight:800">A안 · 투자 추천</div>
       <ul class="l" style="margin-top:10px"><li>SUMMARY <span>상황 → 결론 → 근거(→n장) → 요청</span></li><li>1. 사업 아이디어·기술·경쟁 차별성</li><li>2. 시장 규모와 성장성</li><li>3. 팀의 구성</li><li>4. 투자 판단과 사업 리스크</li><li>5. 한계점</li><li>REFERENCE</li></ul></div>
     <div class="topline"><div style="font-size:22px;font-weight:800">B안 · 모두 보류</div>
@@ -359,7 +371,7 @@
       <ul class="l" style="margin-top:10px"><li>SUMMARY</li><li>1. 탐색 경과와 탈락 사유</li><li>2. 한계점</li><li>REFERENCE</li></ul>
       <p class="note" style="margin-top:14px"><b>공통 규칙</b> 5장 이내 · SUMMARY 에 개요 문장 금지 · REFERENCE 는 기관 보고서 / 학술 논문 / 웹페이지 형식 그대로</p></div>
   </div>
-  <div class="src">설계서 E · agents/report.py(렌더링 뒤 쪽수 · SUMMARY 높이 · REFERENCE 형식 자동 검사)</div><div class="pg">16</div>
+  <div class="src">설계서 E · 렌더링 후 쪽수·SUMMARY 높이·REFERENCE 형식을 자동으로 검사</div><div class="pg">16</div>
   <aside class="notes">보고서 목차입니다. 맨 앞 SUMMARY 반 장에 상황, 결론, 근거, 요청을 넣고, 근거마다 본문 몇 장에 있는지 연결합니다. 결과에 따라 투자 추천, 모두 보류, 후보 없음 세 가지 목차를 두었고, 모두 보류일 때는 교수님 말씀대로 후보마다 왜 안 되는지로 보고서를 구성합니다.</aside>
 </section>
 
@@ -374,9 +386,9 @@
     <tr><td class="k">C. 평가표</td><td>Payne Scorecard 6기준 × 4문항 · Bessemer 10문 · 동종 평균 대비 {{ thr }} ∧ 창업자 근거 ∧ Deal-killer 없음 · 민감도 1.00~1.20</td><td>C.1 ~ C.8</td></tr>
     <tr><td class="k">D. 그래프</td><td>State {{ n_state }}개 키 · 가이드 Graph(안) + 창업자 평가 · 보류 → 다음 후보(최대 {{ cfg.workflow.max_evaluations }}곳) · Agentic RAG 서브그래프</td><td>D.1 ~ D.4</td></tr>
     <tr><td class="k">E. 보고서</td><td>SUMMARY 반 장 → 본문 5장 이내 → REFERENCE · 투자 추천 / 모두 보류 / 후보 없음 목차</td><td>E</td></tr>
-    <tr><td class="k">운영</td><td>{{ cfg.models.generator }} · 임베딩 비용 0원 · 검색·LLM 응답 캐시로 API 키 없이 같은 결과 재현</td><td>README</td></tr>
+    <tr><td class="k">운영</td><td>{{ cfg.models.generator }} · 임베딩 비용 0원 · 검색·LLM 응답을 캐시해 API 키 없이 같은 결과를 재현</td><td>A.2 · B.5</td></tr>
   </table>
-  <div class="src">RAG-Design_{{ team.campus }}-{{ team['class'] }}_{{ members | join('+') }}.pdf · github.com/skala-smart-farm/agtech-investment-agent-v2</div><div class="pg">17</div>
+  <div class="src">SKALA {{ team.campus }}캠퍼스 {{ team['class'] }} {{ team.team }} · {{ members_line }}</div><div class="pg">17</div>
   <aside class="notes">정리하겠습니다. 평가 기준은 Scorecard와 Bessemer라는 표준에서 가져왔고, 모든 판단은 원문 인용이 확인될 때만 인정하며, 반 공용 키를 쓰는 만큼 반복에는 상한을 두었습니다. 과제의 다섯 항목이 설계서의 어느 장에 있는지 표로 정리했습니다. 감사합니다.</aside>
 </section>
 
@@ -388,6 +400,15 @@ document.querySelectorAll('.reveal .slides > section').forEach(function (s) {
   var d = document.createElement('div'); d.className = 'in';
   Array.prototype.slice.call(s.childNodes).forEach(function (c) { if (c.tagName !== 'ASIDE') d.appendChild(c); });
   s.insertBefore(d, s.firstChild);
+  if (s.classList.contains('cover')) return;
+  // 제목(kick·h2) 아래 남는 영역의 세로 가운데에 본문을 둔다 (위로 몰리고 아래가 비는 것을 막음)
+  var box = document.createElement('div'); box.className = 'content';
+  Array.prototype.slice.call(d.childNodes).forEach(function (c) {
+    if (c.nodeType !== 1) return;
+    if (c.classList.contains('kick') || c.tagName === 'H2' || c.classList.contains('src') || c.classList.contains('pg')) return;
+    box.appendChild(c);
+  });
+  var h2 = d.querySelector('h2'); if (h2) h2.after(box); else d.appendChild(box);
 });
 mermaid.initialize({startOnLoad:false, theme:"neutral", securityLevel:"loose",
   themeVariables:{fontFamily:"Pretendard, sans-serif", fontSize:"15px"},
