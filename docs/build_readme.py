@@ -305,6 +305,19 @@ def _target(run: dict, r: dict, sens: dict | None, thr: float) -> dict | None:
             "first_hold": f"{float(first_hold) * 100:.0f}" if first_hold else "", "roi": roi_line}
 
 
+def _escape_tilde(md: str) -> str:
+    """GitHub 은 ~a~ 를 취소선으로 그린다(예: '10~20% … $107M~$214M'). 코드 블록 · 인라인 코드 밖의 ~ 는 \\~ 로 쓴다."""
+    out, fence = [], False
+    for line in md.split("\n"):
+        if line.lstrip().startswith("```"):
+            fence = not fence
+        elif not fence:
+            parts = line.split("`")
+            line = "`".join(x.replace("~", "\\~") if i % 2 == 0 else x for i, x in enumerate(parts))
+        out.append(line)
+    return "\n".join(out)
+
+
 def _eval_rows(evals: list[dict]) -> list[dict]:
     """평가한 후보 전체(배수 순)와 판정 — 투자 추천 대상을 어떻게 골랐는지 보인다."""
     rows = sorted((e for e in evals if e.get("multiplier") is not None), key=lambda e: -e["multiplier"])
@@ -423,7 +436,7 @@ def build(run_file: str = "outputs/run_log.json", out: Path | None = None) -> st
     md = env.get_template("README.md.j2").render(**context(run_file))
     md = re.sub(r"\n{3,}", "\n\n", md).strip() + "\n"
     out = out or ROOT / "README.md"
-    out.write_text(md, encoding="utf-8")
+    out.write_text(_escape_tilde(md), encoding="utf-8")
     return str(out)
 
 
