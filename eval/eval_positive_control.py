@@ -4,7 +4,7 @@
 "초기 기업의 공개 정보 부족" 때문인지 가르기 위한 실험이다.
 적격성 검증 → 창업자 → 기술 → 시장성 → 경쟁사 → 투자 판단을 그래프와 같은 순서로 실행한다 (v2: 동종 기준 집단 대비 배수).
 결과는 기업마다 outputs/eval/positive_control.json 에 바로 쓴다 (중간에 실패해도 앞 기업 결과와 실패 사유가 남는다).
-기업별: decision(투자/보류/적격성 탈락/실행 실패), multiplier(동종 평균 = 1.00), hold_type, founder_yes, unknown_ratio,
+기업별: decision(투자/보류/적격성 탈락/실행 실패), multiplier(동종 평균 = 1.00), hold_type, founder_yes, founder_c, unknown_ratio,
 reasons, 뒤집힘 조건, 강등된 YES(rejected_yes), 미확인 문항, 기준별 점수(동종 평균 = 100), 기준 배수 민감도,
 그 기업 평가 중 실패한 웹 검색 수. v1 결과(100점 만점 70점 기준: 0/3)는 v1-safe 태그에 남아 있다.
 
@@ -55,7 +55,8 @@ def _evaluate(c: dict) -> dict:
     sc = decision_node(state)["scorecard"]
     return {"name": c["name"], "eligible": True, "stage": rec["stage"], "decision": sc["decision"],
             "multiplier": sc["multiplier"], "threshold": sc["threshold"], "hold_type": sc["hold_type"],
-            "founder_yes": sc["founder_yes"], "unknown_ratio": sc["unknown_ratio"], "reasons": sc["reasons"],
+            "founder_yes": sc["founder_yes"], "founder_c": sc.get("founder_c"), "unknown_ratio": sc["unknown_ratio"],
+            "reasons": sc["reasons"],
             "flip": (sc.get("flip") or {}).get("note"), "reference_n": (sc.get("reference") or {}).get("n"),
             "rejected_yes": [{"qid": r["qid"], "reason": r["reason"]} for r in sc["rejected_yes"]],
             "unknown_qids": [r["qid"] for r in sc["rows"] if r["answer"] == "UNKNOWN"],

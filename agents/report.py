@@ -167,6 +167,11 @@ def _s100(m: float | None) -> str:
     return "-" if m is None else f"{m * 100:.0f}"
 
 
+def _s1(m: float | None) -> str:
+    """배수 → 소수 한 자리 표기 (결론 줄: 기준과 가까운 값이 반올림으로 기준과 같아 보이지 않게, 예 1.096 → 109.6)."""
+    return "-" if m is None else f"{m * 100:.1f}"
+
+
 def _p100(pct: float | None) -> str:
     """기준별 점수(투자 판단 에이전트가 c_d × 100 으로 준 값) → 보고서 표기. _s100 과 달리 다시 곱하지 않는다."""
     return "-" if pct is None else f"{pct:.0f}"
@@ -246,7 +251,7 @@ def _funnel(pool: dict) -> str:
 
 
 def _hold_counts(evals: list[dict]) -> str:
-    order = ("동종 대비 열위", "정보 부족", "창업자 근거 없음", "Deal-killer")
+    order = ("동종 평균 이하", "창업자 점수 평균 미만", "Deal-killer")
     types = [e.get("hold_type") or (e.get("scorecard") or {}).get("hold_type") for e in evals]
     return " · ".join(f"{t} {types.count(t)}" for t in order if types.count(t))
 
@@ -524,11 +529,12 @@ def _criteria_rows(sc: dict) -> list[list[str]]:
 
 def _rule_line(sc: dict, cfg) -> str:
     t, design = sc["threshold"], _design_threshold()
-    why = (f"두 참고자료 예시 배수 1.1205(Eqvista)·1.155(ACA 2019)보다 낮은 {t:.2f}, 설계 가정"
-           if abs(t - design) < 1e-9 else f"이번 실행에 지정한 기준(설계 기준 {design:.2f}과 다름)")
-    return (f"투자 추천 ⇔ 배수 ≥ {t:.2f}(표기 {_s100(t)}) ∧ 창업자 문항 YES ≥ {cfg.decision.min_founder_yes} ∧ Deal-killer 없음. "
-            f"기준 {t:.2f}: {why}. 기준별 배수 = 1 + {cfg.decision.step} × 평균(문항 신호 − 동종 평균 신호)"
-            f"({cfg.decision.clip[0]}~{cfg.decision.clip[1]}로 자름), 신호 YES +1 · NO −1 · 미확인 0")
+    why = ("Payne Scorecard 원 방법의 기준점 '투자를 받은 동종 평균 기업 = 100%'" if abs(t - design) < 1e-9
+           else f"이번 실행에 지정한 기준(설계 기준 {design:.2f}과 다름)")
+    return (f"투자 추천 ⇔ 동종 평균 대비 배수 > {t:.2f}(표기 {_s100(t)}) ∧ 창업자 기준 ≥ 동종 평균 ∧ Deal-killer 없음. "
+            f"기준 {t:.2f}: {why}. 창업자 조건: 팀이 가장 중요한 요인(Payne 가중치 30%) — 팀이 평균 미만이면 보류. "
+            f"기준별 배수 = 1 + {cfg.decision.step} × 평균(문항 신호 − 동종 평균 신호)"
+            f"({cfg.decision.clip[0]}~{cfg.decision.clip[1]}로 자름: Payne 예시 비율 75~150%를 포함), 신호 YES +1 · NO −1 · 미확인 0")
 
 
 def _reference_members(ref: dict, cfg) -> list[dict]:
@@ -660,7 +666,7 @@ def _limitations(cfg, pool: dict, failed_by: dict[str, int], data_limits: list[s
                    + (f" — '투자 추천 없음'은 평가한 {pool['evaluated']}곳에 대한 결론이다" if mode == "hold" else ""))
     if mode != "none":
         out.append("동종 기준 집단 평균 대비 상대 평가라 기준 집단 전체의 질이 낮으면 상대적으로 나은 기업이 추천될 수 있다"
-                   f"{_reference_mix()}. 관문(실제 투자 유치 확인)·창업자 근거 요건·Deal-killer·실사 조건으로 보완한다")
+                   f"{_reference_mix()}. 관문(실제 투자 유치 확인)·창업자 기준(동종 평균 이상) 요건·Deal-killer·실사 조건으로 보완한다")
         out.append("ROI 는 환율·지분율·회수 배수 가정에 따른 참고치이며 점수와 결정에 넣지 않았다")
     out += data_limits[:1]
     out.append(f"문항 판정은 {cfg.models.judge} 가 하고, 코드는 인용이 원문에 있는지·제3자·최근 24개월·상용 운영 요건만 검사한다"
@@ -837,8 +843,8 @@ def _team_blocks(target: dict, d: dict, reg: SourceRegistry, detail: bool) -> li
 def _chapters_invest(target: dict, d: dict, t: dict, reg: SourceRegistry, cfg, pool: dict) -> list[dict]:
     sc = target["scorecard"]
     c2_yes = t["verdict"].get("C2") == "YES"
-    ch4_lead = (f"동종 평균 대비 {_s100(sc['multiplier'])}(평균 100, 기준 {_s100(sc['threshold'])}), 창업자 근거 "
-                f"{sc.get('founder_yes', 0)}개 확인, Deal-killer 없음 — 투자 추천(실사 조건부)")
+    ch4_lead = (f"동종 평균 대비 {_s1(sc['multiplier'])}(동종 평균 100 초과), 창업자 기준 {_s1(sc.get('founder_c'))}"
+                f"(동종 평균 이상), Deal-killer 없음 — 투자 추천(실사 조건부)")
     judge = [_table(["기준 (비중)", "YES / NO / 미확인", "동종 평균 대비", "기여", "핵심 사실"], _criteria_rows(sc),
                     ["18%", "13%", "11%", "8%", "50%"], small=True),
              _note(_rule_line(sc, cfg)), _note(_reference_line(sc, cfg)), _note(_sensitivity_line(sc)),
@@ -901,7 +907,8 @@ def _chapters_hold(evals: list[dict], target: dict, d: dict, t: dict, reg: Sourc
         pool_blocks.append(_note(f"미평가 적격 후보 {len(un)}곳 ({pool['why']}): " + ", ".join(
             f"{u['name']}({u['stage']}{', 관문 검색 실패' if u['search_failed'] else ''})" for u in un)))
     ht = target.get("hold_type") or sc.get("hold_type")
-    top_why = (f"기준 {_s100(thr)}에 못 미쳤다" if sc["multiplier"] < thr else f"배수 기준은 넘었지만 보류 유형 '{ht}'에 해당한다")
+    top_why = (f"기준 {_s100(thr)}을 넘지 못했다" if sc["multiplier"] <= thr   # 투자 ⇔ 배수 > 기준 (같으면 보류)
+               else f"배수 기준은 넘었지만 보류 유형 '{ht}'에 해당한다")
     detail = [{"t": "h3", "text": B_DETAIL[0]}] + _idea_blocks(target, d, reg, c2_yes, t["notes"], with_competition=False)
     detail += [{"t": "h3", "text": B_DETAIL[1]}] + _market_blocks(target, d, reg)
     detail += [{"t": "h3", "text": B_DETAIL[2]}] + _team_blocks(target, d, reg, detail=False)
@@ -1152,19 +1159,19 @@ def report_node(state: dict) -> dict:
     if mode == "invest":
         rank = sc.get("target_rank")
         peer = f"동종 {sc.get('peer_n')}곳 중 {rank}위" if rank else f"기준 집단 {(sc.get('reference') or {}).get('n', 0)}곳"
-        conclusion = (f"{target['name']} 투자 추천(실사 조건부) — 동종 평균 대비 {_s100(sc['multiplier'])}"
-                      f"(평균 100, 기준 {_s100(sc['threshold'])}), {peer}")
+        conclusion = (f"{target['name']} 투자 추천(실사 조건부) — 동종 평균 대비 {_s1(sc['multiplier'])}"
+                      f"(동종 평균 100 초과, 창업자 기준 {_s1(sc.get('founder_c'))}), {peer}")
         situation = f"{_funnel(pool)} → {evals.index(target) + 1}번째 평가 대상 {target['name']}({prof.get('stage') or '-'}, {seg})"
         request = (f"실사 확인 항목 {k_dd}개를 조건으로 투자심의 상정을 진행할까요?" if k_dd else "투자심의 상정을 진행할까요?")
         title = f"{target['name']} 투자 검토 — 투자 추천(실사 조건부)"
         badge = "투자 추천"
         expect = lambda c: (c.startswith(f"{target['name']} 투자 추천") and target["decision"] == "투자"  # noqa: E731
-                            and f"동종 평균 대비 {_s100(sc['multiplier'])}" in c)
+                            and f"동종 평균 대비 {_s1(sc['multiplier'])}" in c)
     else:
         scope = (f"적격 {pool['eligible']}곳 중 비용 상한 {len(evals)}곳 평가" if un and pool["capped"]
                  else f"적격 {pool['eligible']}곳 중 {len(evals)}곳 평가" if un else f"적격 {pool['eligible']}곳 모두 평가")
         conclusion = (f"투자 추천 없음 — 평가한 {len(evals)}곳 모두 보류({scope}), 최고점 {target['name']} 동종 평균 대비 "
-                      f"{_s100(sc['multiplier'])}(기준 {_s100(sc['threshold'])})")
+                      f"{_s1(sc['multiplier'])}(기준 {_s100(sc['threshold'])})")
         situation = f"{_funnel(pool)} → {len(evals)}곳 평가(국내 {pool['ev_split'][0]}·해외 {pool['ev_split'][1]})"
         request = (f"{target['name']} 실사 착수 또는 미평가 적격 {len(un)}곳 추가 평가를 승인할까요?" if un
                    else f"{target['name']} 실사 착수를 승인할까요?")

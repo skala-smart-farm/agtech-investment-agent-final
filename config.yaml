@@ -88,11 +88,10 @@ workflow:
 decision:
   # Payne Scorecard 의 비교 원리(동종 투자 유치 기업 평균 = 1.00). v1 의 100점 만점 규칙(70점)은 쓰지 않는다
   method: payne_relative               # 6개 기준마다 동종 기준 집단 평균 대비 배수를 구해 가중합(M)
-  threshold: 1.10                      # 투자 기준 배수. 두 참고자료 예시 배수 1.1205(Eqvista)·1.155(ACA 2019)보다 낮은 1.10 (원전에 go/no-go 기준 없음 → 설계 가정)
+  threshold: 1.00                      # 투자 ⇔ 배수 M 이 이 값을 '초과'. 1.00 = Payne 원 방법의 기준점 '투자를 받은 동종 평균 기업(100%)' — 새로 정한 숫자가 아님
   step: 0.5                            # 기준별 배수 c = clip(1 + step × 평균(문항 신호 − 동종 평균 신호))
   clip: [0.5, 1.5]                     # 기준별 배수 c 의 하한·상한
-  min_founder_yes: 1                   # 창업자 문항(F1~F4) YES 최소 개수 (미달이면 보류: 창업자 근거 없음)
-  info_gap_ratio: 0.6                  # 보류일 때 미확인 문항 비율이 이 값 이상이면 보류 유형을 '정보 부족'으로 표시
+  founder_min_c: 1.00                  # 창업자 기준 비율 c_founder 가 이 값 이상이어야 투자 (팀이 동종 평균 이상). Payne: "A great team will fix early product flaws, but the reverse is not true"
   reference_file: data/reference_class.json   # 동종 기준 집단 (app.py --calibrate 가 만든다)
   reference_min_n: 5                   # 기준 집단이 이 수보다 작으면 동종 평균 신호를 0 으로 둔다(fallback)
   sensitivity: [1.00, 1.05, 1.10, 1.15, 1.20]   # 기준 배수 민감도 (배수마다 결정을 기록)

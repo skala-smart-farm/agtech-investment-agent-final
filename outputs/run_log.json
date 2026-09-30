@@ -1,8 +1,8 @@
 {
   "run_date": "2026-09-30",
-  "elapsed_sec": 8.9,
+  "elapsed_sec": 8.1,
   "mode": "main",
-  "threshold": 1.1,
+  "threshold": 1.0,
   "end_reason": "invest_found",
   "models": {
     "generator": "gpt-4.1-mini",
@@ -304,11 +304,11 @@
       "stage": "Pre-A",
       "decision": "투자",
       "hold_type": null,
-      "multiplier": 1.1014,
-      "score100": 110.1,
+      "multiplier": 1.0958,
+      "score100": 109.6,
       "reasons": [
-        "동종 평균 대비 110(평균 100, 기준 110) — 기준 충족",
-        "창업자 문항(F1~F4) YES 2개 (최소 1개)",
+        "동종 평균 대비 109.6(동종 평균 100) — 동종 평균보다 높음",
+        "창업자 기준 118.1(동종 평균 100) — 동종 평균 이상",
         "Deal-killer 없음"
       ],
       "flip": null,
@@ -367,9 +367,9 @@
           "no": 0,
           "unknown": 2,
           "n": 4,
-          "pct": 105.6,
-          "peer_mean": 0.389,
-          "contribution": 0.2639
+          "pct": 108.3,
+          "peer_mean": 0.333,
+          "contribution": 0.2708
         },
         {
           "dim": "product",
@@ -379,9 +379,9 @@
           "no": 0,
           "unknown": 2,
           "n": 3,
-          "pct": 111.1,
-          "peer_mean": 0.111,
-          "contribution": 0.1667
+          "pct": 107.4,
+          "peer_mean": 0.185,
+          "contribution": 0.1611
         },
         {
           "dim": "competition",
@@ -391,9 +391,9 @@
           "no": 0,
           "unknown": 4,
           "n": 4,
-          "pct": 94.4,
-          "peer_mean": 0.111,
-          "contribution": 0.0944
+          "pct": 91.7,
+          "peer_mean": 0.167,
+          "contribution": 0.0917
         },
         {
           "dim": "traction",
@@ -403,9 +403,9 @@
           "no": 0,
           "unknown": 4,
           "n": 4,
-          "pct": 100.0,
-          "peer_mean": 0.0,
-          "contribution": 0.1
+          "pct": 95.8,
+          "peer_mean": 0.083,
+          "contribution": 0.0958
         },
         {
           "dim": "deal",
@@ -456,31 +456,31 @@
         {
           "qid": "M1",
           "answer": "YES",
-          "rationale": "글로벌 애그테크 시장 규모가 공공기관 문서에서 2020년 91억 달러에서 2025년 226억 달러로 성장할 것으로 수치와 함께 명확히 제시되어 있어 M1 요건을 충족한다.",
-          "quote": "글로벌 애그테크 시장은 인공지능, 사물인터넷(IoT), 위성기반 원격측정, 클라우드 컴퓨팅 등 기술발전을 통해 2020년 91억 달러에서 2025년 226억 달러 규모로 연평균 20%의 빠른 성장세를 보일 것으로 전망된다.",
+          "rationale": "글로벌 스마트 농업 시장 규모와 성장률이 공공기관 문서에서 구체적 수치와 기간을 포함하여 확인되므로 YES 판정한다.",
+          "quote": "BIS Research는 글로벌 스마트 농업시장이 2023년 174억 달러에서 2034년 1,172억 달러에 달할 것으로 추정하였으며, 2024~2034년 예측 기간 동안 연평균 19.1%의 성장률을 기록할 것으로 예상하였다.",
           "evidence_ids": [
-            "D41703"
+            "Deaac5"
           ]
         },
         {
           "qid": "M2",
           "answer": "UNKNOWN",
-          "rationale": "최근 24개월 이내 근거 아님 → UNKNOWN 강등 (근거 문서 D41703(2023-03)에서 글로벌 애그테크 시장이 2020년 91억 달러에서 2025년 226억 달러로 연평균 20% 성장할 것으로 명확히 제시되어 있어, 최근 24개월 내의 성장 근거로 인정된다.)",
+          "rationale": "인용문이 근거 본문에서 확인되지 않음 → UNKNOWN 강등 (최근 2년 내 발행된 근거에서 투자액 증가 수치가 명확히 제시되어 해당 분야가 성장 중임을 확인할 수 있으므로 YES 판정한다.)",
           "quote": "",
           "evidence_ids": []
         },
         {
           "qid": "M3",
           "answer": "UNKNOWN",
-          "rationale": "경제적 효과가 수치로 제시되었으나, 출처가 회사 대표 발언으로 제3자 근거가 아니므로 UNKNOWN 판정한다.",
+          "rationale": "회사 측 발언·계획(제3자 근거 아님) → UNKNOWN 강등 (제3자 출처 기사에서 고객 문제와 제품의 경제적 효과(인건비 절감 수치)를 수치로 제시하고 있어 YES 판정함.)",
           "quote": "",
           "evidence_ids": []
         },
         {
           "qid": "M4",
           "answer": "YES",
-          "rationale": "과금 방식이 구독형 요금제 및 수확량 비례 과금으로 구체적으로 서술되어 있어 M4 요건을 충족한다.",
-          "quote": "로봇 구입 가격이 부담되는 농가를 위해 구독형 요금제로 출시할 방침이다. 로봇이 수확한 작물의 양에 비례해 1kg당 요금을 받는 식이다.",
+          "rationale": "과금 방식이 구독형 요금제 및 수확량 비례 과금으로 구체적으로 서술되어 있어 YES 판정함.",
+          "quote": "로봇 구입 가격이 부담되는 농가를 위해 구독형 요금제로 출시할 방침이다. 로봇이 수확한 작물의 양에 비례해 1kg당 요금을 받는 식이다",
           "evidence_ids": [
             "Wc3a78"
           ]
@@ -518,56 +518,56 @@
         {
           "qid": "C1",
           "answer": "UNKNOWN",
-          "rationale": "인용 주변(±300자)에 회사명이 없음 (업계 일반론이 아니라 이 회사 이야기여야 함) → UNKNOWN 강등 (근거 [Wfc2e9]에 2026년 8월 15일자 기사에서 신한투자증권이 특허 2건 출원에 성공했다는 문장이 있으나, 메타파머스의 특허 출원·등록 현황은 확인 불가하므로 메타파머스에 관한 특허 근거는 없다. 따라서 C1은 UNKNOWN이다.)",
+          "rationale": "인용 주변(±300자)에 회사명이 없음 (업계 일반론이 아니라 이 회사 이야기여야 함) → UNKNOWN 강등 (근거 [Wfc2e9]에 2026년 8월 기준으로 신한투자증권이 특허 2건을 출원했다는 문장이 있어, 메타파머스의 특허 출원 여부는 직접 확인되지 않으나, 메타파머스 관련 특허 출원 현황은 불분명하다. 따라서 메타파머스에 관한 특허 출원 근거는 없다. 따라서 C1은 UNKNOWN이다.)",
           "quote": "",
           "evidence_ids": []
         },
         {
           "qid": "C2",
           "answer": "UNKNOWN",
-          "rationale": "인용문이 근거 본문에서 확인되지 않음 → UNKNOWN 강등 (근거 문서에서 메타파머스가 경쟁사 대비 다목적 농작업 로봇과 원격제어 소프트웨어를 통해 다양한 농작업을 단일 플랫폼에서 처리하는 범용성을 갖추었다고 명확히 기술되어 있어, 경쟁사와 구체적인 차별점이 확인된다.)",
+          "rationale": "인용문이 근거 본문에서 확인되지 않음 → UNKNOWN 강등 (근거 문단에서 메타파머스가 경쟁사인 영국 더그투스와 비교하여 원가절감을 통한 저렴한 생산가를 목표로 한다는 구체적인 차별점이 명시되어 있어 경쟁사 2곳 이상과 비교한 구체적 차별점이 확인된다.)",
           "quote": "",
           "evidence_ids": []
         },
         {
           "qid": "C3",
           "answer": "UNKNOWN",
-          "rationale": "인용문이 근거 본문에서 확인되지 않음 → UNKNOWN 강등 (근거 문서에 메타파머스가 자체 데이터 파이프라인과 강화학습 기반 알고리즘을 보유하고 있어 진입장벽이 존재한다는 구체적 사실이 명시되어 있어, 사용이 늘수록 자체 데이터가 쌓여 성능이 좋아지는 구조임이 확인된다.)",
+          "rationale": "인용문이 근거 본문에서 확인되지 않음 → UNKNOWN 강등 (근거 문단에 메타파머스가 자체 데이터 파이프라인과 강화학습 기반 알고리즘을 보유하고 있어 진입장벽이 존재한다는 문장이 있어, 사용이 늘수록 자체 데이터가 쌓여 성능이 좋아지거나 연동 구조에 따른 교체 비용이 드는 구조임이 확인된다.)",
           "quote": "",
           "evidence_ids": []
         },
         {
           "qid": "C4",
           "answer": "UNKNOWN",
-          "rationale": "반대 사실이 아니라 근거 부족 → NO 대신 UNKNOWN (근거 [W2a166]에 따르면 메타파머스는 농협 등과 PoC를 진행 중이나 계약이나 공동사업 체결 근거는 없고, MOU만 있거나 계획 단계로 보인다. 따라서 계약이나 공동사업이 확인되지 않아 NO 판정한다.)",
+          "rationale": "반대 사실이 아니라 근거 부족 → NO 대신 UNKNOWN (근거 문단에 농협 등과 PoC(기술 검증)를 진행 중이라는 내용은 있으나, 계약이나 공동사업 체결에 대한 구체적 언급은 없고 MOU 여부도 불분명하다. 따라서 계약이나 공동사업이 확인되지 않아 NO 판정한다.)",
           "quote": "",
           "evidence_ids": []
         },
         {
           "qid": "R1",
           "answer": "UNKNOWN",
-          "rationale": "근거 문서에서 메타파머스의 매출액과 연도에 관한 구체적인 재무정보가 확인되지 않아, 연도가 적힌 매출액이 기업 DB·공시·보도로 확인되는지 판단할 수 없습니다.",
+          "rationale": "근거 문서에서 메타파머스의 매출액과 연도에 관한 구체적인 재무정보가 확인되지 않는다. 투자 유치 금액은 있으나 매출액과 연도는 명확히 제시되지 않아 판정 불가.",
           "quote": "",
           "evidence_ids": []
         },
         {
           "qid": "R2",
           "answer": "UNKNOWN",
-          "rationale": "유료 고객 수, 설치 규모(고객 수, 농가 수, 면적, 두수, 계약 금액) 등의 수치가 근거 문서에 명확히 제시되어 있지 않아 확인할 수 없습니다.",
+          "rationale": "유료 고객 수, 설치 규모, 농가 수, 면적, 두수, 계약 금액 등 수치로 확인 가능한 구체적 근거가 근거 문서에 없다.",
           "quote": "",
           "evidence_ids": []
         },
         {
           "qid": "R3",
           "answer": "UNKNOWN",
-          "rationale": "같은 고객의 재계약·확대 도입이나 여러 해 연속 사용에 대한 구체적인 근거가 문서에 없으므로 판단할 수 없습니다.",
+          "rationale": "같은 고객의 재계약, 확대 도입, 여러 해 연속 사용에 관한 구체적 근거가 근거 문서에 존재하지 않는다.",
           "quote": "",
           "evidence_ids": []
         },
         {
           "qid": "R4",
           "answer": "UNKNOWN",
-          "rationale": "정부 보조사업이 아닌 매출(민간 판매, 수출, 기업 간 계약)에 관한 구체적인 근거가 제시되어 있지 않아 확인할 수 없습니다.",
+          "rationale": "정부 보조사업이 아닌 민간 판매, 수출, 기업 간 계약에 의한 매출 근거가 명확히 확인되지 않는다.",
           "quote": "",
           "evidence_ids": []
         },
@@ -594,14 +594,14 @@
         {
           "qid": "D3",
           "answer": "UNKNOWN",
-          "rationale": "기업가치나 투자 지분율에 관한 구체적인 수치가 공개된 근거가 없다.",
+          "rationale": "투자 단계와 금액은 공개되었으나, 기업가치나 투자 지분율에 대한 구체적 수치나 공개 근거는 없다.",
           "quote": "",
           "evidence_ids": []
         },
         {
           "qid": "D4",
           "answer": "YES",
-          "rationale": "사업 모델이 대규모 자체 시설이 필요 없는 다목적 농작업 로봇이며, 투자 유치 내역에서 전략적 투자자 확보가 확인된다.",
+          "rationale": "사업 모델이 대규모 자체 시설이 필요 없는 범용 농작업 로봇이며, 투자 유치 내역에서 전략적 투자자 확보가 확인되어 조건을 충족한다.",
           "quote": "옴니파머는 전통 농장부터 수직농장·온실까지 폭넓게 활용 가능",
           "evidence_ids": [
             "W2a166"
@@ -617,30 +617,30 @@
     "pdf": "outputs/investment_report.pdf",
     "submit_pdf": "outputs/RAG-Output_울산-2반_김가연+김진녕+문지후+이준희+정승우.pdf",
     "pages": 4,
-    "summary_ratio": 0.214,
+    "summary_ratio": 0.233,
     "cited_ids": [
       "Df26b5",
       "D204c5",
-      "D41703",
-      "D23d90",
+      "Db6b8c",
+      "D8c04e",
       "Deaac5",
+      "D5b883",
+      "D8f441",
+      "Wbf33c",
+      "Wa4ac8",
       "Wc091e",
-      "W1dfeb",
       "Wc3a78",
       "Wef018",
       "W2a166",
-      "Wbf33c",
-      "Wa4ac8",
       "Weeb95",
       "W299f0",
-      "Wd558b",
-      "W02c5d"
+      "Wd558b"
     ],
     "checks": {
       "pages": 4,
       "max_pages": 5,
       "pages_ok": true,
-      "summary_ratio": 0.214,
+      "summary_ratio": 0.233,
       "summary_ok": true,
       "first_section": "SUMMARY",
       "last_section": "REFERENCE",
@@ -655,20 +655,20 @@
       "assumptions_labeled": true,
       "consistency_violations": [],
       "density_level": 0,
-      "rewrites": 1,
-      "references": 14,
+      "rewrites": 0,
+      "references": 12,
       "reference_groups": {
-        "기관 보고서": 3,
-        "학술 논문": 1,
-        "웹페이지": 10
+        "기관 보고서": 2,
+        "학술 논문": 2,
+        "웹페이지": 8
       },
-      "summary_ratio_of_a4": 0.214,
+      "summary_ratio_of_a4": 0.233,
       "scorecard_consistency_violations": []
     },
     "title": "메타파머스 투자 검토 — 투자 추천(실사 조건부)",
     "target": "메타파머스",
     "decision": "투자 추천",
-    "generated_at": "2026-09-30T09:15:25"
+    "generated_at": "2026-09-30T12:58:04"
   },
   "rag_traces": [
     {
@@ -678,14 +678,14 @@
         {
           "query": "국내외 애그테크 스타트업 사례와 투자 동향 (기업명 포함)",
           "retrieved": 8,
-          "relevant": 7,
+          "relevant": 4,
           "kept": 4,
-          "dropped": 3,
+          "dropped": 0,
           "kept_ranks": [
-            2,
-            3,
-            4,
-            5
+            5,
+            6,
+            7,
+            8
           ],
           "top_k": 4
         }
@@ -742,10 +742,10 @@
       "sub_questions": [
         "2024년 이후 발표된 국내 및 글로벌 농업 로봇·자율주행 농기계 시장 규모는 어떻게 되는가? (market size)",
         "2024년 이후 기준으로 국내 및 글로벌 농업 로봇·자율주행 농기계 시장의 연평균 성장률은 얼마인가? (market growth rate)",
-        "2024년 이후 국내외 농업 로봇·자율주행 농기계 수요를 촉진하는 주요 요인은 무엇인가? (demand factors)",
-        "2024년 이후 국내외 농업 로봇·자율주행 농기계 구매자들의 지불 의향은 어느 정도인가? (willingness to pay)",
-        "2024년 이후 국내외 농업 로봇·자율주행 농기계 분야에 적용되는 정책 및 규제 현황은 어떠한가? (policy and regulation)",
-        "2024년 이후 국내외 애그테크 분야, 특히 농업 로봇·자율주행 농기계 관련 스타트업의 투자 동향과 국가별 투자액 증감은 어떠한가? (agrifoodtech funding)"
+        "2024년 이후 발표된 국내 및 글로벌 농업 로봇·자율주행 농기계 수요 요인에는 어떤 것들이 있는가? (demand factors)",
+        "2024년 이후 기준으로 국내 및 글로벌 농업 로봇·자율주행 농기계 구매자들의 지불 의향은 어느 정도인가? (willingness to pay)",
+        "2024년 이후 발표된 국내 및 글로벌 농업 로봇·자율주행 농기계 관련 정책 및 규제 현황은 어떠한가? (policy and regulation)",
+        "2024년 이후 기준으로 국내 및 글로벌 애그테크 분야 투자 동향, 특히 농업 로봇·자율주행 농기계 스타트업에 대한 투자 총액 증감과 국가별 투자 증감 현황은 어떠한가? (agrifoodtech funding)"
       ],
       "padded_with_defaults": false,
       "added_investment_question": false
@@ -846,7 +846,7 @@
     },
     {
       "agent": "market",
-      "question": "2024년 이후 국내외 농업 로봇·자율주행 농기계 수요를 촉진하는 주요 요인은 무엇인가? (demand factors)",
+      "question": "2024년 이후 발표된 국내 및 글로벌 농업 로봇·자율주행 농기계 수요 요인에는 어떤 것들이 있는가? (demand factors)",
       "purpose": "수요",
       "step": "answer",
       "route": "docs",
@@ -861,20 +861,20 @@
             "search_documents"
           ],
           "reason": "",
-          "query": "농업 로봇 자율주행 농기계 수요 촉진 요인 2024 이후"
+          "query": "농업 로봇 자율주행 농기계 수요 요인 2024 이후"
         },
         {
           "step": "grade",
-          "query": "농업 로봇 자율주행 농기계 수요 촉진 요인 2024 이후",
+          "query": "농업 로봇 자율주행 농기계 수요 요인 2024 이후",
           "retrieved": 8,
-          "relevant": 4,
+          "relevant": 5,
           "kept": 4,
-          "dropped": 0,
+          "dropped": 1,
           "kept_ranks": [
             1,
             2,
-            3,
-            6
+            6,
+            7
           ],
           "top_k": 4
         },
@@ -886,14 +886,14 @@
         },
         {
           "step": "check",
-          "reason": "답변은 근거 문서들에서 제시된 농업인력 부족 대응, 자율주행 농기계 및 농업용 로봇 상용화, AI 및 첨단 기술 활용, 제도적 장치 마련, 글로벌 식량 수요 증가, 자원 효율성 최적화, IoT·AI·로봇공학 통합, 상업용 온실 자동화 및 제어 환경 농업 도입, 첨단 농기자재 실증단지 조성, 무인 농작업 대응 로봇 및 관리시스템 개발 등 주요 수요 촉진 요인들을 모두 포함하고 있어 근거에 부합한다. 또한 질문에 대해 2024년 이후 국내외 농업 로봇 및 자율주행 농기계 수요를 촉진하는 주요 요인을 직접적으로 답하고 있으므로 질문에 적절히 답변하였다.",
+          "reason": "답변의 국내 수요 요인과 관련된 내용은 근거 [Df26b5]에 명확히 포함되어 있으며, 글로벌 수요 요인도 근거 [Deaac5], [D4f90b]에서 언급된 식량 수요 증가, 자원 효율성, IoT·AI·로봇공학 통합, 온실 자동화, M2M 연계 등과 일치한다. 답변은 질문에 직접적으로 2024년 이후 국내 및 글로벌 농업 로봇·자율주행 농기계 수요 요인을 설명하고 있어 질문에 답하고 있다.",
           "check": "grounded"
         }
       ]
     },
     {
       "agent": "market",
-      "question": "2024년 이후 국내외 농업 로봇·자율주행 농기계 구매자들의 지불 의향은 어느 정도인가? (willingness to pay)",
+      "question": "2024년 이후 기준으로 국내 및 글로벌 농업 로봇·자율주행 농기계 구매자들의 지불 의향은 어느 정도인가? (willingness to pay)",
       "purpose": "지불 의향",
       "step": "answer",
       "route": "docs",
@@ -922,12 +922,12 @@
         },
         {
           "step": "rewrite",
-          "query": "2024년 이후 국내외 농업용 로봇 및 자율주행 농기계 구매자의 지불 의향(willingness to pay), 시장 규모(market size), 연평균 성장률(CAGR), 투자액(investment amount), 스마트팜 보급률(smart farm adoption rate) 관련 보고서",
+          "query": "2024년 이후 국내외 농업용 로봇 및 자율주행 농기계 구매자의 지불 의향(willingness to pay), 시장 규모(market size), 투자액(investment amount), 연평균 성장률(CAGR), 스마트팜 보급률 보조 지표 포함",
           "after": "grade"
         },
         {
           "step": "grade",
-          "query": "2024년 이후 국내외 농업용 로봇 및 자율주행 농기계 구매자의 지불 의향(willingness to pay), 시장 규모(market size), 연평균 성장률(CAGR), 투자액(investment amount), 스마트팜 보급률(smart farm adoption rate) 관련 보고서",
+          "query": "2024년 이후 국내외 농업용 로봇 및 자율주행 농기계 구매자의 지불 의향(willingness to pay), 시장 규모(market size), 투자액(investment amount), 연평균 성장률(CAGR), 스마트팜 보급률 보조 지표 포함",
           "retrieved": 8,
           "relevant": 0,
           "kept": 0,
@@ -937,12 +937,12 @@
         },
         {
           "step": "rewrite",
-          "query": "2024년 이후 국내외 농업용 로봇 및 자율주행 농기계 구매자의 지불 의향(willingness to pay), 시장 규모(market size), 연평균 성장률(CAGR), 투자액(investment amount), 스마트팜 보급률(smart farm adoption rate), 구매 의사(purchase intention), 가격 민감도(price sensitivity), 농업 자동화(agricultural automation) 관련 보고서",
+          "query": "2024년 이후 국내외 농업용 로봇 및 자율주행 농기계 구매자의 지불 의향(willingness to pay), 시장 규모(market size), 연평균 성장률(CAGR), 투자액(investment amount), 스마트팜 보급률(smart farm adoption rate) 관련 보고서 데이터",
           "after": "grade"
         },
         {
           "step": "grade",
-          "query": "2024년 이후 국내외 농업용 로봇 및 자율주행 농기계 구매자의 지불 의향(willingness to pay), 시장 규모(market size), 연평균 성장률(CAGR), 투자액(investment amount), 스마트팜 보급률(smart farm adoption rate), 구매 의사(purchase intention), 가격 민감도(price sensitivity), 농업 자동화(agricultural automation) 관련 보고서",
+          "query": "2024년 이후 국내외 농업용 로봇 및 자율주행 농기계 구매자의 지불 의향(willingness to pay), 시장 규모(market size), 연평균 성장률(CAGR), 투자액(investment amount), 스마트팜 보급률(smart farm adoption rate) 관련 보고서 데이터",
           "retrieved": 8,
           "relevant": 0,
           "kept": 0,
@@ -952,25 +952,25 @@
         },
         {
           "step": "web",
-          "query": "2024년 이후 국내외 농업 로봇·자율주행 농기계 구매자들의 지불 의향은 어느 정도인가? (willingness to pay)",
+          "query": "2024년 이후 기준으로 국내 및 글로벌 농업 로봇·자율주행 농기계 구매자들의 지불 의향은 어느 정도인가? (willingness to pay)",
           "web_fallback": 4
         },
         {
           "step": "generate",
           "context": 4,
-          "cited": 4,
+          "cited": 2,
           "regeneration": false
         },
         {
           "step": "check",
-          "reason": "답변은 2024년 이후 농업 로봇 및 자율주행 농기계 구매자들의 지불 의향에 대한 구체적 수치가 근거에 없음을 명확히 밝히고, 관련 시장 성장률과 가능성을 언급하여 질문에 직접 답하고 있다.",
+          "reason": "답변은 근거에 명시된 수치와 내용을 정확히 인용하며, 지불 의향에 대한 구체적 수치가 근거에 없음을 명확히 밝히고 있다. 따라서 모든 사실과 수치가 근거에 기반하고 있으며, 질문에 직접 답하고 있다.",
           "check": "grounded"
         }
       ]
     },
     {
       "agent": "market",
-      "question": "2024년 이후 국내외 농업 로봇·자율주행 농기계 분야에 적용되는 정책 및 규제 현황은 어떠한가? (policy and regulation)",
+      "question": "2024년 이후 발표된 국내 및 글로벌 농업 로봇·자율주행 농기계 관련 정책 및 규제 현황은 어떠한가? (policy and regulation)",
       "purpose": "정책·규제",
       "step": "answer",
       "route": "docs",
@@ -1010,14 +1010,14 @@
         },
         {
           "step": "check",
-          "reason": "답변의 모든 사실과 수치가 근거 문서에 명확히 포함되어 있으며, 질문에 정책 및 규제 현황에 대해 직접 답하고 있다.",
+          "reason": "답변에 제1차 스마트농업 육성 기본계획(2025~2029년)과 관련된 정책 및 검정기준 마련, 실증단지 조성, 기술 개발 일정 등이 근거 문서에 명확히 포함되어 있으며, ISO 18497-1:2024 표준 발표 내용도 근거에 있다. 답변은 질문에 직접적으로 2024년 이후 국내외 정책 및 규제 현황을 설명하고 있어 두 문항 모두 true이다.",
           "check": "grounded"
         }
       ]
     },
     {
       "agent": "market",
-      "question": "2024년 이후 국내외 애그테크 분야, 특히 농업 로봇·자율주행 농기계 관련 스타트업의 투자 동향과 국가별 투자액 증감은 어떠한가? (agrifoodtech funding)",
+      "question": "2024년 이후 기준으로 국내 및 글로벌 애그테크 분야 투자 동향, 특히 농업 로봇·자율주행 농기계 스타트업에 대한 투자 총액 증감과 국가별 투자 증감 현황은 어떠한가? (agrifoodtech funding)",
       "purpose": "투자 동향",
       "step": "answer",
       "route": "both",
@@ -1033,57 +1033,51 @@
             "web_search"
           ],
           "reason": "",
-          "query": "애그테크 투자 동향 농업 로봇 자율주행 농기계 2024 이후 국가별 투자액 증감",
-          "web_query": "애그테크 투자 동향 농업 로봇 자율주행 농기계 스타트업 2024 이후",
+          "query": "agrifoodtech funding investment trends 2024 2026 agricultural robots autonomous farm machinery startup investment by country",
+          "web_query": "애그테크 투자 동향 농업 로봇 자율주행 농기계 스타트업 투자 증감 국가별",
           "recent": true
         },
         {
           "step": "grade",
-          "query": "애그테크 투자 동향 농업 로봇 자율주행 농기계 2024 이후 국가별 투자액 증감",
+          "query": "agrifoodtech funding investment trends 2024 2026 agricultural robots autonomous farm machinery startup investment by country",
           "retrieved": 8,
-          "relevant": 6,
+          "relevant": 7,
           "kept": 4,
-          "dropped": 2,
+          "dropped": 3,
           "kept_ranks": [
             1,
+            2,
             3,
-            4,
-            5
+            4
           ],
           "top_k": 4
         },
         {
           "step": "web",
-          "query": "애그테크 투자 동향 농업 로봇 자율주행 농기계 스타트업 2024 이후",
+          "query": "애그테크 투자 동향 농업 로봇 자율주행 농기계 스타트업 투자 증감 국가별",
           "recent": true,
-          "web_results": 0
+          "web_results": 1
         },
         {
           "step": "generate",
-          "context": 4,
-          "cited": 4,
+          "context": 5,
+          "cited": 3,
           "regeneration": false
         },
         {
           "step": "check",
-          "numbers": [
-            "59",
-            "12",
-            "2700",
-            "22",
-            "8500"
-          ],
+          "reason": "답변에서 2024년부터 2025년까지 농업 로봇·자율주행 농기계 분야 투자액이 791M 달러에서 898M 달러로 소폭 감소한다고 했으나, 근거 [Dcb71b]에 따르면 791M 달러에서 898M 달러로 증가한 것으로 나타나 투자액이 감소했다는 내용은 근거와 상반된다. 또한, 한국의 2025년 투자액 253.3M 달러와 171% 증가, 미국의 5.9B 달러와 8% 감소 수치 등은 근거에 부합한다. 따라서 투자 총액 증감에 관한 부분에서 오류가 있어 grounded는 false이다. 답변은 질문에 대해 국내 및 글로벌 애그테크 투자 동향과 국가별 투자 증감 현황을 직접적으로 다루고 있으므로 answers_question은 true이다.",
           "check": "not_grounded"
         },
         {
           "step": "generate",
-          "context": 4,
-          "cited": 4,
+          "context": 5,
+          "cited": 3,
           "regeneration": true
         },
         {
           "step": "check",
-          "reason": "답변의 투자액과 증감률 수치가 근거 [D48f58]에 명확히 일치하며, Midstream Technologies 분야의 2025년 투자액 $3.6B도 [D6b653]에서 확인된다. 국가별 투자액과 증감률도 모두 근거에 포함되어 있어 사실과 부합한다. 답변은 질문에 직접적으로 2024년 이후 투자 동향과 국가별 증감을 설명하고 있다.",
+          "reason": "답변의 글로벌 농업 로봇·자율주행 농기계 분야 투자 총액 증가 수치(791M 달러에서 898M 달러)는 근거 [Dcb71b]에 명확히 있으며, 미국 5.9B 달러 -8% 감소, 중국 43%, 네덜란드 44%, 일본 24% 증가 수치도 [D81460]에 부합한다. 한국 253.3M 달러 171% 증가 수치도 [D81460]에 있다. 국내 AI와 로보틱스 활용 현황은 [Wcc9e3]에서 확인 가능하다. 따라서 모든 사실과 수치가 근거에 있으며 질문에 직접 답하고 있다.",
           "check": "grounded"
         }
       ]
@@ -1095,12 +1089,12 @@
     "[평가 1] 메타파머스 (KR, Pre-A, robotics)",
     "[창업자] 메타파머스: t0 2022-09-02(TIPS 설립일), 인물 2명(이규화(대표), 윤원재(기술이사(CTO))), 마일스톤 5건(최근 24개월 3건), 근거 7건 → 창업자 YES 2/4",
     "[기술 요약] 메타파머스: 성숙도 실증, 장점 4·단점 4·주장 4건, 홈페이지 읽기 실패 → 회사 기사 요약, 기준선 grounded, 근거 8건 → 제품/기술력 YES 1/3",
-    "[시장성] 농업 로봇·자율주행 농기계: 하위 질문 6개 (문서 5·웹 0·직접 0, grounded 4개), 대표 규모 17400.0(USD_M), 근거 16건 (문서 12건) → 시장성 YES 2/4",
+    "[시장성] 농업 로봇·자율주행 농기계: 하위 질문 6개 (문서 5·웹 0·직접 0, grounded 4개), 대표 규모 22650.0(USD_M), 근거 14건 (문서 11건) → 시장성 YES 2/4",
     "[경쟁사] 메타파머스: 제품 유형 '다목적 농작업 로봇 및 원격 제어 소프트웨어', 검색 5건, 근거 속 경쟁사 더그투스 → 경쟁사 1곳 비교, 주장 4건(제3자 확인 0·반대 근거 0) → 경쟁 우위 YES 0/4",
-    "[투자 판단] 메타파머스: Scorecard 110.1점(동종 평균 100, 기준 110, 기준 집단 9곳 자기 제외) · YES 8 · NO 0 · 미확인 65% · 창업자 YES 2 · Deal-killer 없음 → 투자 [여기서 판정한 기준: traction, deal]",
-    "[보고서] invest investment_report.pdf 4쪽 (≤5), SUMMARY A4 대비 21%, REFERENCE 14건, 형식 검사 통과 → RAG-Output_울산-2반_김가연+김진녕+문지후+이준희+정승우.pdf"
+    "[투자 판단] 메타파머스: 동종 평균 대비 109.6(동종 평균 100, 창업자 기준 118.1, 기준 집단 9곳 자기 제외) · YES 8 · NO 0 · 미확인 65% · 창업자 YES 2 · Deal-killer 없음 → 투자 [여기서 판정한 기준: traction, deal]",
+    "[보고서] invest investment_report.pdf 4쪽 (≤5), SUMMARY A4 대비 23%, REFERENCE 12건, 형식 검사 통과 → RAG-Output_울산-2반_김가연+김진녕+문지후+이준희+정승우.pdf"
   ],
-  "sources_collected": 586,
+  "sources_collected": 589,
   "failed_searches": [],
   "llm_cost": {
     "api_calls": 0,

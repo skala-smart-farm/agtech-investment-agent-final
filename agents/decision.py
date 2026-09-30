@@ -8,8 +8,12 @@
      대상이 기준 집단에 있으면 자기 자신을 뺀 평균(LOO). 파일이 없거나 문항 목록이 옛것이거나 decision.reference_min_n 곳보다
      적으면 x̄ = 0(fallback, 설계 가정)
    - 기준 d 마다 c_d = clip(1 + step × 평균_q(x_q − x̄_q)), M = Σ (가중치/100) × c_d
-3) 결정(코드): 투자 ⇔ M ≥ decision.threshold ∧ 창업자 YES ≥ decision.min_founder_yes ∧ Deal-killer 없음.
-   보류 유형(보고서의 '왜 안 되는가' 이름표, 앞선 것 우선): Deal-killer > 창업자 근거 없음 > 정보 부족 > 동종 대비 열위.
+3) 결정(코드): 투자 ⇔ M > decision.threshold(1.00) ∧ 창업자 기준 c_founder ≥ decision.founder_min_c(1.00) ∧ Deal-killer 없음.
+   두 기준값 모두 Payne 원 방법의 기준점 '투자를 받은 동종 평균 기업 = 100%' 그대로다(새로 정한 숫자 없음).
+   - M > 1.00: 이미 투자를 받은 동종 기업의 평균보다 낫다.
+   - c_founder ≥ 1.00: 팀이 동종 평균 이상이다 — "A great team will fix early product flaws, but the reverse is not true"(Payne 2019).
+   - Deal-killer: Payne 워크시트의 deal killer 개념(조건 K1~K3 는 rubric.yaml).
+   보류 유형(보고서의 '왜 안 되는가' 이름표, 앞선 것 우선): Deal-killer > 창업자 점수 평균 미만 > 동종 평균 이하.
 4) 보고서 재료(코드): 뒤집힘 조건, 실사 항목, Bessemer 10문, ROI 참고치, 기준 배수 민감도, 동종 순위.
 보정 실행(workflow.calibrate)에서는 기준 집단을 만드는 중이라 결정하지 않는다(decision None, 판정·신호만 기록).
 """
@@ -27,7 +31,7 @@ from tools.grounding import norm
 from tools.sources import SourceRegistry
 
 AGENT = "decision"
-HOLD_TYPES = ("Deal-killer", "창업자 근거 없음", "정보 부족", "동종 대비 열위")   # 앞선 것 우선
+HOLD_TYPES = ("Deal-killer", "창업자 점수 평균 미만", "동종 평균 이하")   # 앞선 것 우선
 UNDISCLOSED = ("비공개", "미공개", "undisclosed", "비밀", "n/a")
 
 __all__ = ["decision_node", "load_rubric", "load_reference", "write_reference_class", "write_threshold_sensitivity",
@@ -59,8 +63,24 @@ def _killers(rows: list[dict], rubric: dict) -> list[str]:
     return [k["id"] for k in rubric["deal_killers"] if all(v.get(q) == a for q, a in k["when"].items())]
 
 
-def _decide(M: float, founder_yes: int, killers: list[str], threshold: float, min_founder_yes: int) -> str:
-    return "투자" if M >= threshold and founder_yes >= min_founder_yes and not killers else "보류"
+def _founder_c(criteria: list[dict]) -> float:
+    """창업자 기준의 동종 대비 비율 c_founder (payne_multiplier 의 criteria 에서)."""
+    return next((round(c["pct"] / 100, 4) for c in criteria if c["dim"] == "founder" and c.get("pct") is not None), 1.0)
+
+
+def _decide(M: float, founder_c: float, killers: list[str], threshold: float, founder_min_c: float) -> str:
+    """투자 ⇔ M > 기준(동종 평균) ∧ 창업자 기준 ≥ 동종 평균 ∧ Deal-killer 없음."""
+    return "투자" if M > threshold and founder_c >= founder_min_c and not killers else "보류"
+
+
+def _bar(bar: float) -> str:
+    """기준 이름: 1.00 이면 '동종 평균', 시나리오 실행(--threshold)처럼 다르면 '기준 130'."""
+    return "동종 평균" if abs(bar - 1) < 1e-9 else f"기준 {bar * 100:.0f}"
+
+
+def _vs_peer(label: str, v: float, bar: float) -> str:
+    """'동종 평균 대비 109.6(동종 평균 100)'. 동종 평균은 늘 100 이고, 기준이 동종 평균과 다를 때만 ', 기준 130' 을 붙인다."""
+    return f"{label} {v * 100:.1f}(동종 평균 100{'' if abs(bar - 1) < 1e-9 else f', 기준 {bar * 100:.0f}'})"
 
 
 def _with_yes(rows: list[dict], i: int) -> list[dict]:
@@ -161,22 +181,22 @@ def write_reference_class(evaluations: list[dict], path: str, run_date: str) -> 
 
 
 def _peer_scores(data: dict, rubric: dict) -> list[dict]:
-    """기준 집단 구성원마다 자기 제외(LOO) 동종 평균으로 구한 배수·창업자 YES·Deal-killer."""
+    """기준 집단 구성원마다 자기 제외(LOO) 동종 평균으로 구한 배수·창업자 YES·창업자 기준 비율(founder_c)·Deal-killer."""
     d = get_config().decision
     out = []
     for m in data.get("members") or []:
         rows = _rows_from_signals(m["signals"], rubric)
         ref = _reference(data, m["name"], rubric, d.reference_min_n)
-        M, _ = payne_multiplier(rows, ref["mean"], rubric, d.step, d.clip)
+        M, crit = payne_multiplier(rows, ref["mean"], rubric, d.step, d.clip)
         out.append({"name": m["name"], "multiplier": M, "founder_yes": _founder_yes(rows),
-                    "killers": _killers(rows, rubric)})
+                    "founder_c": _founder_c(crit), "killers": _killers(rows, rubric)})
     return out
 
 
 def write_threshold_sensitivity(ref_path: str, out_path: str) -> dict:
     """기준 집단 구성원마다 자기 제외 배수(multiplier_loo)를 구하고, config decision.sensitivity 의 각 기준 배수에서의 결정을 기록한다.
     파일 형식: {'thresholds': [...], 'threshold': 현재 기준, 'reference_n': int,
-               'members': [{'name','multiplier_loo','founder_yes','killers','decision_at': {'1.10': '투자'|'보류', …}}],
+               'members': [{'name','multiplier_loo','founder_yes','founder_c','killers','decision_at': {'1.00': '투자'|'보류', …}}],
                'invest_count_at': {'1.00': int, …}}   (members 는 배수 내림차순)
     반환: 쓴 내용(dict)."""
     d = get_config().decision
@@ -186,8 +206,8 @@ def write_threshold_sensitivity(ref_path: str, out_path: str) -> dict:
     rubric = load_rubric()
     keys = [(f"{t:.2f}", t) for t in d.sensitivity]
     members = [{"name": p["name"], "multiplier_loo": p["multiplier"], "founder_yes": p["founder_yes"],
-                "killers": p["killers"],
-                "decision_at": {k: _decide(p["multiplier"], p["founder_yes"], p["killers"], t, d.min_founder_yes)
+                "founder_c": p["founder_c"], "killers": p["killers"],
+                "decision_at": {k: _decide(p["multiplier"], p["founder_c"], p["killers"], t, d.founder_min_c)
                                 for k, t in keys}}
                for p in sorted(_peer_scores(data, rubric), key=lambda p: -p["multiplier"])]
     out = {"thresholds": [t for _, t in keys], "threshold": d.threshold, "reference_n": len(members),
@@ -221,34 +241,29 @@ def payne_multiplier(rows: list[dict], mean: dict, rubric: dict, step: float, cl
     return round(M, 4), criteria
 
 
-def decide_rule(M: float, founder_yes: int, killers: list[str], unknown_ratio: float, cfg) -> tuple[str, str | None, list[str]]:
-    """투자 ⇔ M ≥ decision.threshold ∧ founder_yes ≥ decision.min_founder_yes ∧ Deal-killer 없음.
-    보류 유형 우선순위: 'Deal-killer' > '창업자 근거 없음' > '정보 부족'(unknown_ratio ≥ info_gap_ratio) > '동종 대비 열위'.
-    '정보 부족'과 '동종 대비 열위'는 둘 다 M 이 기준에 못 미친 경우이고, 미확인 비율로 이름만 나눈다.
+def decide_rule(M: float, founder_c: float, killers: list[str], unknown_ratio: float, cfg) -> tuple[str, str | None, list[str]]:
+    """투자 ⇔ M > decision.threshold(동종 평균 1.00) ∧ founder_c ≥ decision.founder_min_c(동종 평균 1.00) ∧ Deal-killer 없음.
+    보류 유형 우선순위: 'Deal-killer' > '창업자 점수 평균 미만' > '동종 평균 이하'. 미확인 비율은 이름표가 아니라 사유 문장에만 적는다.
     반환: (결정 '투자'|'보류', 보류 유형 또는 None, 사람이 읽는 사유 문장 목록 — 보류면 보류 유형의 사유가 맨 앞)"""
     d = cfg.decision
-    t, need, gap = d.threshold, d.min_founder_yes, d.info_gap_ratio
-    score = f"동종 평균 대비 {M * 100:.0f}(평균 100, 기준 {t * 100:.0f})"   # 보고서 표기와 같은 형식
-    if _decide(M, founder_yes, killers, t, need) == "투자":
-        return "투자", None, [f"{score} — 기준 충족", f"창업자 문항(F1~F4) YES {founder_yes}개 (최소 {need}개)",
-                            "Deal-killer 없음"]
+    t, need = d.threshold, d.founder_min_c
+    score, team = _vs_peer("동종 평균 대비", M, t), _vs_peer("창업자 기준", founder_c, need)   # 보고서 표기와 같은 형식
+    if _decide(M, founder_c, killers, t, need) == "투자":
+        return "투자", None, [f"{score} — {_bar(t)}보다 높음", f"{team} — {_bar(need)} 이상", "Deal-killer 없음"]
     text = {k["id"]: k["text"] for k in load_rubric()["deal_killers"]}
     reasons = [f"Deal-killer {k}: {text.get(k, '')}" for k in killers]
-    if founder_yes < need:
-        reasons.append(f"창업자 문항(F1~F4) YES {founder_yes}개 — 최소 {need}개 필요")
-    if M < t and unknown_ratio >= gap:
-        reasons.append(f"미확인 문항 {unknown_ratio:.0%} (≥ {gap:.0%}) — 공개 정보로는 판단하기 어려움")
-    if M < t:
-        reasons.append(f"{score} — 기준 미달")
-    hold = ("Deal-killer" if killers else "창업자 근거 없음" if founder_yes < need
-            else "정보 부족" if unknown_ratio >= gap else "동종 대비 열위")
+    if founder_c < need:
+        reasons.append(f"{team} — 팀이 {_bar(need)} 미만")
+    if M <= t:
+        reasons.append(f"{score} — {_bar(t)} 이하 (미확인 문항 {unknown_ratio:.0%})")
+    hold = "Deal-killer" if killers else "창업자 점수 평균 미만" if founder_c < need else "동종 평균 이하"
     return "보류", hold, reasons
 
 
 def flip_conditions(rows: list[dict], mean: dict, rubric: dict, cfg, founder_ok: bool, killers: list[str]) -> dict | None:
     """보류 후보의 뒤집힘 조건: 미확인 문항 중 YES 로 확인되면 M 이 가장 많이 오르는 문항을 하나씩(탐욕적으로) 골라,
-    투자 조건(M ≥ 기준, 창업자 요건)을 채우거나 decision.flip_max_items 개가 될 때까지 더하고 새 배수 M' 을 계산한다.
-    창업자 요건이 모자라면(founder_ok False) 창업자 문항을 먼저 넣는다.
+    투자 조건(M > 기준, 창업자 기준 c_founder ≥ decision.founder_min_c)을 채우거나 decision.flip_max_items 개가 될 때까지 더하고
+    새 배수 M' 을 계산한다. 창업자 기준이 모자라면(founder_ok False) 창업자 문항을 먼저 넣는다.
     Deal-killer 가 있으면 미확인 문항으로는 뒤집을 수 없어 new_multiplier None 과 'Kx 해소 필요'를 돌려준다.
     반환: {'qids': [str], 'items': [str], 'new_multiplier': float|None, 'reached': bool, 'note': str}
     (호출하는 decision_node 는 보류일 때만 부르고, 투자면 flip 을 None 으로 둔다)"""
@@ -260,32 +275,34 @@ def flip_conditions(rows: list[dict], mean: dict, rubric: dict, cfg, founder_ok:
         return {"qids": qids, "items": [f"{q} {info[q]['short']}" for q in qids], "new_multiplier": None,
                 "reached": False, "note": " · ".join(f"{k} 해소 필요({rule[k]['text']})" for k in killers)}
     cur = list(rows)
-    M, _ = payne_multiplier(cur, mean, rubric, d.step, d.clip)
-    fy, picked = _founder_yes(cur), []
+
+    def score(rs: list[dict]) -> tuple[float, float]:
+        m, crit = payne_multiplier(rs, mean, rubric, d.step, d.clip)
+        return m, _founder_c(crit)
+
+    (M, fc), picked = score(cur), []
 
     def done() -> bool:
-        return M >= d.threshold and fy >= d.min_founder_yes
+        return M > d.threshold and fc >= d.founder_min_c
 
     while not done() and len(picked) < d.flip_max_items:
         cand = [i for i, r in enumerate(cur) if r["answer"] == "UNKNOWN"]
-        if not founder_ok and fy < d.min_founder_yes:
+        if not founder_ok and fc < d.founder_min_c:
             cand = [i for i in cand if cur[i]["dim"] == "founder"]   # 창업자 요건부터 채운다
         if not cand:
             break
-        gain = {i: payne_multiplier(_with_yes(cur, i), mean, rubric, d.step, d.clip)[0] for i in cand}
-        best = max(cand, key=lambda i: (gain[i], -i))                 # 같으면 평가표 순서
-        cur, M = _with_yes(cur, best), gain[best]
-        fy += cur[best]["dim"] == "founder"
+        gain = {i: score(_with_yes(cur, i)) for i in cand}
+        best = max(cand, key=lambda i: (gain[i][0], -i))              # 같으면 평가표 순서
+        cur, (M, fc) = _with_yes(cur, best), gain[best]
         picked.append(cur[best]["qid"])
-    t = f"{d.threshold * 100:.0f}"
     if not picked:
-        note = ("창업자 문항에 미확인이 없어(모두 NO) 미확인 문항 확인만으로는 뒤집을 수 없음" if fy < d.min_founder_yes
+        note = ("창업자 문항에 미확인이 없어 미확인 문항 확인만으로는 창업자 기준을 동종 평균 이상으로 올릴 수 없음" if fc < d.founder_min_c
                 else "미확인 문항이 없어 뒤집힘 조건 없음")
     elif done():
-        note = f"{'·'.join(picked)} 이(가) YES 로 확인되면 동종 평균 대비 {M * 100:.0f}(기준 {t}) → 투자"
+        note = f"{'·'.join(picked)} 이(가) YES 로 확인되면 {_vs_peer('동종 평균 대비', M, d.threshold)} → 투자"
     else:
-        note = (f"미확인 {len(picked)}문항({'·'.join(picked)})이 YES 로 확인돼도 동종 평균 대비 {M * 100:.0f}"
-                f"{f', 창업자 YES {fy}개' if fy < d.min_founder_yes else ''} — 기준 미달(최대 {d.flip_max_items}문항)")
+        note = (f"미확인 {len(picked)}문항({'·'.join(picked)})이 YES 로 확인돼도 {_vs_peer('동종 평균 대비', M, d.threshold)}"
+                f"{f', 창업자 기준 {fc * 100:.1f}' if fc < d.founder_min_c else ''} — 기준 미달(최대 {d.flip_max_items}문항)")
     return {"qids": picked, "items": [f"{q} {info[q]['short']}" for q in picked], "new_multiplier": round(M, 4),
             "reached": done(), "note": note}
 
@@ -446,7 +463,7 @@ def _ranking(data: dict | None, ref: dict, name: str, me: dict, rubric: dict, cf
     if ref["source"] != "calibration":
         return [], None, 0
     d = cfg.decision
-    out = [{**p, "decision": _decide(p["multiplier"], p["founder_yes"], p["killers"], d.threshold, d.min_founder_yes),
+    out = [{**p, "decision": _decide(p["multiplier"], p["founder_c"], p["killers"], d.threshold, d.founder_min_c),
             "is_target": False}
            for p in _peer_scores(data, rubric) if norm(p["name"]) != norm(name)]
     out.append({**me, "is_target": True})
@@ -500,20 +517,22 @@ def decision_node(state: dict) -> dict:
         M, criteria = payne_multiplier(rows, ref["mean"], rubric, dc.step, dc.clip)
         score100 = round(M * 100, 1)
         # 3) 결정과 보고서 재료
-        decision, hold_type, reasons = decide_rule(M, founder_yes, killers, unknown_ratio, cfg)
-        flip = (flip_conditions(rows, ref["mean"], rubric, cfg, founder_yes >= dc.min_founder_yes, killers)
+        founder_c = _founder_c(criteria)
+        decision, hold_type, reasons = decide_rule(M, founder_c, killers, unknown_ratio, cfg)
+        flip = (flip_conditions(rows, ref["mean"], rubric, cfg, founder_c >= dc.founder_min_c, killers)
                 if decision == "보류" else None)
         ranking, target_rank, peer_n = _ranking(
-            data, ref, name, {"name": name, "multiplier": M, "founder_yes": founder_yes, "killers": killers,
-                              "decision": decision}, rubric, cfg)
+            data, ref, name, {"name": name, "multiplier": M, "founder_yes": founder_yes, "founder_c": founder_c,
+                              "killers": killers, "decision": decision}, rubric, cfg)
         scorecard = {**base, "criteria": criteria, "multiplier": M, "score100": score100,
                      "reference": {k: ref[k] for k in ("n", "loo", "source", "members", "run_date", "note")},
                      "decision": decision, "hold_type": hold_type, "reasons": reasons, "flip": flip,
                      "dd_items": _dd_items(rows, ref["mean"], rubric, cfg, killers),
-                     "sensitivity": {f"{t:.2f}": _decide(M, founder_yes, killers, t, dc.min_founder_yes)
+                     "founder_c": founder_c,
+                     "sensitivity": {f"{t:.2f}": _decide(M, founder_c, killers, t, dc.founder_min_c)
                                      for t in dc.sensitivity},
                      "ranking": ranking, "target_rank": target_rank, "peer_n": peer_n}
-        msg = (f"[투자 판단] {name}: Scorecard {score100}점(동종 평균 100, 기준 {dc.threshold * 100:.0f}, "
+        msg = (f"[투자 판단] {name}: 동종 평균 대비 {score100}(동종 평균 100, 창업자 기준 {founder_c * 100:.1f}, "
                f"기준 집단 {ref['n']}곳{' 자기 제외' if ref['loo'] else ''}{' · fallback' if ref['source'] == 'fallback' else ''}) "
                f"· {counts} · 창업자 YES {founder_yes} · Deal-killer {killers or '없음'} → {decision}"
                + (f" ({hold_type})" if hold_type else ""))

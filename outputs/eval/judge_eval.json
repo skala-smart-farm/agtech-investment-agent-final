@@ -5,15 +5,15 @@
     "correctness": 1.0,
     "n": 20,
     "route_dist": {
-      "docs": 18,
-      "web": 2,
+      "docs": 19,
+      "web": 1,
       "both": 0,
       "direct": 0
     },
-    "rewrite_rate": 0.4,
-    "web_fallback_rate": 0.35,
+    "rewrite_rate": 0.45,
+    "web_fallback_rate": 0.4,
     "regen_rate": 0.0,
-    "not_found_rate": 0.1
+    "not_found_rate": 0.05
   },
   "rows": [
     {
@@ -46,7 +46,7 @@
     {
       "id": "q02",
       "question": "수직농업에서 상추와 토마토 생산 시나리오를 분석할 때 고려된 빛 이용 효율(LUEINT)의 범위는 어떻게 되는가?",
-      "answer": "수직농업에서 상추와 토마토 생산 시나리오를 분석할 때 고려된 빛 이용 효율(LUEINT)의 범위는 0.8에서 1.8 g dry weight mol−1 photosynthetically active radiation (PAR)까지이다. 이 범위는 6단계로 나누어져 있으며, 각 단계별로 상추와 토마토에 대해 18개의 생산 시나리오가 평가되었다. 이 수치는 2026년 Frontiers 문서에 근거한다[D52345][D2f602][D1f61b].",
+      "answer": "수직농업에서 상추와 토마토 생산 시나리오를 분석할 때 고려된 빛 이용 효율(LUEINT)의 범위는 0.8에서 1.8 g 건물중(DW) mol⁻¹ 광합성 유효 방사(PAR)까지이다. 이 범위 내에서 0.8, 1.0, 1.2, 1.4, 1.6, 1.8의 여섯 단계로 설정되어 있으며, 총 18개의 생산 시나리오가 상추와 토마토 각각에 대해 평가되었다. 이 수치는 2026년 Frontiers 논문에서 제시되었다[D52345][D2f602][D91cab].",
       "gold": "빛 이용 효율(LUEINT)은 0.8에서 1.6까지 6단계로 고려되었다.",
       "route": "docs",
       "status": "grounded",
@@ -56,40 +56,38 @@
       "cited_ids": [
         "D52345",
         "D2f602",
-        "D1f61b"
+        "D91cab"
       ],
       "evidence_ids": [
         "D52345",
         "D2f602",
-        "D1f61b"
+        "D91cab"
       ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer correctly states that the light use efficiency (LUEINT) range considered in the vertical farming scenarios for lettuce and tomato is from 0.8 to 1.8 g dry weight mol−1 PAR, divided into 6 levels. This matches the source documents which specify six intercepted light use efficiencies: 0.8, 1.0, 1.2, 1.4, 1.6, and 1.8 g DW mol−1 PAR. The reference to 6 steps and 18 scenarios per crop is also accurate. The user's 'correct' answer states the range as 0.8 to 1.6, which is incomplete and thus less accurate. Therefore, the system answer is relevant, faithful to the source, and correct."
+      "reason": "The system answer directly addresses the question about the range of light use efficiency (LUEINT) considered in the analysis of vertical farming scenarios for lettuce and tomato. It states that LUEINT ranges from 0.8 to 1.8 in six steps (0.8, 1.0, 1.2, 1.4, 1.6, 1.8), which is consistent with the cited source from the 2026 Frontiers paper. The reference confirms these values and the number of steps, as well as the total number of scenarios evaluated. Although the user answer states the range as 0.8 to 1.6, the system answer provides a more complete and accurate range (0.8 to 1.8), which is supported by the source. Therefore, the system answer is relevant, faithful to the source, and correct."
     },
     {
       "id": "q03",
       "question": "일본 농림수산성이 2019년부터 실시한 스마트농업 실증 프로젝트는 2023년 기준 몇 개 지구에서 수행되고 있나요?",
-      "answer": "일본 농림수산성이 2019년부터 실시한 스마트농업 실증 프로젝트는 2023년 기준 217개 지구에서 수행되고 있다(2023년, KDI 경제교육·정보센터) [D3cb93]. 이는 초기 69개 지역에서 시작하여 매년 범위를 넓혀 누적 217개 지역으로 확대한 결과이다(2025년, krei.re.kr) [Wd78be].",
+      "answer": "일본 농림수산성은 2019년부터 스마트농업 실증 프로젝트를 실시하고 있으며, 2023년 기준으로 이 프로젝트는 217개 지구에서 수행되고 있습니다(2023년, KDI 경제교육·정보센터) [D3cb93].",
       "gold": "2023년 기준 217개 지구에서 수행되고 있습니다.",
       "route": "docs",
       "status": "grounded",
       "rewrites": 2,
       "regenerations": 0,
-      "web_fallback": true,
+      "web_fallback": false,
       "cited_ids": [
-        "D3cb93",
-        "Wd78be"
+        "D3cb93"
       ],
       "evidence_ids": [
-        "D3cb93",
-        "Wd78be"
+        "D3cb93"
       ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "시스템 답변은 질문에 정확히 부합하며, 2023년 기준 217개 지구에서 스마트농업 실증 프로젝트가 수행되고 있다는 정보를 명확히 제공하고 있습니다. 또한, 답변에 사용된 근거 문서들([D3cb93], [Wd78be]) 모두 해당 사실을 뒷받침하고 있어 내용의 신뢰성과 정확성이 확보되어 있습니다."
+      "reason": "시스템 답변은 질문에 정확히 부합하며, 2023년 기준 217개 지구에서 스마트농업 실증 프로젝트가 수행되고 있다는 정보를 명확히 제공하고 있습니다. 또한, 사용된 근거 문서[D3cb93]에서 동일한 수치와 내용을 확인할 수 있어 답변의 신뢰성과 정확성이 보장됩니다."
     },
     {
       "id": "q04",
@@ -144,27 +142,25 @@
     {
       "id": "q06",
       "question": "2026년 농림축산식품부가 국가 인공지능 프로젝트를 통해 확보한 GPU 수량과 그 활용 계획은 무엇인가?",
-      "answer": "2026년 농림축산식품부는 과학기술정보통신부의 국가 인공지능 프로젝트를 통해 GPU 32장을 확보하였다. 이 GPU는 공공 AX데이터 구축과 민간 AI솔루션 개발 지원에 각각 16장씩 활용될 계획이다. 공공 부문에서는 농가의 작물 생육 사진·영상을 AI 모델로 판독하여 AI 학습용 생육 데이터를 구축하고, 민간 부문에서는 스마트농업 AI솔루션 개발 기업에 GPU를 제공하여 고품질 AI학습용 데이터셋을 구축·공유하도록 지원한다. 또한, 기업들은 GPU를 활용해 다양한 농업 데이터 분석과 AI솔루션 개발을 진행할 예정이며, 농식품부는 4월 말에 참여 기업 공모를 추진하여 5월부터 GPU를 최대 4장까지 배분할 계획이다 [Dd2e30][D5e12a][Df3a64].",
+      "answer": "2026년 농림축산식품부는 국가 인공지능 프로젝트를 통해 GPU 32장을 확보하였다(농림축산식품부 2026). 이 GPU 32장은 공공과 민간이 함께 활용하는 방식으로 운영되며, 정부는 GPU 16장을 농가의 작물 생육 사진·영상 데이터를 AI 모델로 판독하여 AI 학습용 생육 데이터를 구축하는 데 활용할 계획이다. 나머지 GPU 16장은 스마트농업 AI솔루션 개발 기업에 제공하여 고품질 AI학습용 데이터셋 구축 및 공유를 지원한다. 이를 통해 스마트팜 데이터 품질 향상과 AI솔루션 개발을 촉진하고, 학습용 데이터셋을 스마트팜 빅데이터 통합플랫폼 누리집을 통해 개방할 예정이다[Dd2e30][D5e12a].",
       "gold": "총 32장의 GPU를 확보하여, 16장은 공공 AX데이터 구축에, 나머지 16장은 민간 AI솔루션 개발 지원에 활용한다.",
       "route": "docs",
       "status": "grounded",
-      "rewrites": 0,
+      "rewrites": 2,
       "regenerations": 0,
-      "web_fallback": false,
+      "web_fallback": true,
       "cited_ids": [
         "Dd2e30",
-        "D5e12a",
-        "Df3a64"
+        "D5e12a"
       ],
       "evidence_ids": [
         "Dd2e30",
-        "D5e12a",
-        "Df3a64"
+        "D5e12a"
       ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer directly addresses the question by stating that the Ministry of Agriculture, Food and Rural Affairs secured 32 GPUs through the national AI project in 2026, with 16 GPUs allocated for public AX data construction and 16 GPUs for supporting private AI solution development. This matches the provided correct answer exactly. Furthermore, the system answer elaborates on the utilization plans with detailed information supported by the cited documents, confirming the faithfulness and correctness of the response."
+      "reason": "시스템 답변은 질문에 대해 정확하게 2026년 농림축산식품부가 국가 인공지능 프로젝트를 통해 확보한 GPU 수량(32장)과 그 활용 계획(16장은 공공 AX데이터 구축에, 나머지 16장은 민간 AI솔루션 개발 지원에 활용)을 상세히 설명하고 있으며, 제공된 근거 문서 내용과 일치한다. 따라서 답변은 질문에 적절히 관련되어 있고, 사실에 부합하며, 정확하다."
     },
     {
       "id": "q07",
@@ -198,49 +194,55 @@
       "gold": "스마트농업 전문교육기관은 2029년까지 누적 8개소로 확대되며, 스마트농업관리사 양성과정은 2025년 하반기부터 운영된다.",
       "route": "docs",
       "status": "grounded",
-      "rewrites": 1,
+      "rewrites": 0,
       "regenerations": 0,
       "web_fallback": false,
       "cited_ids": [
         "D9d9ae",
         "D971e8",
-        "D14917"
+        "D14917",
+        "D28816"
       ],
       "evidence_ids": [
         "D9d9ae",
         "D971e8",
-        "D14917"
+        "D14917",
+        "D28816"
       ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer directly addresses the question by stating that the number of smart agriculture specialized education institutions will expand from 4 to 8 between 2025 and 2029, and that the smart agriculture manager qualification training course will be operated from the second half of 2025. This matches the provided correct answer exactly. The supporting evidence from the Ministry of Agriculture, Food and Rural Affairs 2025 documents confirms these details, ensuring the answer is faithful and correct. Therefore, all criteria are met with true."
+      "reason": "시스템 답변은 질문에 대해 정확하고 구체적으로 답변하고 있으며, 스마트농업 전문교육기관이 2025년 4개소에서 2029년까지 누적 8개소로 확대된다는 점과 스마트농업관리사 자격증 양성과정이 2025년 하반기부터 운영된다는 점을 명확히 언급하고 있다. 이는 제공된 정답과 일치하며, 근거 문서들에서도 동일한 내용을 확인할 수 있다. 따라서 답변은 질문에 적절히 관련되어 있고, 사실에 부합하며, 정확하다."
     },
     {
       "id": "q09",
       "question": "2026년에 농림축산식품부가 선정한 스마트농업 우수기업 중에서 AI 자동화 로봇 'Omni'를 개발한 기업은 어디인가?",
-      "answer": "2026년에 농림축산식품부가 선정한 스마트농업 우수기업 중에서 AI 자동화 로봇 'Omni'를 개발한 기업은 근거에서 확인되지 않음.",
+      "answer": "2026년에 농림축산식품부가 선정한 스마트농업 우수기업 중에서 AI 자동화 로봇 'Omni'를 개발한 기업은 메타파머스이다. 메타파머스는 딸기의 수분·수확 농작업에 사용되는 AI 자동화 로봇 'Omni'를 개발하였다[D12823][D5391b][Wdd289].",
       "gold": "메타파머스",
-      "route": "web",
-      "status": "not_found",
-      "rewrites": 0,
+      "route": "docs",
+      "status": "grounded",
+      "rewrites": 2,
       "regenerations": 0,
-      "web_fallback": false,
-      "cited_ids": [],
+      "web_fallback": true,
+      "cited_ids": [
+        "D12823",
+        "D5391b",
+        "Wdd289"
+      ],
       "evidence_ids": [
-        "We358f",
-        "W3dc1c",
-        "W3f7dc"
+        "D12823",
+        "D5391b",
+        "Wdd289"
       ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system's answer states that the information about the company developing the AI automation robot 'Omni' among the 2026 smart agriculture excellent companies selected by the Ministry of Agriculture, Food and Rural Affairs is not confirmed in the provided evidence. The provided evidence includes mentions of MetaFarmers as a smart agriculture excellent company and their work in physical AI and agricultural automation robots, but does not explicitly confirm that MetaFarmers developed the 'Omni' robot. Therefore, the system's answer is relevant, faithful to the evidence, and correct in not asserting information not supported by the evidence."
+      "reason": "The system answer directly addresses the question by stating that the company developing the AI automation robot 'Omni' selected by the Ministry of Agriculture, Food and Rural Affairs in 2026 is MetaFarmers (메타파머스). This matches the provided correct answer exactly. The system's answer is supported by multiple cited sources ([D12823], [D5391b], [Wdd289]) which confirm that MetaFarmers developed the AI automation robot 'Omni' for strawberry moisture and harvesting tasks and was selected as a smart agriculture excellent company in 2026. Therefore, the answer is relevant, factually accurate, and correct."
     },
     {
       "id": "q10",
       "question": "농업용 로봇이 수행하는 주요 작업에는 어떤 것들이 있나요?",
-      "answer": "농업용 로봇이 수행하는 주요 작업에는 운반, 방제, 제초 작업이 중심이며, 수확, 적과, 적엽 등 다관절 작업도 포함된다. 또한, 토양 준비, 파종, 제초, 식물 보호, 수확, 수확량 추정 및 표현형 분석 등의 작업도 수행한다. 다만, 비료 살포, 잔디 깎기, 토양 경운, 관개 등의 작업은 아직 경제적·관리적으로 수익성이 낮아 제한적으로 사용되고 있다. [D2a5aa][D9c83a][Dcaa38]",
+      "answer": "농업용 로봇이 수행하는 주요 작업에는 파종 전 토양 준비, 식재, 제초 및 식물 보호, 수확, 수확량 추정 및 표현형 분석이 포함된다. 또한 일부 로봇은 면화, 아스파라거스, 딸기 수확과 제초, 운반 작업에 특화되어 있다. 비록 소수이지만 비료 살포, 잔디 깎기, 토양 경운, 관개 등의 작업도 수행 가능하나 경제적·관리적 측면에서 아직 이익이 크지 않다. 농업용 로봇은 주로 초본 작물과 경작지 작물 관리에 사용되며, 온실이나 축사 같은 제한된 환경에서의 활용이 많았으나 점차 다양한 환경에서 작동할 수 있도록 개발 중이다[D9c83a][Dcaa38][D8bb19][Dc4d8a].",
       "gold": "농업용 로봇은 토양 준비, 파종, 제초, 식물 보호, 수확, 수확량 추정 및 표현형 분석 등의 작업을 수행합니다.",
       "route": "docs",
       "status": "grounded",
@@ -248,24 +250,26 @@
       "regenerations": 0,
       "web_fallback": false,
       "cited_ids": [
-        "D2a5aa",
         "D9c83a",
-        "Dcaa38"
+        "Dcaa38",
+        "D8bb19",
+        "Dc4d8a"
       ],
       "evidence_ids": [
-        "D2a5aa",
         "D9c83a",
-        "Dcaa38"
+        "Dcaa38",
+        "D8bb19",
+        "Dc4d8a"
       ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer directly addresses the question by listing the main tasks performed by agricultural robots, including soil preparation, sowing, weeding, plant protection, harvesting, yield estimation, and phenotyping, which matches the provided correct answer. Additionally, it provides extra details about other tasks and economic considerations, all supported by the cited references. Therefore, the answer is relevant, factually faithful to the sources, and correct."
+      "reason": "The system answer directly addresses the question by listing the main tasks performed by agricultural robots, including soil preparation, planting, weeding, plant protection, harvesting, yield estimation, and phenotyping, which matches the provided correct answer. Additionally, it provides more detailed information about specialized tasks and current limitations, all supported by the cited references. Therefore, the answer is relevant, factually faithful to the source, and correct."
     },
     {
       "id": "q11",
       "question": "스마트농업 정책 추진체계 고도화에서 중점적으로 다뤄야 할 데이터 관련 요소는 무엇인가요?",
-      "answer": "스마트농업 정책 추진체계 고도화에서 중점적으로 다뤄야 할 데이터 관련 요소는 데이터 생산 방식의 다각화, 데이터 자산화 및 거래 활성화, 그리고 데이터 수집의 정밀성과 목적성에 대한 주의이다. 정부가 직접 수집하는 방식 외에 민간 주도의 고품질 데이터셋 축적 방식을 도입하고, 데이터 가치를 평가하여 농가 및 기업의 자산화를 지원하며, 거래 가이드라인과 플랫폼 고도화를 통해 시장 활성화를 도모해야 한다. 또한, 정책사업의 기본 단계부터 필요한 데이터의 범위와 형태를 명확히 하고, 효율적인 데이터 수집과 호환 활용 체계를 구축하는 것이 중요하다[D93da4][Dc49b7].",
+      "answer": "스마트농업 정책 추진체계 고도화에서 중점적으로 다뤄야 할 데이터 관련 요소는 스마트농업데이터 거래 활성화, 데이터 기반 스마트농업 솔루션 확산, 그리고 산업수요 기반 기자재·데이터 표준화 촉진이다. 구체적으로는 데이터 생산 방식의 다각화, 데이터 가치 평가 및 자산화 지원, 거래 가이드라인 마련과 거래 플랫폼 고도화가 포함된다. 또한, 스마트팜코리아 표준 데이터 적용과 표준적용 기자재 농가 실증지원 확대, 국가 정책사업 표준적용 의무화도 중요한 요소로 다뤄진다[Df53d5][D93da4][Da8033].",
       "gold": "데이터 수집과 축적, 이용에 초점을 맞추는 방식이다.",
       "route": "docs",
       "status": "grounded",
@@ -273,22 +277,24 @@
       "regenerations": 0,
       "web_fallback": false,
       "cited_ids": [
+        "Df53d5",
         "D93da4",
-        "Dc49b7"
+        "Da8033"
       ],
       "evidence_ids": [
+        "Df53d5",
         "D93da4",
-        "Dc49b7"
+        "Da8033"
       ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "시스템 답변은 스마트농업 정책 추진체계 고도화에서 중점적으로 다뤄야 할 데이터 관련 요소로 데이터 수집과 축적, 이용에 초점을 맞추는 방식을 상세히 설명하고 있으며, 이는 정답과 일치한다. 답변은 데이터 생산 방식의 다각화, 데이터 자산화 및 거래 활성화, 데이터 수집의 정밀성과 목적성에 대한 주의 등 정답의 핵심 요소를 포함하고 있어 질문에 적절히 부합한다. 또한, 제시된 근거 문서들을 바탕으로 한 내용으로 사실에 부합하므로 정답과 비교해 정확하다."
+      "reason": "The system answer comprehensively covers the data-related elements that should be focused on in the smart agriculture policy advancement, including data collection diversification, data value evaluation and assetization, activation of data trading, and standardization of equipment and data based on industry demand. These points are directly supported by the provided references from the Ministry of Agriculture, Food and Rural Affairs' 2025-2029 smart agriculture basic plan documents. The system answer is relevant to the question, faithful to the provided source content, and correct in addressing the key data-related elements emphasized in the policy framework. The user's provided 'correct answer' is a simplified summary focusing on data collection, accumulation, and utilization, which is encompassed within the system's more detailed and accurate response."
     },
     {
       "id": "q12",
       "question": "2021년 미국 우유 생산의 몇 퍼센트가 개별 소 생산 기록, 영양사 설계 사료, 또는 번식 관련 기술을 사용한 농장에서 나왔나요?",
-      "answer": "2021년 미국 우유 생산의 90퍼센트 이상이 개별 소 생산 기록, 영양사 설계 사료, 또는 번식 관련 기술(예: 성별 선별 정액)을 사용하는 농장에서 나왔습니다. 이는 USDA Economic Research Service의 2026년 보고서에 근거한 수치입니다[D8e6a0].",
+      "answer": "2021년 미국 우유 생산의 90퍼센트 이상이 개별 소 생산 기록, 영양사 설계 사료, 또는 번식 관련 기술(예: 성별 선별 정액)을 사용한 농장에서 나왔습니다. 이는 USDA Economic Research Service의 2026년 보고서에 근거한 수치입니다[D8e6a0].",
       "gold": "2021년 미국 우유 생산의 최소 90%가 해당 기술을 사용하는 농장에서 생산되었습니다.",
       "route": "docs",
       "status": "grounded",
@@ -304,7 +310,7 @@
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "The system answer directly addresses the question by stating that at least 90% of U.S. milk production in 2021 came from farms using individual cow production records, nutritionist-designed feed, or reproduction-related technologies, matching the provided correct answer. The system also cites a credible source (USDA Economic Research Service 2026 report) that supports this data. Therefore, the answer is relevant, faithful to the source, and factually correct."
+      "reason": "The system answer directly addresses the question by stating that over 90% of U.S. milk production in 2021 came from farms using individual cow production records, nutritionist-designed feed, or reproduction-related technologies, matching the provided correct answer. The answer cites the USDA Economic Research Service 2026 report as the source, which is consistent with the provided evidence. Therefore, the answer is relevant, faithful to the source, and correct."
     },
     {
       "id": "q13",
@@ -401,7 +407,7 @@
     {
       "id": "q17",
       "question": "글로벌 스마트 농업 시장의 2023년 BIS Research와 Grand View Research의 시장 규모 추정치는 각각 얼마인가?",
-      "answer": "글로벌 스마트 농업 시장의 2023년 시장 규모 추정치는 BIS Research가 174억 달러로 평가하였고, Grand View Research는 226억 5천만 달러로 평가하였다. 두 기관 모두 2023년을 기준으로 시장 규모를 산정하였으며, BIS Research는 2023~2034년 동안 연평균 19.1% 성장할 것으로, Grand View Research는 2024~2030년 동안 연평균 13.7% 성장할 것으로 전망하였다. 이 수치는 각각 2024년 발표된 전망치이다[D66bcb][Deaac5][D5b883][D4f90b].",
+      "answer": "글로벌 스마트 농업 시장의 2023년 시장 규모 추정치는 BIS Research가 174억 달러, Grand View Research가 226억 5천만 달러로 평가하였다. BIS Research는 2023년부터 2034년까지 연평균 19.1% 성장할 것으로 전망하였고, Grand View Research는 2023년부터 2030년까지 연평균 13.7% 성장할 것으로 예측하였다. 두 기관 모두 스마트 농업 시장의 성장 가능성을 긍정적으로 보고 있다.[D66bcb][D5b883][D4f90b][Deaac5]",
       "gold": "BIS Research는 2023년 시장 규모를 174억 달러로, Grand View Research는 226억 5천만 달러로 추정하였다.",
       "route": "docs",
       "status": "grounded",
@@ -410,20 +416,20 @@
       "web_fallback": false,
       "cited_ids": [
         "D66bcb",
-        "Deaac5",
         "D5b883",
-        "D4f90b"
+        "D4f90b",
+        "Deaac5"
       ],
       "evidence_ids": [
         "D66bcb",
-        "Deaac5",
         "D5b883",
-        "D4f90b"
+        "D4f90b",
+        "Deaac5"
       ],
       "relevance": true,
       "faithfulness": true,
       "correctness": true,
-      "reason": "시스템 답변은 질문에 대해 BIS Research와 Grand View Research의 2023년 글로벌 스마트 농업 시장 규모 추정치를 각각 174억 달러와 226억 5천만 달러로 정확히 제시하고 있다. 또한, 답변은 두 기관의 성장률과 분석 기간에 대한 추가 정보를 포함하여 근거 문서의 내용을 충실히 반영하고 있다. 따라서 답변은 질문에 적절히 관련되어 있고, 근거 문서와 일치하며, 정답과도 정확히 부합한다."
+      "reason": "시스템 답변은 질문에 대해 BIS Research와 Grand View Research의 2023년 글로벌 스마트 농업 시장 규모 추정치를 정확히 제시하고 있다. BIS Research는 174억 달러, Grand View Research는 226억 5천만 달러로 명확히 언급되어 있으며, 이는 정답과 일치한다. 또한, 시스템 답변은 추가로 두 기관의 연평균 성장률 전망과 시장 성장 가능성에 대한 평가도 포함하고 있어, 질문에 대한 답변으로 적절하고 근거 문서의 내용을 충실히 반영하였다."
     },
     {
       "id": "q18",

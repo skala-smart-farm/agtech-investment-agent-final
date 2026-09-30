@@ -5,29 +5,40 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	discover(discover)
-	verify(verify)
-	select(select)
+	founder(founder)
 	tech(tech)
 	market(market)
 	competition(competition)
 	decide(decide)
 	report(report)
 	__end__([<p>__end__</p>]):::last
-	__start__ --> discover;
+	__start__ --> discover\3a__start__;
 	competition --> decide;
-	decide -.-> discover;
+	decide -.-> discover\3a__start__;
 	decide -.-> report;
-	decide -.-> select;
-	discover --> verify;
+	discover\3a__end__ -.-> founder;
+	discover\3a__end__ -.-> report;
+	founder --> tech;
 	market --> competition;
-	select --> market;
-	select --> tech;
-	tech --> competition;
-	verify -.-> discover;
-	verify -.-> report;
-	verify -.-> select;
+	tech --> market;
 	report --> __end__;
+	subgraph discover
+	discover\3a__start__(<p>__start__</p>)
+	discover\3acollect(collect)
+	discover\3ascreen(screen)
+	discover\3apick(pick)
+	discover\3aexhausted(exhausted)
+	discover\3a__end__(<p>__end__</p>)
+	discover\3a__start__ -.-> discover\3acollect;
+	discover\3a__start__ -.-> discover\3aexhausted;
+	discover\3a__start__ -.-> discover\3apick;
+	discover\3acollect --> discover\3ascreen;
+	discover\3ascreen -.-> discover\3acollect;
+	discover\3ascreen -.-> discover\3aexhausted;
+	discover\3ascreen -.-> discover\3apick;
+	discover\3aexhausted --> discover\3a__end__;
+	discover\3apick --> discover\3a__end__;
+	end
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0
 	classDef last fill:#bfb6fc

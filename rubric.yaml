@@ -119,7 +119,8 @@ deal_killers:
 decision_rule: >
   문항 신호 x = YES +1 · NO −1 · 미확인 0. 기준 d 의 배수 c_d = clip(1 + 0.5 × 평균(x_q − x̄_q), 0.5, 1.5),
   x̄_q 는 동종 기준 집단(app.py --calibrate, 자기 제외)의 문항 평균 신호(5곳 미만이면 0). M = Σ 가중치_d × c_d (동종 평균 = 1.00).
-  투자 ⇔ M ≥ 1.10 AND 창업자 문항 YES ≥ 1 AND Deal-killer 없음. 그 외는 보류이며 보류 유형은
-  Deal-killer > 창업자 근거 없음 > 정보 부족(미확인 ≥ 60%) > 동종 대비 열위 순으로 하나를 붙인다.
-  1.10 은 두 참고자료 예시 배수 1.1205(Eqvista)·1.155(ACA 2019)보다 낮게 둔 설계 가정이라 1.00~1.20 민감도를 함께 기록한다.
+  투자 ⇔ M > 1.00 AND 창업자 기준 c_founder ≥ 1.00 AND Deal-killer 없음. 두 기준값 모두 Payne Scorecard 원 방법의 기준점
+  '투자를 받은 동종 평균 기업 = 100%' 이며 새로 정한 숫자가 아니다(팀 조건: "A great team will fix early product flaws,
+  but the reverse is not true" — Payne 2019). 그 외는 보류이며 보류 유형은 Deal-killer > 창업자 점수 평균 미만 > 동종 평균 이하
+  순으로 하나를 붙인다. 기준을 바꿨을 때의 결과(1.00~1.20 민감도)를 보고서에 함께 싣는다.
   수치는 config.yaml decision 과 같아야 한다(tests/test_decision.py 가 확인).

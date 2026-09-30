@@ -4,3 +4,8 @@
 {"run_date": "2026-09-30", "finished_at": "2026-09-30 08:16:24", "elapsed_sec": 1088.8, "fresh": false, "mode": "calibrate", "api_calls": 327, "cache_hits": 57, "input_tokens": 1497037, "output_tokens": 80915, "usd": 0.7125}
 {"run_date": "2026-09-30", "finished_at": "2026-09-30 08:17:47", "elapsed_sec": 45.2, "fresh": false, "mode": "main", "api_calls": 2, "cache_hits": 82, "input_tokens": 42553, "output_tokens": 2036, "usd": 0.0176}
 {"run_date": "2026-09-30", "finished_at": "2026-09-30 08:29:47", "elapsed_sec": 53.9, "fresh": false, "mode": "scenario", "api_calls": 2, "cache_hits": 384, "input_tokens": 65169, "output_tokens": 3786, "usd": 0.0279}
+{"run_date": "2026-09-30", "finished_at": "2026-09-30 12:38:01", "elapsed_sec": 706.7, "fresh": false, "mode": "calibrate", "api_calls": 263, "cache_hits": 133, "input_tokens": 1098144, "output_tokens": 57313, "usd": 0.5292}
+{"run_date": "2026-09-30", "finished_at": "2026-09-30 12:40:19", "elapsed_sec": 77.6, "fresh": false, "mode": "main", "api_calls": 3, "cache_hits": 396, "input_tokens": 97685, "output_tokens": 5471, "usd": 0.0393}
+{"run_date": "2026-09-30", "finished_at": "2026-09-30 12:50:33", "elapsed_sec": 18.6, "fresh": false, "mode": "main", "api_calls": 1, "cache_hits": 83, "input_tokens": 20779, "output_tokens": 1070, "usd": 0.01}
+{"run_date": "2026-09-30", "finished_at": "2026-09-30 12:52:05", "elapsed_sec": 68.2, "fresh": false, "mode": "scenario", "api_calls": 3, "cache_hits": 396, "input_tokens": 97778, "output_tokens": 5509, "usd": 0.0388}
+{"run_date": "2026-09-30", "finished_at": "2026-09-30 12:57:52", "elapsed_sec": 17.5, "fresh": false, "mode": "main", "api_calls": 1, "cache_hits": 83, "input_tokens": 20791, "output_tokens": 1084, "usd": 0.0101}

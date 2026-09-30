@@ -182,7 +182,7 @@ BESSEMER_NOTE = {8: "M2 (ROI 는 참고치로 함께 표시, C.7)", 9: "P4, D4 +
                  10: "F1 + F3 — 대리지표: 창업 전 같은 분야 경력 + 창업 후 이어진 마일스톤"}
 
 # 결정 규칙 기본값 (config.yaml 에 decision.threshold 등이 들어오면 그 값을 쓴다)
-DECISION_DEFAULT = {"threshold": 1.10, "step": 0.5, "clip": [0.5, 1.5], "min_founder_yes": 1, "info_gap_ratio": 0.6,
+DECISION_DEFAULT = {"threshold": 1.00, "step": 0.5, "clip": [0.5, 1.5], "founder_min_c": 1.00,
                     "reference_min_n": 5, "sensitivity": [1.00, 1.05, 1.10, 1.15, 1.20], "flip_max_items": 3, "dd_max_items": 5}
 RAG_DEFAULT = {"max_regenerations": 1, "rag_recursion_limit": 25}
 WORKFLOW_DEFAULT = {"recursion_limit": 100}
@@ -387,7 +387,8 @@ def context() -> dict:
 def _calibration() -> dict:
     """v2 보정 실행 결과(data/reference_class.json): 구성원마다 자기 제외 동종 평균으로 다시 계산한 배수·결정.
     파일이 없으면 빈 값 (설계서는 규칙만 싣는다)."""
-    from agents.decision import _founder_yes, _killers, _reference, _rows_from_signals, decide_rule, payne_multiplier
+    from agents.decision import (_founder_c, _founder_yes, _killers, _reference, _rows_from_signals, decide_rule,
+                                 payne_multiplier)
     from core.judge import load_rubric
 
     ref, sens = _json("data/reference_class.json"), _json("outputs/eval/threshold_sensitivity.json")
@@ -399,12 +400,13 @@ def _calibration() -> dict:
     for m in ref["members"]:
         r = _rows_from_signals(m["signals"], rubric)
         mean = _reference(ref, m["name"], rubric, d.reference_min_n)["mean"]
-        M, _ = payne_multiplier(r, mean, rubric, d.step, d.clip)
-        fy, k = _founder_yes(r), _killers(r, rubric)
+        M, crit = payne_multiplier(r, mean, rubric, d.step, d.clip)
+        fy, fc, k = _founder_yes(r), _founder_c(crit), _killers(r, rubric)
         judged = [x for x in r if x["answer"] != "N/A"]
         unk = sum(x["answer"] == "UNKNOWN" for x in judged) / len(judged)
-        dec, hold, _ = decide_rule(M, fy, k, unk, cfg)
+        dec, hold, _ = decide_rule(M, fc, k, unk, cfg)
         rows.append({"name": m["name"], "region": m.get("region"), "stage": m.get("stage"), "M": M, "founder_yes": fy,
+                     "founder_c": fc,
                      "yes": sum(x["answer"] == "YES" for x in r), "no": sum(x["answer"] == "NO" for x in r),
                      "unknown_ratio": unk, "decision": dec, "hold_type": hold, "killers": k})
     rows.sort(key=lambda x: -x["M"])
