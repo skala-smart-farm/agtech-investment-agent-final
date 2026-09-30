@@ -192,6 +192,29 @@ def _bare(x: str) -> str:
     return re.sub(r"[.。]\s*$", "", x)
 
 
+def _reference_gap(evals: list[dict]) -> dict | None:
+    """이번에 평가한 후보 중 동종 기준 집단(data/reference_class.json)에 없는 곳. 새 데이터로 평가(--fresh)하면서
+    같은 캐시로 --calibrate 를 먼저 돌리지 않으면 동종 평균·순위가 이번 평가가 아니라 예전 기준 집단 기준이 된다.
+    제출 실행은 평가 10곳 = 기준 집단 10곳이라 None."""
+    from agents.decision import _read_json, _ref_path
+
+    data = _read_json(_ref_path()) or {}
+    members = {m.get("name") for m in data.get("members") or []}
+    unseen = [e["name"] for e in evals if e["name"] not in members]
+    if not members or not unseen:
+        return None
+    return {"unseen": unseen, "n_ref": len(members), "date": data.get("run_date") or "-"}
+
+
+def _pick_target(evals: list[dict]) -> tuple[list[dict], list[dict], dict]:
+    """(투자 기준 통과 후보, 배수 순 전체, 보고서 대상). 대상은 투자 기준 통과 후보 중 배수 1위 — 평가 순서와 무관,
+    통과 후보가 없으면 배수 1위(모두 보류 보고서)."""
+    invested = [e for e in evals if e["decision"] == "투자"]
+    ranked = sorted(evals, key=lambda e: -e["scorecard"]["multiplier"])
+    target = next(e for e in ranked if e["decision"] == "투자") if invested else ranked[0]
+    return invested, ranked, target
+
+
 def _pool(state: dict, evals: list[dict], screened: list[dict], cfg) -> dict:
     """발굴 → 검증 → 적격 → 평가 단계별 후보 수와, 적격인데 평가하지 않은 후보."""
     def split(rows):
@@ -224,6 +247,7 @@ def _pool(state: dict, evals: list[dict], screened: list[dict], cfg) -> dict:
         "unevaluated": [{"name": r.get("official_name") or r["name"], "stage": r.get("stage") or "-",
                          "search_failed": bool(r.get("gate_search_failed"))} for r in left],
         "why": why, "capped": capped, "per_round": cfg.workflow.max_candidates_per_round,
+        "ref_gap": _reference_gap(evals) if evals else None,
     }
 
 
@@ -708,6 +732,10 @@ def _limitations(cfg, pool: dict, failed_by: dict[str, int], data_limits: list[s
     """한계점: 검색 실패, 미평가 적격 후보, 상대 평가, 가정, 데이터 한계, 판정 모델 순으로 최대 6개 + 조회일 표기 1줄
     (REFERENCE 는 목록만 싣고, 게시일 대신 조회일을 쓴 사실은 여기서 밝힌다)."""
     out = []
+    if gap := pool.get("ref_gap"):
+        out.append(f"이번에 평가한 {pool['evaluated']}곳 중 {len(gap['unseen'])}곳({'·'.join(gap['unseen'])})은 동종 기준 집단"
+                   f"(보정 실행 {gap['date']}, {gap['n_ref']}곳)에 없다 — 동종 평균과 배수는 그 기준 집단 기준이다. "
+                   "새 데이터로 평가했다면 같은 캐시로 --calibrate 를 먼저 실행해 기준 집단을 다시 만든 뒤 비교해야 한다")
     if failed_by:
         n = sum(failed_by.values())
         parts = ", ".join(f"{k} {v}건" for k, v in sorted(failed_by.items(), key=lambda kv: (kv[0] == "분야·경쟁사 검색", -kv[1])))
@@ -1214,10 +1242,8 @@ def report_node(state: dict) -> dict:
     run_date = state.get("run_date") or datetime.now().strftime("%Y-%m-%d")
     if not evals:
         return _no_candidate_report(state, cfg, screened, reg, run_date)
-    invested = [e for e in evals if e["decision"] == "투자"]
+    invested, ranked, target = _pick_target(evals)  # 투자 기준 통과 후보 중 배수 1위
     mode = "invest" if invested else "hold"
-    ranked = sorted(evals, key=lambda e: -e["scorecard"]["multiplier"])
-    target = next(e for e in ranked if e["decision"] == "투자") if invested else ranked[0]  # 투자 기준 통과 후보 중 배수 1위
     prof, sc = target.get("profile") or {}, target["scorecard"]
     pool = _pool(state, evals, screened, cfg)
     companies = [_names(e) for e in evals] + [
@@ -1232,6 +1258,10 @@ def report_node(state: dict) -> dict:
     if mode == "invest":
         rank = sc.get("target_rank")
         peer = f"동종 {sc.get('peer_n')}곳 중 {rank}위" if rank else f"기준 집단 {(sc.get('reference') or {}).get('n', 0)}곳"
+        if pool["ref_gap"]:  # 기준 집단이 이번 평가와 다르면 동종 순위 대신 이번 평가 안의 순위
+            peer = f"평가 {len(evals)}곳 중 {ranked.index(target) + 1}위"
+            print(f"[보고서] 주의: 평가한 {len(pool['ref_gap']['unseen'])}곳이 동종 기준 집단에 없습니다 — "
+                  "새 데이터라면 같은 캐시로 python app.py --fresh --calibrate 를 먼저 실행하세요")
         conclusion = (f"{target['name']} 투자 추천(실사 조건부) — 동종 평균 대비 {_s1(sc['multiplier'])}"
                       f"(동종 평균 100 초과, 창업자 기준 {_s1(sc.get('founder_c'))}), {peer}")
         pick = (f"{len(evals)}곳 평가 → 투자 기준 통과 {len(invested)}곳 중 배수 1위" if len(evals) > 1

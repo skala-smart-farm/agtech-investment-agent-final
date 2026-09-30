@@ -1,6 +1,6 @@
 {
   "run_date": "2026-09-30",
-  "elapsed_sec": 25.5,
+  "elapsed_sec": 23.8,
   "mode": "main",
   "threshold": 1.0,
   "end_reason": "max_evaluations",
@@ -3434,7 +3434,7 @@
     "title": "메타파머스 투자 검토 — 투자 추천(실사 조건부)",
     "target": "메타파머스",
     "decision": "투자 추천",
-    "generated_at": "2026-09-30T13:59:36"
+    "generated_at": "2026-09-30T14:12:24"
   },
   "rag_traces": [
     {
