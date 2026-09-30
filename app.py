@@ -19,7 +19,7 @@ import warnings
 
 warnings.filterwarnings("ignore")  # 라이브러리 경고로 진행 로그가 묻히지 않게
 
-from core.config import ROOT, get_config, path
+from core.config import ROOT, get_config, path, require_keys
 from core.config import run_date as get_run_date
 from core.cost import TRACKER
 from graph.builder import build_graph
@@ -96,6 +96,18 @@ def apply_options(args: argparse.Namespace, cfg) -> str:
         cfg["report"]["scenario"] = True
         return "scenario"
     return "main"
+
+
+def search_notice(args: argparse.Namespace, cfg) -> str:
+    """검색 공급자 안내 한 줄. 재현 실행은 캐시만 읽으므로 키·공급자와 무관하다는 것을 먼저 알린다."""
+    names = " → ".join(p.capitalize() for p in web_search_mod.active_providers()) or "없음"
+    if not (args.fresh or args.retry_failed):
+        return f"   검색: 재현용 캐시({cfg.cache.dir}/)에서 읽음 — 검색 키·공급자와 무관 (공급자 {names})"
+    msg = f"   검색 공급자: {names} · 요청 제한 {cfg.search.get('timeout_sec', 30)}초"
+    if web_search_mod.active_providers() == ["tavily"]:
+        msg += (" — SERPER_API_KEY 가 없어 모든 검색을 Tavily 로 보냅니다. 새 평가는 검색이 수백 번이라 오래 걸리고"
+                " Tavily 무료 한도를 많이 씁니다 (README '실행이 느리거나 멈춘 것 같을 때')")
+    return msg
 
 
 def initial_state(cfg, run_date: str) -> dict:
@@ -189,6 +201,8 @@ def main(argv: list[str] | None = None) -> None:
     cfg = get_config()
     base_out = cfg.report.output_dir  # 비용 기록은 모드와 관계없이 기본 출력 폴더 한 곳에 모은다
     mode = apply_options(args, cfg)
+    if args.fresh or args.retry_failed:  # 새로 호출할 실행은 키가 없으면 중간이 아니라 시작할 때 멈춘다
+        require_keys()
     app = build_graph()
     if args.graph_only:
         print(save_graph_image(app))
@@ -201,6 +215,7 @@ def main(argv: list[str] | None = None) -> None:
         meta.write_text(json.dumps({"run_date": run_date}), encoding="utf-8")
     print(f"== AgTech 스타트업 투자 평가 시작 ({run_date}, 모드 {mode}, 기준 배수 {cfg.decision.threshold}, "
           f"생성 {cfg.models.generator}, 판정 {cfg.models.judge}, 임베딩 {cfg.embedding.model}, 캐시 {cfg.cache.dir}/) ==")
+    print(search_notice(args, cfg))
     state = app.invoke(initial_state(cfg, run_date), {"recursion_limit": cfg.workflow.recursion_limit})
     elapsed = round(time.time() - t0, 1)
 

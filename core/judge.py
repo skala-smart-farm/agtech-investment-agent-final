@@ -14,10 +14,13 @@ LLM 은 평가표 질문에 판정(YES/NO/UNKNOWN/N/A)·근거 id·근거 원문
 - NO 도 반대 사실을 적은 문장의 인용이 본문에 있어야 인정한다. "근거가 없다"는 NO 가 아니라 UNKNOWN
   (판정 이유가 "추정·확인되지 않음·근거가 없음" 같은 근거 부족이고 인용 자체에 부정 표현이 없으면 코드가 UNKNOWN 으로 바꾼다)
 - 인용 앞뒤 300자 안에 회사명이 있어야 한다 (시장 문항 M1·M2 제외, 업계 일반론 차단)
-- 제3자 근거·최근 24개월(문서는 발행 연도)·문서 근거 요구 조건을 코드가 검사한다
+- 제3자 근거·최근 24개월(문서는 발행 연도)·문서 근거 요구 조건을 코드가 검사한다. 최근 24개월 = [기준일 − 24개월, 기준일]이라
+  기준일 이후 날짜(예정·계획)는 최근으로 인정하지 않는다 (규칙은 core/recency.py 한 곳). 최근 문항(F3·R1·R2)은 인용 속 날짜가
+  기준일 이후뿐이거나 인용이 완료 표지 없는 예정·계획·목표 문장이면 인정하지 않는다 (시장 전망 M1·M2 는 제외)
   (제3자 문항은 기사에 실렸어도 인용 주변에 대표·회사 측 발언이나 목표·계획·예정 표현이 있으면 인정하지 않는다)
 - 상용 운영 문항은 인용 주변에 예정·목표·실증·PoC·시범 표현이 있거나 인용에 수량·고객이 없으면 인정하지 않는다
 - D1(최근 라운드)은 LLM 답을 쓰지 않고 적격성 관문에서 인용 검증을 마친 값으로 코드가 판정한다
+  (라운드 시점이 기준일 이후이거나 단계 인용이 예정·추진 중인 라운드면 완료된 투자가 아니므로 UNKNOWN)
 """
 from __future__ import annotations
 
@@ -33,6 +36,7 @@ from rank_bm25 import BM25Okapi
 from core.config import ROOT
 from core.llm_bounded import bounded
 from core.prompts import render
+from core.recency import future_round, only_future_events, planned_only
 from rag.index import kiwi_tokenize
 from rag.loader import load_manifest
 from tools.grounding import fuzzy_in, norm
@@ -227,10 +231,10 @@ def _doc_years() -> dict:
 
 
 def _is_recent(s: dict, run_date: str) -> bool:
-    if s["kind"] == "doc" or s.get("id", "").startswith("D"):  # 문서는 manifest 의 발행 연도 ≥ 기준 연도 - 2 (쪽마다 날짜가 없음)
+    if s["kind"] == "doc" or s.get("id", "").startswith("D"):  # 문서는 manifest 의 발행 연도가 기준 연도 − 2 ~ 기준 연도 (쪽마다 날짜가 없음)
         year = _doc_years().get(s.get("doc_id")) or s.get("year")
         try:
-            return int(year) >= int(run_date[:4]) - 2
+            return int(run_date[:4]) - 2 <= int(year) <= int(run_date[:4])
         except (TypeError, ValueError):
             return False
     if s["kind"] == "web" and s.get("site") in DB_SITES:
@@ -264,6 +268,8 @@ def _round_rule(c: dict, run_date: str) -> tuple[str, list[str], str]:
     y, mo = int(m.group(1)), int(m.group(2) or 6)
     run = datetime.strptime(run_date, "%Y-%m-%d")
     months = (run.year - y) * 12 + (run.month - mo)
+    if why := future_round(c, run_date):  # 기준일 이후·예정 라운드는 음수 개월이라 '24개월 안'으로 통과하던 것을 막는다
+        return "UNKNOWN", [], f"{why} (코드 판정)"
     if months > 24:
         return "NO", ids, f"최근 라운드가 {rd} 로 24개월보다 오래됨 (코드 판정)"
     # 금액은 숫자가 있고 '비공개·미공개' 같은 표현이 없을 때만 확인된 것으로 본다 ('비공개' 문자열을 금액으로 세지 않게)
@@ -360,6 +366,10 @@ def judge_dimension(dim_id: str, company: dict, pool_ids: list[str], reg: Source
                 fail = "최근 24개월 이내 근거 아님"
             elif q.get("recent") and not q.get("market_level") and _events_too_old(f"{a.quote} {a.rationale}", run_date):
                 fail = "언급된 사건 날짜가 모두 평가 기준일로부터 24개월보다 오래됨 (코드 날짜 검사)"
+            elif q.get("recent") and not q.get("market_level") and only_future_events(a.quote, run_date):
+                fail = "인용 속 사건 날짜가 평가 기준일 이후(예정)뿐 (코드 날짜 검사)"
+            elif q.get("recent") and not q.get("market_level") and planned_only(a.quote, run_date):
+                fail = "인용이 예정·계획·목표 문장 (완료된 사건 아님)"
             if fail:
                 verdict, note = "UNKNOWN", f"{fail} → UNKNOWN 강등 ({note})"
                 rejected.append({"qid": q["id"], "reason": fail, "quote": a.quote})

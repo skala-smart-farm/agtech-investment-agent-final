@@ -94,8 +94,14 @@ def test_fetch_existing_definitions_unchanged():
     assert not changed, f"tools/fetch.py 기존 정의가 바뀜(추가만 허용): {changed}"
 
 
+# 허용한 유일한 변경: 새 근거 id 를 _id 대신 _new_id 로 만든다(해시 충돌 때만 id 가 길어짐, 충돌이 없으면 _id 와 같다).
+# 재현용 캐시 실행(본 실행 586개·보정 898개 id)에는 충돌이 0건이라 프롬프트 속 id 가 그대로다 — test_sources_ids.py 가 확인.
+ALLOWED_SOURCES_EDIT = ("self._new_id(", "self._id(")
+
+
 def test_sources_registry_definitions_unchanged():
-    old, new = _defs(_at_tag("tools/sources.py")), _defs((ROOT / "tools/sources.py").read_text(encoding="utf-8"))
+    cur = (ROOT / "tools/sources.py").read_text(encoding="utf-8").replace(*ALLOWED_SOURCES_EDIT)
+    old, new = _defs(_at_tag("tools/sources.py")), _defs(cur)
     assert set(SOURCES_FROZEN) <= set(old)
     changed = [k for k in SOURCES_FROZEN if new.get(k) != old[k]]
     assert not changed, f"tools/sources.py 근거 등록 정의가 바뀜(추가만 허용): {changed}"

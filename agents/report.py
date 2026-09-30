@@ -35,8 +35,8 @@ from tools.sources import (ACCESS_DATE_NOTE, GROUPS, REFERENCE_FORMATS, SourceRe
                            merge_duplicates, reference_group, reference_key, title_key, uses_access_date)
 
 AGENT = "report"
-CITE = re.compile(r"\[\s*([WD][0-9a-f]{5}(?:\s*[,，]\s*[WD][0-9a-f]{5})*)\s*\]")
-PAREN_CITE = re.compile(r"\(\s*([WD][0-9a-f]{5}(?:\s*[,，]\s*[WD][0-9a-f]{5})*)\s*\)")  # LLM 이 (W1a2b3) 로 쓴 인용
+CITE = re.compile(r"\[\s*([WD][0-9a-f]{5,8}(?:\s*[,，]\s*[WD][0-9a-f]{5,8})*)\s*\]")
+PAREN_CITE = re.compile(r"\(\s*([WD][0-9a-f]{5,8}(?:\s*[,，]\s*[WD][0-9a-f]{5,8})*)\s*\)")  # LLM 이 (W1a2b3) 로 쓴 인용
 NUM_CITE = re.compile(r"\[(\d+(?:, \d+)*)\]")  # 번호로 바뀐 본문 인용
 CHAPTER_REF = re.compile(r"\(→\s*([\d·,\s]+)장\)")
 
@@ -94,7 +94,9 @@ DEMOTED = {"인용문이 근거 본문에서 확인되지 않음": "근거 원�
            "공공·연구기관 문서 근거 없음": "공공·연구기관 문서 근거 없음",
            "회사 자체 발표만 있음": "회사 자체 발표만 있고 제3자 근거 없음",
            "최근 24개월 이내 근거 아님": "최근 24개월 이내 근거 없음",
-           "언급된 사건 날짜가 모두": "언급된 사건이 모두 24개월보다 오래됨"}
+           "언급된 사건 날짜가 모두": "언급된 사건이 모두 24개월보다 오래됨",
+           "인용 속 사건 날짜가 평가 기준일 이후": "언급된 사건이 아직 일어나지 않음(예정)",
+           "인용이 예정·계획·목표 문장": "예정·계획이며 완료된 사건이 아님"}
 
 
 # ── LLM 문안 스키마 (문장 칸만. 표·수치·결론은 코드가 쓴다)
@@ -361,9 +363,9 @@ def _consistency_problems(draft: _Body, target: dict, evals: list[dict], run_dat
             probs.append(f"판정 단계에서 기각된 주장('{rj['quote'][:30]}…')을 쓰지 마라")
     plain = re.sub(r"우수기업|우수 기업|우수벤처|우수 벤처", "", f"{text}\n{notes}")  # 공식 프로그램 이름은 평가성 표현이 아니다
     probs += [f"평가성 표현 '{w}' 대신 사실과 판정 근거로 써라" for w in EVALUATIVE if w in plain]
-    if not re.search(r"\[[^\]]*D[0-9a-f]{5}", draft.market):
+    if not re.search(r"\[[^\]]*D[0-9a-f]{5,8}", draft.market):
         probs.append("시장 수치에 공공·연구기관 문서([D..]) 인용이 없다")
-    if not re.search(r"\[[^\]]*D[0-9a-f]{5}", draft.industry_baseline):
+    if not re.search(r"\[[^\]]*D[0-9a-f]{5,8}", draft.industry_baseline):
         probs.append("업계 기술 수준 문장에 문서([D..]) 인용이 없다")
     if any(not r.evidence_ids for r in draft.risks):
         probs.append("근거 id 가 없는 리스크가 있다")
@@ -1020,7 +1022,7 @@ def _brief_json(x: dict, reg: SourceRegistry) -> str:
         if isinstance(v, str):
             return CITE.sub(lambda m: f"[{', '.join(k)}]" if (k := _usable(reg, re.split(r"\s*[,，]\s*", m.group(1)))) else "", v)
         if isinstance(v, list):
-            return (_usable(reg, v) if v and all(isinstance(i, str) and re.fullmatch(r"[WD][0-9a-f]{5}", i) for i in v)
+            return (_usable(reg, v) if v and all(isinstance(i, str) and re.fullmatch(r"[WD][0-9a-f]{5,8}", i) for i in v)
                     else [scrub(i) for i in v])
         if isinstance(v, dict):
             return {k: scrub(i) for k, i in v.items() if k not in ("criterion", "pool_ids", "search_plan", "answers")}

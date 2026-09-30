@@ -49,7 +49,7 @@ PARTICLE = re.compile(r"(?<=[가-힣A-Za-z]{2})(?:보다|에서|에게|으로|�
 SUPERIOR = re.compile(r"앞선다|앞서 있|앞서는|우위(?:에|를|가)|우월|뛰어나|능가|압도|더 낫|차별화된다|outperform|superior|ahead of",
                       re.I)
 CLAIMED = re.compile(r"회사\s?측\s?주장\s?[:：][^/\n.]*")  # 주장은 문장 끝('.')이나 '/' 까지
-CITE = re.compile(r"\[[WD][0-9a-f]{5}")
+CITE = re.compile(r"\[[WD][0-9a-f]{5,8}")
 
 
 def _plain(s: str | None) -> str:

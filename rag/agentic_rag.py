@@ -220,7 +220,7 @@ class Check(BaseModel):
     answers_question: bool = Field(description="답변이 질문이 묻는 것에 직접 답하면 true")
 
 
-CITE = re.compile(r"\[([DW][0-9a-f]{5})\]")
+CITE = re.compile(r"\[([DW][0-9a-f]{5,8})\]")
 NOT_FOUND = "확인되지 않음"
 CHECK_RANK = {"grounded": 2, "not_useful": 1, "not_grounded": 0}  # not_useful 은 근거는 맞고 질문에 덜 맞는 답
 

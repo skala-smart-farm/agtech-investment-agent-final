@@ -53,7 +53,8 @@ def test_default_nodes_are_v1_discovery_and_eligibility():
 
     sub = build_discovery_graph()
     assert sub.builder.nodes["collect"].runnable.func is discovery_node
-    assert sub.builder.nodes["screen"].runnable.func is eligibility_node
+    # screen 은 관문 함수를 입력 그대로 부르고 결과의 G2 최근 투자(기준일 이후·예정 라운드)만 다시 거르는 감싸기다
+    assert sub.builder.nodes["screen"].runnable.func.__wrapped__ is eligibility_node
     assert {(e.source, e.target) for e in sub.get_graph().edges} == SUB_EDGES
 
 

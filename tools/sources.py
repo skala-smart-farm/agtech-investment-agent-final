@@ -112,6 +112,17 @@ class SourceRegistry:
         # 병렬 노드가 동시에 등록해도 충돌하지 않도록 순번 대신 키 해시로 id 를 만든다
         return prefix + hashlib.sha1(key.encode()).hexdigest()[:5]
 
+    def _new_id(self, prefix: str, key: str) -> str:
+        """새 근거의 id. 보통은 _id(해시 앞 5자리)와 같다. 이미 다른 출처가 그 id 를 쓰고 있으면(해시 충돌)
+        해시를 한 자리씩 늘려 겹치지 않는 id 를 준다 — 먼저 등록된 근거를 덮어쓰지 않는다.
+        충돌이 없으면 id 가 예전과 같으므로 재현용 캐시(프롬프트 속 근거 id)도 그대로 맞는다."""
+        full = hashlib.sha1(key.encode()).hexdigest()
+        for n in range(5, len(full) + 1):
+            sid = prefix + full[:n]
+            if sid not in self.data or self.data[sid].get("key") == key:
+                return sid
+        raise RuntimeError(f"근거 id 를 만들 수 없음: {key}")
+
     def _find(self, key: str) -> str | None:
         return next((sid for sid, s in self.data.items() if s.get("key") == key), None)
 
@@ -128,7 +139,7 @@ class SourceRegistry:
         site = _site(url, title)
         pub = (_date(result.get("published_date")) or _date_from(url, result.get("content", ""))
                or _date_from("", result.get("raw_content") or ""))
-        sid = self._id("W", key)
+        sid = self._new_id("W", key)
         self.data[sid] = {
             "id": sid, "key": key, "kind": "web", "url": url, "site": site,
             "title": _clean_title(title, site), "date": pub, "date_is_access": pub is None,
@@ -142,7 +153,7 @@ class SourceRegistry:
         key = f"doc:{meta.get('doc_id')}:{meta.get('page')}:{hashlib.md5(text.encode()).hexdigest()[:8]}"
         if sid := self._find(key):
             return sid
-        sid = self._id("D", key)
+        sid = self._new_id("D", key)
         self.data[sid] = {
             "id": sid, "key": key, "kind": "doc", "doc_id": meta.get("doc_id"), "type": meta.get("type", "report"),
             "title": meta.get("title"), "publisher": meta.get("publisher"), "year": meta.get("year"),

@@ -33,7 +33,7 @@ AGENT = "tech"
 # 기사 본문에서 기술·제품·실적 문단을 고르는 표현 (본문 발췌용)
 TECH_TERMS = re.compile(r"기술|특허|제품|개발|실증|상용|출시|설치|도입|농가|매출|고객|계약|협약|공급|수출|정확도|절감|수확량|"
                         r"AI|인공지능|로봇|센서|patent|product|deploy|customer|revenue|trial|yield", re.I)
-CITE_ID = re.compile(r"\b[WD][0-9a-f]{5}\b")
+CITE_ID = re.compile(r"\b[WD][0-9a-f]{5,8}\b")
 BASELINE_Q = "{seg} 분야의 기술 동향, 상용화 수준, 기술적 과제"   # v1 과 같은 질문 (RAG 캐시 키)
 BASELINE_PURPOSE = "스타트업 기술 수준을 비교할 기준선"
 HOMEPAGE_FOCUS = "핵심 기술·제품·장점과 단점"

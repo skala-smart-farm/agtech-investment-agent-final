@@ -120,6 +120,7 @@ def wowtale_agtech_funding(since_days: int = 730) -> list[dict]:
     for p in posts:
         title = html.unescape(p["title"]["rendered"])
         d = p["date"][:10]
-        if FUNDING.search(title) and (now - datetime.fromisoformat(d)).days <= since_days:
+        # 평가 기준일 이후 글(음수 일수)은 최근 2년에 넣지 않는다 (core/recency.py 와 같은 규칙)
+        if FUNDING.search(title) and 0 <= (now - datetime.fromisoformat(d)).days <= since_days:
             out.append({"title": title, "date": d, "url": p["link"]})
     return out

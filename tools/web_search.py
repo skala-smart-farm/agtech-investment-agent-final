@@ -6,6 +6,10 @@
   재현 때는 저장된 결과를 그대로 쓴다 (결과마다 provider 필드로 출처 공급자를 남긴다).
 - 한 공급자가 한도 초과·오류면 다음 공급자로 넘어간다. 모두 실패하면 실패 표시(.failed)를 남기고,
   --retry-failed 로 실행하면 그 검색만 다시 시도한다.
+- 실시간 검색만 해당(재현 실행은 캐시만 읽음): 요청마다 제한 시간(search.timeout_sec)을 두고, 일시 오류만 다시 시도한다.
+  인증·한도 오류(401·403·432·433)는 1번, 연결 실패·시간 초과·5xx 는 연속 search.breaker_after 번이면 그 공급자를 이번 실행에서 끈다
+  (429 속도 제한은 기다렸다 다시 시도할 뿐 끄지 않는다)
+  (한도가 끝난 키로 남은 검색 수백 번을 헛되이 부르지 않게). 꺼진 뒤의 검색도 지금과 같이 실패로 기록된다(fail-closed).
 - 실패한 검색은 "결과 없음"과 구분해 FAILED_QUERIES 에 남긴다 (적격성 관문의 fail-closed, 보고서 한계점에 사용).
 """
 from __future__ import annotations
@@ -14,10 +18,9 @@ import hashlib
 import json
 import os
 import re
+import threading
 import time
 from datetime import date
-
-from langchain_tavily import TavilySearch
 
 from core.config import get_config, path, require_keys
 from tools import search_providers as providers
@@ -32,6 +35,11 @@ SEARCH_PAGE = re.compile(r"//search\.|/search[/?]|[?&](kwd|q|query|keyword)=", r
 # 실패해서 데이터 없이 끝난 검색 {query, agent}. 실시간 실패와 재현용 캐시의 실패 표시(.failed)를 모두 기록한다.
 # 호출할 때마다 붙인다(같은 쿼리가 여러 번 들어갈 수 있음). 다른 모듈이 같은 객체를 참조하므로 다시 대입하지 않는다
 FAILED_QUERIES: list[dict] = []
+# 이번 실행에서 끈 공급자 {공급자: 사유}와 공급자별 연속 오류 수, 실시간 검색 횟수·누적 시간 (적격성 검증이 병렬이라 잠금)
+DISABLED: dict[str, str] = {}
+_STREAK: dict[str, int] = {}
+_LIVE = {"n": 0, "sec": 0.0}
+_LOCK = threading.Lock()
 
 
 def _cache_file(key: dict):
@@ -66,12 +74,17 @@ def _raw_search(query: str, topic: str, time_range: str | None, max_results: int
     if os.getenv("REPLAY_OFFLINE"):
         raise RuntimeError(f"--offline: 재현용 캐시에 없는 검색입니다 → {query!r}")
     require_keys()
-    results, ok, errors = [], False, []
-    for provider in providers.order_for(query):
-        try:
-            got = _call(provider, query, topic, time_range, max_results, include_domains, depth, raw)
+    results, ok, errors, t0 = [], False, [], time.time()
+    active = active_providers()
+    if not active:
+        errors.append(f"공급자 모두 꺼짐({', '.join(DISABLED)})")
+    for provider in active:
+        try:  # 다음 공급자가 있으면 예전처럼 바로 넘어가고, 마지막 공급자일 때만 일시 오류를 다시 시도한다
+            got = _call_with_retry(provider, provider == active[-1], query, topic, time_range, max_results,
+                                   include_domains, depth, raw)
         except Exception as e:  # 한도 초과·인증 오류 → 다음 공급자
             errors.append(f"{provider}: {str(e)[:60]}")
+            _note_error(provider, e)
             continue
         ok = True
         results = [{**r, "provider": provider} for r in got]
@@ -79,6 +92,7 @@ def _raw_search(query: str, topic: str, time_range: str | None, max_results: int
             break
     if not ok:
         print(f"   (검색 실패, 빈 결과로 진행: {query[:40]} — {'; '.join(errors)[:120]})")
+    _progress(time.time() - t0)
     if cfg.cache.search and ok:
         f.write_text(json.dumps(results, ensure_ascii=False), encoding="utf-8")
         failed.unlink(missing_ok=True)
@@ -87,32 +101,62 @@ def _raw_search(query: str, topic: str, time_range: str | None, max_results: int
     return results if ok else None
 
 
+def active_providers() -> list[str]:
+    """키가 있고 이번 실행에서 꺼지지 않은 공급자 (Serper → Tavily 순서)."""
+    return [p for p in providers.order_for("") if p not in DISABLED]
+
+
+def _note_error(provider: str, e: Exception) -> None:
+    """공급자 오류를 세고, 인증·한도 오류이거나 연속 오류가 search.breaker_after 번이면 이번 실행에서 끈다(한 번만 알림)."""
+    fatal = getattr(e, "fatal", False)
+    if getattr(e, "status", None) == 429:  # 속도 제한은 기다리면 풀리므로 공급자를 끄는 근거로 세지 않는다
+        return
+    with _LOCK:
+        _STREAK[provider] = _STREAK.get(provider, 0) + 1
+        if provider in DISABLED or not (fatal or _STREAK[provider] >= int(get_config().search.get("breaker_after", 3))):
+            return
+        DISABLED[provider] = str(e)[:80]
+        streak = _STREAK[provider]
+    why = "인증·사용 한도 오류" if fatal else f"연속 {streak}번 오류"
+    print(f"   [검색] {provider} 를 이번 실행에서 끕니다 ({why}: {str(e)[:60]}). 남은 공급자가 없으면 이후 검색은 실패로 기록되고 "
+          f"해당 판정은 fail-closed 로 처리됩니다 → 키·한도를 확인한 뒤 --retry-failed 로 실패한 검색만 다시 할 수 있습니다")
+
+
+def _call_with_retry(provider: str, last: bool, *args) -> list[dict]:
+    """마지막 공급자일 때 일시 오류(연결 실패·429·5xx)만 search.retries 번 다시 시도한다.
+    인증·한도 오류와 시간 초과는 바로 올린다."""
+    retries = int(get_config().search.get("retries", 1)) if last else 0
+    for attempt in range(retries + 1):
+        try:
+            got = _call(provider, *args)
+        except providers.ProviderError as e:
+            if not e.retryable or attempt == retries:
+                raise
+            time.sleep(min(10.0, e.retry_after) or 2 * (attempt + 1))  # 429 의 Retry-After 가 있으면 따른다(최대 10초)
+            continue
+        with _LOCK:
+            _STREAK[provider] = 0
+        return got
+    return []
+
+
+def _progress(sec: float) -> None:
+    """실시간 검색 search.progress_every 회마다 한 줄 (노드가 끝날 때까지 출력이 없어 멈춘 것처럼 보이지 않게)."""
+    every = int(get_config().search.get("progress_every", 10) or 0)
+    with _LOCK:
+        _LIVE["n"] += 1
+        _LIVE["sec"] += sec
+        n, avg = _LIVE["n"], _LIVE["sec"] / _LIVE["n"]
+    if every and (n == 1 or n % every == 0):
+        print(f"   (실시간 웹 검색 {n}회 · 공급자 {' → '.join(active_providers()) or '없음'} · 평균 {avg:.1f}초/회)")
+
+
 def _call(provider: str, query: str, topic: str, time_range: str | None, max_results: int,
           include_domains: list[str] | None, depth: str, raw: bool) -> list[dict]:
     cfg = get_config()
     if provider == "tavily":
-        kwargs = dict(max_results=max_results, topic=topic, search_depth=depth)
-        if raw:
-            kwargs["include_raw_content"] = "text"  # 본문 전체: 창업자 이력·실적처럼 스니펫에 잘 안 나오는 사실 확보
-        if time_range:
-            kwargs["time_range"] = time_range
-        if include_domains:
-            kwargs["include_domains"] = include_domains
-        else:
-            kwargs["exclude_domains"] = list(cfg.search.exclude_domains)
-        for attempt in range(3):
-            try:
-                res = TavilySearch(**kwargs).invoke({"query": query})
-            except Exception as e:  # 일시적 네트워크 오류는 재시도, "결과 없음"은 정상 빈 결과
-                if "No search results" in str(e):
-                    return []
-                if attempt == 2:
-                    raise
-                time.sleep(2 * (attempt + 1))
-                continue
-            if isinstance(res, dict) and "error" in res:  # 인증·한도 오류는 예외 대신 dict 로 온다
-                raise RuntimeError(str(res["error"]))
-            return res.get("results", []) if isinstance(res, dict) else []
+        return providers.tavily(query, topic, time_range, max_results, include_domains, cfg.search.exclude_domains,
+                                depth, raw, float(cfg.search.get("timeout_sec", 30)))
     blocked = tuple(cfg.search.exclude_domains)
     got = [r for r in providers.serper(query, topic, include_domains, time_range, date.today().isoformat())
            if not _host(r["url"]).endswith(blocked) and not PR_MARKET.search(r["title"])
