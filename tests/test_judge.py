@@ -200,3 +200,27 @@ def test_empty_pool_skips_llm(fake):
 def test_unknown_dimension():
     with pytest.raises(ValueError):
         judge_dimension("team", COMPANY, [], _reg(), "", RUN_DATE)
+
+
+def test_require_no_plan_and_hedged_yes(fake):
+    """질문과 다른 내용을 인용한 YES(수치 없는 효과, 금액만 있는 기업가치), 계획 문장 과금 방식,
+    이유가 스스로 요건 미달을 인정한 YES → UNKNOWN. 필수 표현이 있는 YES 는 그대로 YES."""
+    w6 = {"id": "W6", "kind": "web", "url": "https://news.example.com/a/6", "site": "예시신문", "date": "2026-08-01",
+          "title": "팜랩 투자", "snippet": "",
+          "body": "팜랩 제어기를 쓰면 작업 효율과 생산성을 높일 수 있다고 농촌진흥청은 평가했다. "
+                  "팜랩은 구독형 요금제로 출시할 방침이다. 팜랩은 이번 투자에서 기업가치 300억 원을 인정받았다. "
+                  "팜랩의 이번 투자에는 예시벤처스가 참여했다."}
+    reg = SourceRegistry({**_reg().data, "W6": w6})
+    ids = ("W6",)
+    fake([[_a("M1", "UNKNOWN"), _a("M2", "UNKNOWN"),
+           _a("M3", "YES", "팜랩 제어기를 쓰면 작업 효율과 생산성을 높일 수 있다", ids),
+           _a("M4", "YES", "팜랩은 구독형 요금제로 출시할 방침이다", ids)],
+          [_a("D1", "UNKNOWN"), _a("D2", "YES", "팜랩의 이번 투자에는 예시벤처스가 참여했다", ids,
+                                   "기관투자자 이름은 있지만 VC 여부는 불분명"),
+           _a("D3", "YES", "팜랩은 이번 투자에서 기업가치 300억 원을 인정받았다", ids), _a("D4", "UNKNOWN")]])
+    market = {r["qid"]: r for r in judge_dimension("market", COMPANY, ["W6"], reg, "요약", RUN_DATE)["rows"]}
+    deal = {r["qid"]: r for r in judge_dimension("deal", COMPANY, ["W6"], reg, "요약", RUN_DATE)["rows"]}
+    assert market["M3"]["answer"] == "UNKNOWN" and "필수 표현" in market["M3"]["rationale"]
+    assert market["M4"]["answer"] == "UNKNOWN" and "계획" in market["M4"]["rationale"]
+    assert deal["D2"]["answer"] == "UNKNOWN" and "요건 미달" in deal["D2"]["rationale"]
+    assert deal["D3"]["answer"] == "YES"

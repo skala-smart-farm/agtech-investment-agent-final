@@ -19,6 +19,8 @@ LLM 은 평가표 질문에 판정(YES/NO/UNKNOWN/N/A)·근거 id·근거 원문
   기준일 이후뿐이거나 인용이 완료 표지 없는 예정·계획·목표 문장이면 인정하지 않는다 (시장 전망 M1·M2 는 제외)
   (제3자 문항은 기사에 실렸어도 인용 주변에 대표·회사 측 발언이나 목표·계획·예정 표현이 있으면 인정하지 않는다)
 - 상용 운영 문항은 인용 주변에 예정·목표·실증·PoC·시범 표현이 있거나 인용에 수량·고객이 없으면 인정하지 않는다
+- 문항 필수 표현(rubric require: 기업가치 문항엔 '기업가치·지분', 효과·매출 문항엔 숫자 등)이 인용에 없거나,
+  계획 문장 금지 문항(no_plan)의 인용이 예정·방침 문장이거나, YES 이유가 스스로 요건 미달을 인정하면 인정하지 않는다
 - D1(최근 라운드)은 LLM 답을 쓰지 않고 적격성 관문에서 인용 검증을 마친 값으로 코드가 판정한다
   (라운드 시점이 기준일 이후이거나 단계 인용이 예정·추진 중인 라운드면 완료된 투자가 아니므로 UNKNOWN)
 """
@@ -62,6 +64,9 @@ NO_HEDGE = re.compile(r"추정|불분명|명확하지않|확인되지않|없어|
 # 인용문 자체가 부정을 말하면("특허 없음", "인증을 받지 않았다") 이유에 '없어'가 있어도 반대 사실로 본다
 NEGATED = re.compile(r"없|않|아니|불가|미보유|미등록|\bno\b|\bnot\b|\bnever\b", re.I)
 UNDISCLOSED = ("비공개", "미공개", "undisclosed", "비밀", "n/a")
+# YES 판정 이유가 스스로 요건 미달을 인정하는 표현 ("수치가 없어 완전한 YES 는 아니지만 인정") — 공백을 지운 이유에서 찾는다
+YES_HEDGE = re.compile(r"아니지만|않지만|없지만|부족하지만|완전한yes|수치(?:가|는)?(?:없|제시되지않)|불분명|간접적")
+# ('추정'은 넣지 않는다: 시장 문항 이유에 '2034년 규모 추정치' 처럼 정상 표현으로 자주 나온다)
 
 
 class Row(TypedDict):
@@ -350,6 +355,12 @@ def judge_dimension(dim_id: str, company: dict, pool_ids: list[str], reg: Source
                 fail = "인용문이 근거 본문에서 확인되지 않음"
             elif not q.get("market_level") and not any(_near_company(a.quote, reg.text(i), keys) for i in ev):
                 fail = "인용 주변(±300자)에 회사명이 없음 (업계 일반론이 아니라 이 회사 이야기여야 함)"
+            elif miss := [p for p in q.get("require", []) if not re.search(p, a.quote, re.I)]:
+                fail = f"인용에 문항 필수 표현이 없음 ({' · '.join(miss)})"
+            elif YES_HEDGE.search(re.sub(r"\s+", "", a.rationale).lower()):
+                fail = "판정 이유가 요건 미달을 인정함"
+            elif q.get("no_plan") and planned_only(a.quote, run_date):
+                fail = "인용이 예정·계획·방침 문장 (확인된 사실 아님)"
             elif q.get("doc_required") and not any(i.startswith("D") for i in ev):
                 fail = "공공·연구기관 문서 근거 없음"
             elif q.get("third_party") and not any(_is_third_party(reg.get(i), keys) for i in ev):
